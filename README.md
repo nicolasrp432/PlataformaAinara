@@ -1,115 +1,286 @@
-# Leader Blueprint - Plataforma de Formación Premium
+# Leader Blueprint - Plataforma de Micro-Learning Premium
 
-## Descripción del Proyecto
-Leader Blueprint es una plataforma web premium de formación y transformación personal inspirada en la arquitectura de aprendizaje modular (LX Design). Combina micro-learning, gamificación ética y comunidad para crear una experiencia de aprendizaje transformacional.
+## Descripción General
+Plataforma de formación y desarrollo personal con arquitectura de micro-learning, gamificación ética, y mentoría personalizada. Diseñada siguiendo principios de LX Design y carga cognitiva optimizada.
 
 ## URLs
-- **Sandbox**: http://localhost:3000
-- **Producción**: (Pendiente despliegue a Cloudflare Pages)
 
-## Características Implementadas
+### Producción (pendiente de deploy)
+- **Cloudflare Pages**: *Por configurar*
+- **GitHub**: https://github.com/nicolasrp432/PlataformaAinara
 
-### 1. Dashboard Principal (`/`)
-- **Métricas de Consistencia**: Racha de días consecutivos de aprendizaje
-- **Sistema XP Cognitivo**: Gamificación con niveles y progreso visual
-- **Módulo Recomendado**: Hero card con micro-módulo personalizado
-- **Próximos Insights**: Grid de módulos próximos a explorar
-- **Sidebar**: 
-  - Acceso a La Taberna (comunidad)
-  - Widget de Introspección diaria
-  - Información del Mentor
+### Desarrollo (Sandbox)
+- **URL Base**: https://3000-{sandbox-id}.sandbox.novita.ai
+- **Health Check**: `/api/health`
+
+## Usuarios de Prueba
+
+| Usuario | Email | Contraseña | Rol | Acceso |
+|---------|-------|------------|-----|--------|
+| Admin | admin@leaderblueprint.com | Admin123! | admin | Elite |
+| Usuario Demo | demo@leaderblueprint.com | User1234! | user | Free |
+| Usuario Premium | premium@leaderblueprint.com | User1234! | user | Premium |
+
+## Arquitectura del Sistema
+
+### Stack Tecnológico
+- **Backend**: Hono (TypeScript) + Cloudflare Workers
+- **Base de Datos**: Cloudflare D1 (SQLite)
+- **Frontend**: Server-rendered JSX + Tailwind CSS + Material Symbols
+- **Autenticación**: JWT (access + refresh tokens) con SHA-256
+
+### Estructura del Proyecto
+```
+webapp/
+├── src/
+│   ├── index.tsx          # Punto de entrada y rutas principales
+│   ├── renderer.tsx       # Template HTML base con estilos globales
+│   ├── api/               # APIs REST
+│   │   ├── auth.ts        # Autenticación (login, register, logout)
+│   │   ├── users.ts       # Gestión de usuarios y perfiles
+│   │   ├── content.ts     # Formaciones, módulos, lecciones
+│   │   ├── mentorship.ts  # Sistema de mentoría
+│   │   └── reflections.ts # Reflexiones y comunidad
+│   ├── lib/
+│   │   └── auth.ts        # Utilidades de autenticación y JWT
+│   ├── middleware/
+│   │   └── auth.ts        # Middleware de autenticación
+│   ├── pages/             # Componentes de página
+│   │   ├── Dashboard.tsx  # Panel principal
+│   │   ├── Quest.tsx      # Reproductor de micro-learning
+│   │   ├── Taberna.tsx    # Comunidad y reflexiones
+│   │   ├── Library.tsx    # Biblioteca de formaciones
+│   │   ├── Profile.tsx    # Perfil de usuario
+│   │   └── Mentorship.tsx # Sistema de mentoría
+│   ├── components/
+│   │   └── Header.tsx     # Cabecera con navegación
+│   └── types/
+│       └── index.ts       # Tipos TypeScript
+├── migrations/
+│   ├── 0001_initial_schema.sql  # Esquema de base de datos
+│   └── 0002_seed_data.sql       # Datos iniciales
+├── wrangler.jsonc         # Configuración de Cloudflare
+├── ecosystem.config.cjs   # Configuración de PM2
+└── package.json           # Dependencias y scripts
+```
+
+## Páginas y Funcionalidades
+
+### 1. Dashboard (`/`)
+- Métricas de racha (días consecutivos)
+- Nivel y XP cognitivo con barra de progreso
+- Módulo recomendado (hero card)
+- Grid de próximos insights
+- Acceso rápido a La Taberna
+- Widget de introspección diaria
+- Información del mentor
 
 ### 2. Reproductor Micro-Learning (`/quest/:id`)
-- **Video Player Premium**: Controles personalizados con estética de lujo
-- **Progreso de Quest**: Lista de lecciones con estados (completo/reproduciendo/bloqueado)
+- Video player premium con controles personalizados
+- Barra de progreso de la quest
 - **Suite de Transformación**:
-  - Alineación de Frecuencia (432Hz)
-  - Voz del Crítico Interior (externalización de pensamientos)
-- **Aide-Mémoire**: Recursos descargables del módulo
-- **Footer con estadísticas**: Tiempo de sesión, nivel de enfoque, sincronización
+  - Alineación de Frecuencia 432Hz con visualizador
+  - Herramienta del Crítico Interior
+- Lista de lecciones con estados (completado, en progreso, bloqueado)
+- Aide-Mémoire (checklist, resumen, descargas)
 
 ### 3. La Taberna - Comunidad (`/taberna`)
-- **Feed de Reflexiones**: Publicaciones de la comunidad
-- **Composer**: Crear nuevas reflexiones
-- **Navegación lateral**: Sala de meditación, grupos, mensajes, biblioteca
-- **Compañeros de Viaje**: Usuarios online con estado de actividad
-- **Sala de Meditación**: CTA para sesiones de meditación grupal
-- **Soporte Comunitario**: Badge de espacio seguro certificado
+- Feed de reflexiones públicas
+- Composer para compartir momentos
+- Tabs: Todas, Mi Viaje, Resonados
+- Sala de Meditación (participantes activos)
+- Compañeros de Viaje (usuarios online)
+- Badge de Espacio Seguro Certificado
 
 ### 4. Biblioteca (`/library`)
-- **Grid de Quests**: Tarjetas con imagen, categoría, progreso
-- **Filtros por categoría**: Mindset, Productividad, Filosofía, Neurociencia
-- **Estados de Quest**: Completado, En progreso, Nuevo
-- **Estadísticas resumen**: Quests completados, en progreso, por comenzar
+- Grid de formaciones (Quests)
+- Filtros por categoría
+- Estados: Completado, En Progreso, Nuevo
+- Estadísticas de progreso
+
+### 5. Perfil de Usuario (`/profile`)
+- Edición de nombre y avatar
+- Estadísticas: racha, XP, lecciones, reflexiones
+- Cambio de contraseña
+- Estado de acceso (Free/Premium)
+- Actividad reciente
+- Nivel y progreso a siguiente nivel
+- Próximas sesiones de mentoría
+- Cierre de sesión
+
+### 6. Mentoría (`/mentorship`)
+- Perfil de la mentora (Ainara Sterling)
+- Especialidades y bio
+- Calendario de disponibilidad interactivo
+- Selección de fecha y hora
+- Notas para la sesión
+- Reserva de sesiones (requiere autenticación)
+- Historial de sesiones (próximas y pasadas)
+- Cancelación de sesiones
+- Testimonios de alumnos
+
+### 7. Autenticación
+- Login (`/login`)
+- Registro (`/register`)
+- Validación de contraseñas (8+ caracteres, mayúscula, minúscula, número)
 
 ## API Endpoints
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/health` | Estado del servidor |
-| GET | `/api/user/progress` | Progreso del usuario |
-| GET | `/api/quests` | Lista de quests |
-| GET | `/api/reflections` | Reflexiones de la comunidad |
-| POST | `/api/reflections` | Crear nueva reflexión |
-| POST | `/api/journal` | Guardar entrada de diario |
+### Autenticación
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/auth/register` | Registro de usuario | No |
+| POST | `/api/auth/login` | Inicio de sesión | No |
+| POST | `/api/auth/refresh` | Refrescar token | No |
+| POST | `/api/auth/logout` | Cerrar sesión | Sí |
+| GET | `/api/auth/me` | Usuario actual | Sí |
 
-## Stack Tecnológico
-- **Framework**: Hono (Edge-first web framework)
-- **Estilos**: Tailwind CSS con configuración premium
-- **Iconos**: Material Symbols
-- **Tipografías**: 
-  - Playfair Display (títulos serif)
-  - Manrope (cuerpo sans-serif)
-- **Deploy**: Cloudflare Pages
+### Usuarios
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/users/profile` | Perfil completo | Sí |
+| PUT | `/api/users/profile` | Actualizar perfil | Sí |
+| PUT | `/api/users/password` | Cambiar contraseña | Sí |
+| GET | `/api/users/progress` | Progreso detallado | Sí |
+| GET | `/api/users/activity` | Historial de actividad | Sí |
+| GET | `/api/users` | Listar usuarios (admin) | Admin |
+| PUT | `/api/users/:id/access` | Gestionar acceso (admin) | Admin |
+
+### Contenido
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/content/formations` | Listar formaciones | Opcional |
+| GET | `/api/content/formations/:slug` | Detalle de formación | Opcional |
+| GET | `/api/content/lessons/:id` | Detalle de lección | Sí |
+| POST | `/api/content/lessons/:id/progress` | Actualizar progreso | Sí |
+| POST | `/api/content/formations` | Crear formación (admin) | Admin |
+| PUT | `/api/content/formations/:id` | Editar formación (admin) | Admin |
+| POST | `/api/content/modules` | Crear módulo (admin) | Admin |
+| POST | `/api/content/lessons` | Crear lección (admin) | Admin |
+
+### Mentoría
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/mentorship/mentors` | Listar mentores | Opcional |
+| GET | `/api/mentorship/mentors/:id` | Detalle de mentor | Opcional |
+| GET | `/api/mentorship/mentors/:id/availability` | Disponibilidad | No |
+| POST | `/api/mentorship/sessions` | Reservar sesión | Sí |
+| GET | `/api/mentorship/sessions` | Mis sesiones | Sí |
+| PUT | `/api/mentorship/sessions/:id/cancel` | Cancelar sesión | Sí |
+| PUT | `/api/mentorship/sessions/:id/confirm` | Confirmar (admin) | Admin |
+| POST | `/api/mentorship/mentors/:id/block` | Bloquear fecha (admin) | Admin |
+
+### Reflexiones
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/reflections` | Listar reflexiones | Sí |
+| GET | `/api/reflections/mine` | Mis reflexiones | Sí |
+| POST | `/api/reflections` | Crear reflexión | Sí |
+| PUT | `/api/reflections/:id` | Editar reflexión | Sí |
+| DELETE | `/api/reflections/:id` | Eliminar reflexión | Sí |
+| POST | `/api/reflections/:id/react` | Reaccionar | Sí |
+
+### Utilidades
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/health` | Estado del sistema | No |
+
+## Modelos de Datos
+
+### Users
+- id, email, password_hash, name, avatar_url
+- role: user | admin | mentor
+- status: active | inactive | suspended
+
+### User Access
+- access_type: free | paid | manual | trial
+- starts_at, expires_at
+- access_granted_by, access_reason
+
+### Formations → Modules → Lessons
+- Estructura jerárquica de contenido
+- content_type: video | audio | text | quiz | exercise
+- is_free_preview para contenido de muestra
+
+### User Progress
+- status: not_started | in_progress | completed
+- progress_percent, last_position_seconds
+
+### User Streaks
+- current_streak, longest_streak
+- total_xp, level
+
+### Mentorship Sessions
+- status: pending | confirmed | completed | cancelled | no_show
+- meeting_link, notes, user_notes
+
+### Reflections
+- content, is_public
+- Reactions: resonate | support
+
+## Scripts de Desarrollo
+
+```bash
+# Desarrollo local
+npm run build              # Compilar con Vite
+pm2 start ecosystem.config.cjs  # Iniciar con PM2
+
+# Base de datos
+npm run db:migrate:local   # Aplicar migraciones (local)
+npm run db:seed            # Cargar datos iniciales
+npm run db:reset           # Reset completo de BD
+
+# Despliegue
+npm run deploy             # Deploy a Cloudflare Pages
+npm run deploy:prod        # Deploy a producción
+```
 
 ## Principios de Diseño
 
-### Arquitectura de Información (LX Design)
-- **Regla de los 3 segundos**: Dashboard con acciones claras e inmediatas
-- **Micro-aprendizaje**: Sesiones de 5-15 minutos
-- **Carga cognitiva controlada**: Divulgación progresiva de información
-- **Patrón de lectura F**: Métricas críticas en cuadrante superior izquierdo
+### Diseño Instruccional
+- **Micro-módulos**: 5-15 minutos por lección
+- **Carga cognitiva**: Regla de los 3 segundos en Dashboard
+- **Modelo ADDIE**: Análisis → Diseño → Desarrollo → Implementación → Evaluación
 
-### Paleta de Colores Premium
-- **Primary Gold**: `#C5A059`
-- **Luxury Gold**: `#D4AF37`
-- **Charcoal**: `#2D2D2D`
-- **Ivory Background**: `#FDFCFB`
+### LX Design
+- Formación de hábitos (66 días promedio)
+- Fases: Iniciación → Aprendizaje → Estabilidad
+- Gamificación compasiva (XP sin competencia)
 
-### Gamificación Ética
-- XP y niveles para motivación
-- La Taberna como espacio no competitivo
-- Enfoque en consistencia sobre velocidad
+### UI/UX
+- Patrón de lectura en F
+- Divulgación progresiva
+- Mobile-first
+- Tipografías terapéuticas (Playfair Display + Manrope)
+- Paleta: Dorado #C5A059, Charcoal #2D2D2D, Ivory #FDFCFB
 
-## Comandos de Desarrollo
+## Seguridad
 
-```bash
-# Instalar dependencias
-npm install
+- Autenticación JWT con refresh tokens
+- Hashing SHA-256 para contraseñas
+- Middleware de autorización por roles
+- Validación de entradas
+- CORS configurado
 
-# Construir el proyecto
-npm run build
+## Próximas Mejoras
 
-# Iniciar servidor de desarrollo (sandbox)
-npm run dev:sandbox
+- [ ] Sistema de pagos (Paddle/Lemon Squeezy)
+- [ ] Integración de calendario externo
+- [ ] Notificaciones push
+- [ ] Meditaciones con audio real
+- [ ] Analytics de comportamiento
+- [ ] Panel de administración completo
 
-# O con PM2:
-pm2 start ecosystem.config.cjs
+## Estado del Proyecto
 
-# Desplegar a Cloudflare Pages
-npm run deploy:prod
-```
+- **Plataforma**: ✅ Activa (desarrollo)
+- **Frontend**: ✅ Completo
+- **Backend API**: ✅ Completo
+- **Base de Datos**: ✅ Configurada con D1
+- **Autenticación**: ✅ JWT implementado
+- **Deploy Cloudflare**: ⏳ Pendiente
 
-## Próximas Funcionalidades
+---
 
-- [ ] Autenticación de usuarios
-- [ ] Base de datos D1 para persistencia
-- [ ] Reproductor de video real con streaming
-- [ ] Reproductor de audio para frecuencias solfeggio
-- [ ] Sistema de mentoría con chat
-- [ ] Sistema de pagos con Paddle/Lemon Squeezy
-- [ ] PWA con notificaciones push
-- [ ] Modo oscuro
-
-## Autor
-Desarrollado siguiendo las directrices de diseño instruccional modular para plataformas de transformación personal premium.
+**Tech Stack**: Hono + TypeScript + Cloudflare Workers/D1 + Tailwind CSS
+**Última actualización**: 2026-01-16

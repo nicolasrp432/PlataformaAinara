@@ -1,15 +1,22 @@
 {
   "name": "leader-blueprint",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
+    "dev:sandbox": "wrangler pages dev dist --d1=leader-blueprint-db --local --ip 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "wrangler pages dev dist",
+    "preview": "wrangler pages dev dist --d1=leader-blueprint-db --local",
     "deploy": "npm run build && wrangler pages deploy dist",
     "deploy:prod": "npm run build && wrangler pages deploy dist --project-name leader-blueprint",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true"
+    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
+    "db:migrate:local": "wrangler d1 migrations apply leader-blueprint-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply leader-blueprint-db",
+    "db:seed:local": "wrangler d1 execute leader-blueprint-db --local --file=./migrations/0002_seed_data.sql",
+    "db:reset": "rm -rf .wrangler/state/v3/d1 && npm run db:migrate:local && npm run db:seed:local",
+    "db:console": "wrangler d1 execute leader-blueprint-db --local",
+    "setup": "npm run build && npm run db:migrate:local && npm run db:seed:local"
   },
   "dependencies": {
     "hono": "^4.11.4"
