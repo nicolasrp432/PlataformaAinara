@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
   Sparkles,
   BookOpen,
@@ -11,45 +10,46 @@ import {
   Play,
   Heart,
   Star,
+  Gem,
 } from "lucide-react"
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
               <Sparkles className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">Ainara</span>
+            <span className="text-2xl font-light tracking-wide">Ainara</span>
           </Link>
-          <nav className="hidden items-center gap-6 md:flex">
+          <nav className="hidden items-center gap-8 md:flex">
             <Link
               href="#formaciones"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               Formaciones
             </Link>
             <Link
               href="#mentoria"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               Mentoria
             </Link>
             <Link
               href="#comunidad"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               Comunidad
             </Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" className="text-muted-foreground hover:text-foreground" asChild>
               <Link href="/login">Iniciar Sesion</Link>
             </Button>
-            <Button asChild>
+            <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90" asChild>
               <Link href="/register">Comenzar</Link>
             </Button>
           </div>
@@ -58,33 +58,37 @@ export default function HomePage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden py-24 lg:py-32">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+        <section className="relative overflow-hidden py-32 lg:py-44">
+          {/* Subtle golden gradient overlay */}
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+          <div className="absolute top-20 right-1/4 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute bottom-20 left-1/4 h-64 w-64 rounded-full bg-accent/5 blur-3xl" />
+          
           <div className="container mx-auto px-4">
-            <div className="mx-auto max-w-3xl text-center">
-              <Badge variant="secondary" className="mb-4">
-                <Star className="mr-1 h-3 w-3" />
-                Plataforma de Transformacion
-              </Badge>
-              <h1 className="mb-6 text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <div className="mx-auto max-w-4xl text-center">
+              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2">
+                <Gem className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Plataforma de Transformacion</span>
+              </div>
+              <h1 className="mb-8 text-balance text-5xl font-light tracking-tight text-foreground sm:text-6xl lg:text-7xl">
                 Tu viaje hacia la{" "}
-                <span className="text-primary">transformacion personal</span>{" "}
+                <span className="text-gold-gradient font-normal">transformacion</span>{" "}
                 comienza aqui
               </h1>
-              <p className="mb-8 text-pretty text-lg text-muted-foreground sm:text-xl">
+              <p className="mx-auto mb-12 max-w-2xl text-pretty text-lg text-muted-foreground leading-relaxed sm:text-xl">
                 Formaciones profundas, mentoria personalizada y una comunidad que
                 te acompana en tu camino de crecimiento personal y espiritual.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Button size="lg" asChild>
+                <Button size="lg" className="h-14 px-8 bg-gradient-to-r from-primary to-accent text-primary-foreground text-base hover:opacity-90" asChild>
                   <Link href="/register">
                     Comenzar mi viaje
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" asChild>
+                <Button variant="outline" size="lg" className="h-14 px-8 border-primary/30 text-base hover:bg-primary/5" asChild>
                   <Link href="#formaciones">
-                    <Play className="mr-2 h-4 w-4" />
+                    <Play className="mr-2 h-5 w-5" />
                     Ver formaciones
                   </Link>
                 </Button>
@@ -94,13 +98,14 @@ export default function HomePage() {
         </section>
 
         {/* Features Section */}
-        <section id="formaciones" className="py-24 bg-muted/30">
+        <section id="formaciones" className="py-32 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="mx-auto mb-16 max-w-2xl text-center">
-              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                Todo lo que necesitas para tu transformacion
+            <div className="mx-auto mb-20 max-w-2xl text-center">
+              <h2 className="mb-6 text-4xl font-light tracking-tight sm:text-5xl">
+                Todo lo que necesitas para tu{" "}
+                <span className="text-gold-gradient font-normal">transformacion</span>
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-lg text-muted-foreground leading-relaxed">
                 Una plataforma completa disenada para guiarte en cada paso de tu
                 desarrollo personal.
               </p>
@@ -124,7 +129,7 @@ export default function HomePage() {
               <FeatureCard
                 icon={Trophy}
                 title="Sistema de Progreso"
-                description="Gana XP, mantén tu racha diaria y desbloquea logros mientras avanzas en tu camino."
+                description="Gana XP, manten tu racha diaria y desbloquea logros mientras avanzas en tu camino."
               />
               <FeatureCard
                 icon={Sparkles}
@@ -134,57 +139,63 @@ export default function HomePage() {
               <FeatureCard
                 icon={Star}
                 title="Certificados"
-                description="Obtén certificados verificables al completar cada formacion como reconocimiento de tu dedicacion."
+                description="Obten certificados verificables al completar cada formacion como reconocimiento de tu dedicacion."
               />
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="py-24">
+        <section className="py-32">
           <div className="container mx-auto px-4">
-            <Card className="mx-auto max-w-4xl overflow-hidden">
+            <Card className="mx-auto max-w-5xl overflow-hidden border-primary/20 shadow-lg shadow-primary/5">
               <div className="grid md:grid-cols-2">
-                <div className="bg-primary p-8 text-primary-foreground md:p-12">
-                  <h3 className="mb-4 text-2xl font-bold">
+                <div className="bg-gradient-to-br from-secondary to-secondary/90 p-10 text-secondary-foreground md:p-14">
+                  <h3 className="mb-6 text-3xl font-light">
                     Comienza tu transformacion hoy
                   </h3>
-                  <p className="mb-6 text-primary-foreground/90">
+                  <p className="mb-8 text-secondary-foreground/80 leading-relaxed">
                     Accede a contenido gratuito y descubre si este camino es para
                     ti. Sin compromisos, solo crecimiento.
                   </p>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                      Lecciones de preview gratuitas
+                  <ul className="space-y-4">
+                    <li className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-sm">Lecciones de preview gratuitas</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                      Acceso a la comunidad
+                    <li className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-sm">Acceso a la comunidad</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                      Diario de reflexiones personal
+                    <li className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-sm">Diario de reflexiones personal</span>
                     </li>
                   </ul>
                 </div>
-                <CardContent className="flex flex-col justify-center p-8 md:p-12">
+                <CardContent className="flex flex-col justify-center p-10 md:p-14">
                   <CardHeader className="p-0">
-                    <CardTitle className="text-xl">Crea tu cuenta gratuita</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-2xl font-light">Crea tu cuenta gratuita</CardTitle>
+                    <CardDescription className="mt-2 text-base">
                       Solo necesitas un email para empezar
                     </CardDescription>
                   </CardHeader>
-                  <div className="mt-6">
-                    <Button className="w-full" size="lg" asChild>
+                  <div className="mt-8">
+                    <Button className="w-full h-14 bg-gradient-to-r from-primary to-accent text-primary-foreground text-base hover:opacity-90" size="lg" asChild>
                       <Link href="/register">
                         Registrarse gratis
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        <ArrowRight className="ml-2 h-5 w-5" />
                       </Link>
                     </Button>
-                    <p className="mt-4 text-center text-sm text-muted-foreground">
+                    <p className="mt-6 text-center text-sm text-muted-foreground">
                       ¿Ya tienes cuenta?{" "}
-                      <Link href="/login" className="text-primary hover:underline">
+                      <Link href="/login" className="text-primary font-medium hover:underline">
                         Inicia sesion
                       </Link>
                     </p>
@@ -197,23 +208,23 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t py-12">
+      <footer className="border-t border-border/50 py-16">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
                 <Sparkles className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-semibold">Ainara</span>
+              <span className="text-xl font-light">Ainara</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Plataforma de educacion para la transformacion personal y espiritual.
             </p>
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <Link href="/privacy" className="hover:text-foreground">
+            <div className="flex gap-6 text-sm text-muted-foreground">
+              <Link href="/privacy" className="hover:text-primary transition-colors">
                 Privacidad
               </Link>
-              <Link href="/terms" className="hover:text-foreground">
+              <Link href="/terms" className="hover:text-primary transition-colors">
                 Terminos
               </Link>
             </div>
@@ -234,15 +245,15 @@ function FeatureCard({
   description: string
 }) {
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="luxury-card bg-card hover:shadow-lg transition-all duration-300">
       <CardHeader>
-        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-          <Icon className="h-6 w-6 text-primary" />
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10">
+          <Icon className="h-7 w-7 text-primary" />
         </div>
-        <CardTitle className="text-xl">{title}</CardTitle>
+        <CardTitle className="text-xl font-normal">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground leading-relaxed">{description}</p>
       </CardContent>
     </Card>
   )

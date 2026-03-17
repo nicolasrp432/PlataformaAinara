@@ -1,10 +1,13 @@
 -- Plataforma Ainara - Profiles Table
 -- This table stores user profile data linked to Supabase auth
+-- Run this FIRST before any other scripts
+
+-- Drop existing table if needed (comment out in production)
+-- DROP TABLE IF EXISTS public.profiles CASCADE;
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT,
   full_name TEXT,
   avatar_url TEXT,
   role TEXT DEFAULT 'student' CHECK (role IN ('student', 'mentor', 'admin')),
@@ -22,6 +25,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_delete_own" ON public.profiles;
+
 -- Policies for profiles
 CREATE POLICY "profiles_select_own" ON public.profiles 
   FOR SELECT USING (auth.uid() = id);
@@ -38,8 +48,7 @@ CREATE POLICY "profiles_update_own" ON public.profiles
 CREATE POLICY "profiles_delete_own" ON public.profiles 
   FOR DELETE USING (auth.uid() = id);
 
--- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+-- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 
 -- Function to automatically update updated_at

@@ -1,7 +1,7 @@
 -- Plataforma Ainara - Content Tables
--- Formations, Modules, Lessons structure
+-- Run this AFTER 001_create_profiles.sql and 002_profile_trigger.sql
 
--- Categories table
+-- Categories table (create first since formations references it)
 CREATE TABLE IF NOT EXISTS public.categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.formations (
   long_description TEXT,
   thumbnail_url TEXT,
   trailer_url TEXT,
-  category_id UUID REFERENCES public.categories(id),
+  category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
   difficulty TEXT DEFAULT 'beginner' CHECK (difficulty IN ('beginner', 'intermediate', 'advanced')),
   duration_hours INTEGER DEFAULT 0,
   is_published BOOLEAN DEFAULT false,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.formations (
   price DECIMAL(10, 2) DEFAULT 0,
   xp_reward INTEGER DEFAULT 100,
   order_index INTEGER DEFAULT 0,
-  created_by UUID REFERENCES public.profiles(id),
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -56,13 +56,13 @@ CREATE TABLE IF NOT EXISTS public.lessons (
   description TEXT,
   content TEXT,
   video_url TEXT,
-  video_id TEXT, -- Cloudflare Stream video ID
-  video_duration INTEGER DEFAULT 0, -- Duration in seconds
+  video_id TEXT,
+  video_duration INTEGER DEFAULT 0,
   thumbnail_url TEXT,
   lesson_type TEXT DEFAULT 'video' CHECK (lesson_type IN ('video', 'text', 'quiz', 'exercise', 'meditation')),
   order_index INTEGER DEFAULT 0,
   is_published BOOLEAN DEFAULT false,
-  is_preview BOOLEAN DEFAULT false, -- Free preview lesson
+  is_preview BOOLEAN DEFAULT false,
   xp_reward INTEGER DEFAULT 25,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS public.user_progress (
   progress_percent INTEGER DEFAULT 0,
   is_completed BOOLEAN DEFAULT false,
   completed_at TIMESTAMPTZ,
-  last_position INTEGER DEFAULT 0, -- Video position in seconds
+  last_position INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, lesson_id)
@@ -101,6 +101,23 @@ ALTER TABLE public.modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "categories_select_all" ON public.categories;
+DROP POLICY IF EXISTS "categories_admin_all" ON public.categories;
+DROP POLICY IF EXISTS "formations_select_published" ON public.formations;
+DROP POLICY IF EXISTS "formations_admin_all" ON public.formations;
+DROP POLICY IF EXISTS "modules_select_published" ON public.modules;
+DROP POLICY IF EXISTS "modules_admin_all" ON public.modules;
+DROP POLICY IF EXISTS "lessons_select_published" ON public.lessons;
+DROP POLICY IF EXISTS "lessons_admin_all" ON public.lessons;
+DROP POLICY IF EXISTS "progress_select_own" ON public.user_progress;
+DROP POLICY IF EXISTS "progress_insert_own" ON public.user_progress;
+DROP POLICY IF EXISTS "progress_update_own" ON public.user_progress;
+DROP POLICY IF EXISTS "progress_delete_own" ON public.user_progress;
+DROP POLICY IF EXISTS "enrollments_select_own" ON public.enrollments;
+DROP POLICY IF EXISTS "enrollments_insert_own" ON public.enrollments;
+DROP POLICY IF EXISTS "enrollments_update_own" ON public.enrollments;
 
 -- Categories: public read
 CREATE POLICY "categories_select_all" ON public.categories FOR SELECT USING (true);
@@ -163,7 +180,12 @@ CREATE INDEX IF NOT EXISTS idx_progress_lesson ON public.user_progress(lesson_id
 CREATE INDEX IF NOT EXISTS idx_enrollments_user ON public.enrollments(user_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_formation ON public.enrollments(formation_id);
 
--- Triggers for updated_at
+-- Triggers for updated_at (using function from 001)
+DROP TRIGGER IF EXISTS on_formations_updated ON public.formations;
+DROP TRIGGER IF EXISTS on_modules_updated ON public.modules;
+DROP TRIGGER IF EXISTS on_lessons_updated ON public.lessons;
+DROP TRIGGER IF EXISTS on_progress_updated ON public.user_progress;
+
 CREATE TRIGGER on_formations_updated BEFORE UPDATE ON public.formations
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER on_modules_updated BEFORE UPDATE ON public.modules
