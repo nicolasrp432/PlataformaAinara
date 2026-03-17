@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Color Palette - Ainara Platform */
+  /* Primary: Deep Teal - Represents transformation and depth */
+  --color-primary: oklch(0.45 0.12 195);
+  --color-primary-foreground: oklch(0.98 0.01 195);
+  
+  /* Secondary: Warm Gold - Represents wisdom and enlightenment */
+  --color-secondary: oklch(0.75 0.14 85);
+  --color-secondary-foreground: oklch(0.25 0.05 85);
+  
+  /* Accent: Soft Rose - Represents compassion and heart */
+  --color-accent: oklch(0.70 0.10 15);
+  --color-accent-foreground: oklch(0.25 0.05 15);
+  
+  /* Background tones */
+  --color-background: oklch(0.99 0.005 240);
+  --color-foreground: oklch(0.15 0.02 240);
+  
+  /* Muted backgrounds */
+  --color-muted: oklch(0.96 0.01 240);
+  --color-muted-foreground: oklch(0.45 0.02 240);
+  
+  /* Card surfaces */
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.15 0.02 240);
+  
+  /* Popover surfaces */
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.15 0.02 240);
+  
+  /* Borders */
+  --color-border: oklch(0.90 0.01 240);
+  --color-input: oklch(0.90 0.01 240);
+  --color-ring: oklch(0.45 0.12 195);
+  
+  /* Semantic colors */
+  --color-destructive: oklch(0.55 0.20 25);
+  --color-destructive-foreground: oklch(0.98 0.01 25);
+  
+  --color-success: oklch(0.60 0.15 145);
+  --color-success-foreground: oklch(0.98 0.01 145);
+  
+  --color-warning: oklch(0.75 0.15 70);
+  --color-warning-foreground: oklch(0.25 0.05 70);
+  
+  /* Sidebar specific */
+  --color-sidebar: oklch(0.97 0.005 240);
+  --color-sidebar-foreground: oklch(0.25 0.02 240);
+  --color-sidebar-accent: oklch(0.94 0.01 240);
+  --color-sidebar-accent-foreground: oklch(0.15 0.02 240);
+  --color-sidebar-border: oklch(0.92 0.01 240);
+  
+  /* Chart colors for analytics */
+  --color-chart-1: oklch(0.45 0.12 195);
+  --color-chart-2: oklch(0.75 0.14 85);
+  --color-chart-3: oklch(0.70 0.10 15);
+  --color-chart-4: oklch(0.60 0.15 145);
+  --color-chart-5: oklch(0.55 0.10 280);
+  
+  /* Radius */
+  --radius: 0.625rem;
+  
+  /* Fonts */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  @theme inline {
+    --color-background: oklch(0.14 0.02 240);
+    --color-foreground: oklch(0.95 0.01 240);
+    
+    --color-muted: oklch(0.20 0.02 240);
+    --color-muted-foreground: oklch(0.65 0.02 240);
+    
+    --color-card: oklch(0.18 0.02 240);
+    --color-card-foreground: oklch(0.95 0.01 240);
+    
+    --color-popover: oklch(0.18 0.02 240);
+    --color-popover-foreground: oklch(0.95 0.01 240);
+    
+    --color-border: oklch(0.28 0.02 240);
+    --color-input: oklch(0.28 0.02 240);
+    
+    --color-primary: oklch(0.55 0.12 195);
+    --color-primary-foreground: oklch(0.15 0.02 195);
+    
+    --color-secondary: oklch(0.65 0.12 85);
+    --color-secondary-foreground: oklch(0.15 0.02 85);
+    
+    --color-sidebar: oklch(0.16 0.02 240);
+    --color-sidebar-foreground: oklch(0.90 0.01 240);
+    --color-sidebar-accent: oklch(0.22 0.02 240);
+    --color-sidebar-accent-foreground: oklch(0.95 0.01 240);
+    --color-sidebar-border: oklch(0.25 0.02 240);
+  }
+}
+
+/* Base styles */
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/* Focus ring utility */
+.focus-ring {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background-color: oklch(0.45 0.12 195 / 0.3);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-muted);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
+}
