@@ -1,9 +1,6 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  // Enable React Compiler for performance
-  reactCompiler: true,
-  
   // Image optimization domains
   images: {
     remotePatterns: [
