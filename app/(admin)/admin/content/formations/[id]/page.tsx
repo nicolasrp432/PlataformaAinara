@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical, MoreVertical, Video, FileText, Clock, Users } from "lucide-react"
+import Link from "next/link"
+import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical, MoreVertical, Video, FileText, Clock, Users, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -28,105 +28,48 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Formation, Module, Lesson } from "@/types"
+import { createClient } from "@/lib/supabase/client"
 
-// Mock data for development
-const mockFormation: Formation & { modules: (Module & { lessons: Lesson[] })[] } = {
-  id: "1",
-  title: "Despertar de la Consciencia",
-  slug: "despertar-consciencia",
-  description: "Un viaje profundo hacia el autoconocimiento y la transformacion interior. Descubre las claves para despertar tu consciencia y vivir con mayor plenitud.",
-  thumbnail_url: "/images/formations/despertar.jpg",
-  category: "consciousness",
-  difficulty_level: "intermediate",
-  estimated_duration: 480,
-  xp_reward: 500,
-  is_premium: true,
-  is_published: true,
-  order_index: 1,
-  created_at: "2024-01-15T10:00:00Z",
-  updated_at: "2024-01-20T15:30:00Z",
-  modules: [
-    {
-      id: "m1",
-      formation_id: "1",
-      title: "Fundamentos de la Consciencia",
-      description: "Comprender los principios basicos de la consciencia y como influye en nuestra vida diaria.",
-      order_index: 1,
-      is_published: true,
-      created_at: "2024-01-15T10:00:00Z",
-      updated_at: "2024-01-15T10:00:00Z",
-      lessons: [
-        {
-          id: "l1",
-          module_id: "m1",
-          title: "Que es la consciencia",
-          description: "Una introduccion al concepto de consciencia desde diferentes perspectivas.",
-          video_url: "https://stream.cloudflare.com/xxx",
-          video_duration: 900,
-          content_type: "video",
-          order_index: 1,
-          xp_reward: 25,
-          is_free: true,
-          is_published: true,
-          created_at: "2024-01-15T10:00:00Z",
-          updated_at: "2024-01-15T10:00:00Z",
-        },
-        {
-          id: "l2",
-          module_id: "m1",
-          title: "Niveles de consciencia",
-          description: "Explorando los diferentes niveles de consciencia segun diversas tradiciones.",
-          video_url: "https://stream.cloudflare.com/yyy",
-          video_duration: 1200,
-          content_type: "video",
-          order_index: 2,
-          xp_reward: 30,
-          is_free: false,
-          is_published: true,
-          created_at: "2024-01-15T10:00:00Z",
-          updated_at: "2024-01-15T10:00:00Z",
-        },
-      ],
-    },
-    {
-      id: "m2",
-      formation_id: "1",
-      title: "Practicas de Despertar",
-      description: "Tecnicas y ejercicios para expandir tu consciencia.",
-      order_index: 2,
-      is_published: true,
-      created_at: "2024-01-16T10:00:00Z",
-      updated_at: "2024-01-16T10:00:00Z",
-      lessons: [
-        {
-          id: "l3",
-          module_id: "m2",
-          title: "Meditacion guiada",
-          description: "Una meditacion guiada para conectar con tu esencia.",
-          video_url: "https://stream.cloudflare.com/zzz",
-          video_duration: 1800,
-          content_type: "video",
-          order_index: 1,
-          xp_reward: 40,
-          is_free: false,
-          is_published: true,
-          created_at: "2024-01-16T10:00:00Z",
-          updated_at: "2024-01-16T10:00:00Z",
-        },
-      ],
-    },
-  ],
+interface Formation {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  long_description: string | null
+  thumbnail_url: string | null
+  difficulty: string
+  duration_hours: number
+  is_published: boolean
+  is_premium: boolean
+  is_featured: boolean
+  xp_reward: number
+  price: number
+  order_index: number
 }
 
-const categories = [
-  { value: "consciousness", label: "Consciencia" },
-  { value: "spirituality", label: "Espiritualidad" },
-  { value: "meditation", label: "Meditacion" },
-  { value: "personal_growth", label: "Crecimiento Personal" },
-  { value: "relationships", label: "Relaciones" },
-  { value: "health", label: "Salud y Bienestar" },
-]
+interface Module {
+  id: string
+  formation_id: string
+  title: string
+  description: string | null
+  order_index: number
+  is_published: boolean
+  lessons?: Lesson[]
+}
+
+interface Lesson {
+  id: string
+  module_id: string
+  title: string
+  description: string | null
+  video_url: string | null
+  video_duration: number
+  lesson_type: string
+  order_index: number
+  is_published: boolean
+  is_preview: boolean
+  xp_reward: number
+}
 
 const difficultyLevels = [
   { value: "beginner", label: "Principiante" },
@@ -138,14 +81,20 @@ export default function FormationEditorPage() {
   const params = useParams()
   const router = useRouter()
   const isNew = params.id === "new"
+  const supabase = createClient()
   
-  const [formation, setFormation] = useState<typeof mockFormation | null>(null)
+  const [formation, setFormation] = useState<Formation | null>(null)
+  const [modules, setModules] = useState<Module[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("details")
+  
+  // Dialogs
   const [moduleDialogOpen, setModuleDialogOpen] = useState(false)
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false)
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
+  
+  // Form state for new module/lesson
   const [newModuleTitle, setNewModuleTitle] = useState("")
   const [newModuleDescription, setNewModuleDescription] = useState("")
   const [newLessonTitle, setNewLessonTitle] = useState("")
@@ -158,34 +107,117 @@ export default function FormationEditorPage() {
         title: "",
         slug: "",
         description: "",
+        long_description: "",
         thumbnail_url: "",
-        category: "consciousness",
-        difficulty_level: "beginner",
-        estimated_duration: 0,
-        xp_reward: 100,
-        is_premium: false,
+        difficulty: "beginner",
+        duration_hours: 0,
         is_published: false,
+        is_premium: true,
+        is_featured: false,
+        xp_reward: 100,
+        price: 0,
         order_index: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        modules: [],
       })
       setLoading(false)
     } else {
-      // Simulate API call
-      setTimeout(() => {
-        setFormation(mockFormation)
-        setLoading(false)
-      }, 500)
+      loadFormation()
     }
   }, [isNew, params.id])
 
-  const handleSave = async () => {
+  async function loadFormation() {
+    try {
+      // Load formation
+      const { data: formationData, error: formationError } = await supabase
+        .from("formations")
+        .select("*")
+        .eq("id", params.id)
+        .single()
+
+      if (formationError) throw formationError
+      setFormation(formationData)
+
+      // Load modules with lessons
+      const { data: modulesData, error: modulesError } = await supabase
+        .from("modules")
+        .select(`
+          *,
+          lessons(*)
+        `)
+        .eq("formation_id", params.id)
+        .order("order_index", { ascending: true })
+
+      if (modulesError) throw modulesError
+      
+      // Sort lessons within each module
+      const sortedModules = (modulesData || []).map((m: any) => ({
+        ...m,
+        lessons: (m.lessons || []).sort((a: Lesson, b: Lesson) => a.order_index - b.order_index)
+      }))
+      
+      setModules(sortedModules)
+    } catch (error) {
+      console.error("Error loading formation:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSave() {
+    if (!formation) return
+    
     setSaving(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setSaving(false)
-    // Show success toast
+    try {
+      if (isNew) {
+        // Create new formation
+        const { data, error } = await supabase
+          .from("formations")
+          .insert({
+            title: formation.title,
+            slug: formation.slug,
+            description: formation.description,
+            long_description: formation.long_description,
+            thumbnail_url: formation.thumbnail_url,
+            difficulty: formation.difficulty,
+            duration_hours: formation.duration_hours,
+            is_published: formation.is_published,
+            is_premium: formation.is_premium,
+            is_featured: formation.is_featured,
+            xp_reward: formation.xp_reward,
+            price: formation.price,
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        
+        router.push(`/admin/content/formations/${data.id}`)
+      } else {
+        // Update existing formation
+        const { error } = await supabase
+          .from("formations")
+          .update({
+            title: formation.title,
+            slug: formation.slug,
+            description: formation.description,
+            long_description: formation.long_description,
+            thumbnail_url: formation.thumbnail_url,
+            difficulty: formation.difficulty,
+            duration_hours: formation.duration_hours,
+            is_published: formation.is_published,
+            is_premium: formation.is_premium,
+            is_featured: formation.is_featured,
+            xp_reward: formation.xp_reward,
+            price: formation.price,
+          })
+          .eq("id", formation.id)
+
+        if (error) throw error
+      }
+    } catch (error) {
+      console.error("Error saving formation:", error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const generateSlug = (title: string) => {
@@ -207,67 +239,108 @@ export default function FormationEditorPage() {
     }
   }
 
-  const addModule = () => {
-    if (!formation || !newModuleTitle.trim()) return
+  async function addModule() {
+    if (!formation || !newModuleTitle.trim() || isNew) return
     
-    const newModule: Module & { lessons: Lesson[] } = {
-      id: `temp-${Date.now()}`,
-      formation_id: formation.id,
-      title: newModuleTitle,
-      description: newModuleDescription,
-      order_index: formation.modules.length + 1,
-      is_published: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      lessons: [],
+    try {
+      const { data, error } = await supabase
+        .from("modules")
+        .insert({
+          formation_id: formation.id,
+          title: newModuleTitle,
+          description: newModuleDescription || null,
+          order_index: modules.length,
+          is_published: false,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setModules([...modules, { ...data, lessons: [] }])
+      setNewModuleTitle("")
+      setNewModuleDescription("")
+      setModuleDialogOpen(false)
+    } catch (error) {
+      console.error("Error creating module:", error)
     }
-    
-    setFormation({
-      ...formation,
-      modules: [...formation.modules, newModule],
-    })
-    
-    setNewModuleTitle("")
-    setNewModuleDescription("")
-    setModuleDialogOpen(false)
   }
 
-  const addLesson = () => {
-    if (!formation || !selectedModuleId || !newLessonTitle.trim()) return
+  async function addLesson() {
+    if (!selectedModuleId || !newLessonTitle.trim()) return
     
-    const moduleIndex = formation.modules.findIndex((m) => m.id === selectedModuleId)
+    const moduleIndex = modules.findIndex(m => m.id === selectedModuleId)
     if (moduleIndex === -1) return
     
-    const newLesson: Lesson = {
-      id: `temp-${Date.now()}`,
-      module_id: selectedModuleId,
-      title: newLessonTitle,
-      description: newLessonDescription,
-      video_url: null,
-      video_duration: 0,
-      content_type: "video",
-      order_index: formation.modules[moduleIndex].lessons.length + 1,
-      xp_reward: 25,
-      is_free: false,
-      is_published: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+    try {
+      const { data, error } = await supabase
+        .from("lessons")
+        .insert({
+          module_id: selectedModuleId,
+          title: newLessonTitle,
+          description: newLessonDescription || null,
+          order_index: modules[moduleIndex].lessons?.length || 0,
+          lesson_type: "video",
+          is_published: false,
+          is_preview: false,
+          xp_reward: 25,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      const updatedModules = [...modules]
+      updatedModules[moduleIndex] = {
+        ...updatedModules[moduleIndex],
+        lessons: [...(updatedModules[moduleIndex].lessons || []), data]
+      }
+      setModules(updatedModules)
+      
+      setNewLessonTitle("")
+      setNewLessonDescription("")
+      setLessonDialogOpen(false)
+    } catch (error) {
+      console.error("Error creating lesson:", error)
     }
-    
-    const updatedModules = [...formation.modules]
-    updatedModules[moduleIndex] = {
-      ...updatedModules[moduleIndex],
-      lessons: [...updatedModules[moduleIndex].lessons, newLesson],
+  }
+
+  async function deleteModule(moduleId: string) {
+    try {
+      const { error } = await supabase
+        .from("modules")
+        .delete()
+        .eq("id", moduleId)
+
+      if (error) throw error
+
+      setModules(modules.filter(m => m.id !== moduleId))
+    } catch (error) {
+      console.error("Error deleting module:", error)
     }
-    
-    setFormation({
-      ...formation,
-      modules: updatedModules,
-    })
-    
-    setNewLessonTitle("")
-    setNewLessonDescription("")
-    setLessonDialogOpen(false)
+  }
+
+  async function deleteLesson(lessonId: string, moduleId: string) {
+    try {
+      const { error } = await supabase
+        .from("lessons")
+        .delete()
+        .eq("id", lessonId)
+
+      if (error) throw error
+
+      const moduleIndex = modules.findIndex(m => m.id === moduleId)
+      if (moduleIndex !== -1) {
+        const updatedModules = [...modules]
+        updatedModules[moduleIndex] = {
+          ...updatedModules[moduleIndex],
+          lessons: updatedModules[moduleIndex].lessons?.filter(l => l.id !== lessonId) || []
+        }
+        setModules(updatedModules)
+      }
+    } catch (error) {
+      console.error("Error deleting lesson:", error)
+    }
   }
 
   const formatDuration = (seconds: number) => {
@@ -282,18 +355,25 @@ export default function FormationEditorPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   if (!formation) {
-    return <div>Formacion no encontrada</div>
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Formacion no encontrada</p>
+        <Button variant="outline" className="mt-4" onClick={() => router.back()}>
+          Volver
+        </Button>
+      </div>
+    )
   }
 
-  const totalLessons = formation.modules.reduce((acc, m) => acc + m.lessons.length, 0)
-  const totalDuration = formation.modules.reduce(
-    (acc, m) => acc + m.lessons.reduce((acc2, l) => acc2 + (l.video_duration || 0), 0),
+  const totalLessons = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)
+  const totalDuration = modules.reduce(
+    (acc, m) => acc + (m.lessons?.reduce((acc2, l) => acc2 + (l.video_duration || 0), 0) || 0),
     0
   )
 
@@ -316,13 +396,19 @@ export default function FormationEditorPage() {
         </div>
         <div className="flex items-center gap-2">
           {!isNew && (
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-2" />
-              Vista Previa
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/formations/${formation.slug}`} target="_blank">
+                <Eye className="h-4 w-4 mr-2" />
+                Vista Previa
+              </Link>
             </Button>
           )}
           <Button onClick={handleSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
+            {saving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
             {saving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
@@ -347,8 +433,8 @@ export default function FormationEditorPage() {
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-secondary/10">
-                  <Clock className="h-4 w-4 text-secondary" />
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Clock className="h-4 w-4 text-amber-600" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Duracion</p>
@@ -360,12 +446,12 @@ export default function FormationEditorPage() {
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-accent/10">
-                  <FileText className="h-4 w-4 text-accent" />
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <FileText className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Modulos</p>
-                  <p className="text-xl font-semibold">{formation.modules.length}</p>
+                  <p className="text-xl font-semibold">{modules.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -373,8 +459,8 @@ export default function FormationEditorPage() {
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Users className="h-4 w-4 text-primary" />
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <Users className="h-4 w-4 text-green-600" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Estudiantes</p>
@@ -390,7 +476,7 @@ export default function FormationEditorPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="details">Detalles</TabsTrigger>
-          <TabsTrigger value="content">Contenido</TabsTrigger>
+          <TabsTrigger value="content" disabled={isNew}>Contenido</TabsTrigger>
           <TabsTrigger value="settings">Configuracion</TabsTrigger>
         </TabsList>
 
@@ -400,7 +486,7 @@ export default function FormationEditorPage() {
             <CardHeader>
               <CardTitle>Informacion Basica</CardTitle>
               <CardDescription>
-                Configura el titulo, descripcion y categoria de la formacion
+                Configura el titulo, descripcion y nivel de la formacion
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -428,45 +514,38 @@ export default function FormationEditorPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descripcion</Label>
+                <Label htmlFor="description">Descripcion corta</Label>
                 <Textarea
                   id="description"
                   value={formation.description || ""}
                   onChange={(e) =>
                     setFormation({ ...formation, description: e.target.value })
                   }
-                  placeholder="Describe de que trata esta formacion..."
-                  rows={4}
+                  placeholder="Breve descripcion de la formacion..."
+                  rows={3}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="long_description">Descripcion completa</Label>
+                <Textarea
+                  id="long_description"
+                  value={formation.long_description || ""}
+                  onChange={(e) =>
+                    setFormation({ ...formation, long_description: e.target.value })
+                  }
+                  placeholder="Descripcion detallada de lo que aprenderan..."
+                  rows={5}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
+                  <Label htmlFor="difficulty">Nivel</Label>
                   <Select
-                    value={formation.category}
+                    value={formation.difficulty}
                     onValueChange={(value) =>
-                      setFormation({ ...formation, category: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty">Nivel de Dificultad</Label>
-                  <Select
-                    value={formation.difficulty_level}
-                    onValueChange={(value) =>
-                      setFormation({ ...formation, difficulty_level: value as Formation["difficulty_level"] })
+                      setFormation({ ...formation, difficulty: value })
                     }
                   >
                     <SelectTrigger>
@@ -481,6 +560,30 @@ export default function FormationEditorPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duracion (horas)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min={0}
+                    value={formation.duration_hours}
+                    onChange={(e) =>
+                      setFormation({ ...formation, duration_hours: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="xp_reward">XP Recompensa</Label>
+                  <Input
+                    id="xp_reward"
+                    type="number"
+                    min={0}
+                    value={formation.xp_reward}
+                    onChange={(e) =>
+                      setFormation({ ...formation, xp_reward: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -489,37 +592,25 @@ export default function FormationEditorPage() {
             <CardHeader>
               <CardTitle>Imagen de Portada</CardTitle>
               <CardDescription>
-                Sube una imagen que represente la formacion (recomendado: 1280x720px)
+                URL de la imagen de portada (recomendado: 1280x720px)
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                {formation.thumbnail_url ? (
-                  <div className="relative">
+              <div className="space-y-4">
+                <Input
+                  value={formation.thumbnail_url || ""}
+                  onChange={(e) =>
+                    setFormation({ ...formation, thumbnail_url: e.target.value })
+                  }
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+                {formation.thumbnail_url && (
+                  <div className="border rounded-lg overflow-hidden">
                     <img
                       src={formation.thumbnail_url}
                       alt="Portada"
-                      className="max-h-48 mx-auto rounded-lg"
+                      className="w-full max-h-48 object-cover"
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                    >
-                      Cambiar imagen
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                      <Video className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground mb-2">
-                      Arrastra una imagen aqui o haz click para seleccionar
-                    </p>
-                    <Button variant="outline" size="sm">
-                      Subir imagen
-                    </Button>
                   </div>
                 )}
               </div>
@@ -566,7 +657,7 @@ export default function FormationEditorPage() {
                       id="module-description"
                       value={newModuleDescription}
                       onChange={(e) => setNewModuleDescription(e.target.value)}
-                      placeholder="Describe brevemente este modulo..."
+                      placeholder="Describe el contenido de este modulo..."
                       rows={3}
                     />
                   </div>
@@ -575,7 +666,9 @@ export default function FormationEditorPage() {
                   <Button variant="outline" onClick={() => setModuleDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={addModule}>Crear Modulo</Button>
+                  <Button onClick={addModule} disabled={!newModuleTitle.trim()}>
+                    Crear Modulo
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -583,62 +676,38 @@ export default function FormationEditorPage() {
 
           {/* Modules List */}
           <div className="space-y-4">
-            {formation.modules.length === 0 ? (
+            {modules.length === 0 ? (
               <Card>
-                <CardContent className="py-12 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">No hay modulos todavia</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Crea tu primer modulo para comenzar a agregar lecciones
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 font-semibold">No hay modulos</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Agrega un modulo para empezar a crear contenido
                   </p>
-                  <Button onClick={() => setModuleDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Crear primer modulo
-                  </Button>
                 </CardContent>
               </Card>
             ) : (
-              formation.modules.map((module, moduleIndex) => (
+              modules.map((module, moduleIndex) => (
                 <Card key={module.id}>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="cursor-grab p-1 hover:bg-muted rounded">
-                          <GripVertical className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                          {moduleIndex + 1}
                         </div>
                         <div>
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <span className="text-muted-foreground">
-                              Modulo {moduleIndex + 1}:
-                            </span>
-                            {module.title}
-                            {module.is_published ? (
-                              <Badge variant="default" className="ml-2">
-                                Publicado
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="ml-2">
-                                Borrador
-                              </Badge>
-                            )}
-                          </CardTitle>
-                          <CardDescription>{module.description}</CardDescription>
+                          <CardTitle className="text-base">{module.title}</CardTitle>
+                          {module.description && (
+                            <CardDescription className="text-xs mt-1">
+                              {module.description}
+                            </CardDescription>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedModuleId(module.id)
-                            setLessonDialogOpen(true)
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Leccion
-                        </Button>
+                        <Badge variant={module.is_published ? "default" : "outline"}>
+                          {module.is_published ? "Publicado" : "Borrador"}
+                        </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -646,13 +715,21 @@ export default function FormationEditorPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Editar modulo</DropdownMenuItem>
-                            <DropdownMenuItem>
-                              {module.is_published ? "Despublicar" : "Publicar"}
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedModuleId(module.id)
+                                setLessonDialogOpen(true)
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Agregar Leccion
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => deleteModule(module.id)}
+                            >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Eliminar
+                              Eliminar Modulo
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -660,86 +737,66 @@ export default function FormationEditorPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {module.lessons.length === 0 ? (
-                      <div className="py-6 text-center border-2 border-dashed border-border rounded-lg">
-                        <p className="text-muted-foreground mb-2">
-                          No hay lecciones en este modulo
-                        </p>
+                    {/* Lessons List */}
+                    {module.lessons && module.lessons.length > 0 ? (
+                      <div className="space-y-2">
+                        {module.lessons.map((lesson, lessonIndex) => (
+                          <div
+                            key={lesson.id}
+                            className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                          >
+                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                            <div className="flex items-center justify-center w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-medium">
+                              {lessonIndex + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{lesson.title}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="capitalize">{lesson.lesson_type}</span>
+                                {lesson.video_duration > 0 && (
+                                  <>
+                                    <span>-</span>
+                                    <span>{formatDuration(lesson.video_duration)}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {lesson.is_preview && (
+                                <Badge variant="secondary" className="text-xs">Preview</Badge>
+                              )}
+                              <Badge variant={lesson.is_published ? "default" : "outline"} className="text-xs">
+                                {lesson.is_published ? "Publicado" : "Borrador"}
+                              </Badge>
+                              <Button variant="ghost" size="icon" asChild>
+                                <Link href={`/admin/content/lessons/${lesson.id}`}>
+                                  <Video className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => deleteLesson(lesson.id, module.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground text-sm">
+                        No hay lecciones en este modulo
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="link"
+                          className="ml-1 p-0 h-auto"
                           onClick={() => {
                             setSelectedModuleId(module.id)
                             setLessonDialogOpen(true)
                           }}
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Agregar primera leccion
+                          Agregar una
                         </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {module.lessons.map((lesson, lessonIndex) => (
-                          <div
-                            key={lesson.id}
-                            className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                          >
-                            <div className="cursor-grab p-1 hover:bg-background rounded">
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                              {lessonIndex + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium truncate">{lesson.title}</p>
-                                {lesson.is_free && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Gratis
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Video className="h-3 w-3" />
-                                  {lesson.content_type === "video" ? "Video" : "Texto"}
-                                </span>
-                                {lesson.video_duration > 0 && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {formatDuration(lesson.video_duration)}
-                                  </span>
-                                )}
-                                <span>{lesson.xp_reward} XP</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant={lesson.is_published ? "default" : "secondary"}
-                              >
-                                {lesson.is_published ? "Publicada" : "Borrador"}
-                              </Badge>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Editar leccion</DropdownMenuItem>
-                                  <DropdownMenuItem>Subir video</DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    {lesson.is_published ? "Despublicar" : "Publicar"}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-destructive">
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Eliminar
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     )}
                   </CardContent>
@@ -748,13 +805,13 @@ export default function FormationEditorPage() {
             )}
           </div>
 
-          {/* Add Lesson Dialog */}
+          {/* Lesson Dialog */}
           <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Nueva Leccion</DialogTitle>
                 <DialogDescription>
-                  Agrega una nueva leccion a este modulo
+                  Crea una nueva leccion para este modulo
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -764,7 +821,7 @@ export default function FormationEditorPage() {
                     id="lesson-title"
                     value={newLessonTitle}
                     onChange={(e) => setNewLessonTitle(e.target.value)}
-                    placeholder="Ej: Introduccion a la meditacion"
+                    placeholder="Ej: Introduccion a la Meditacion"
                   />
                 </div>
                 <div className="space-y-2">
@@ -773,7 +830,7 @@ export default function FormationEditorPage() {
                     id="lesson-description"
                     value={newLessonDescription}
                     onChange={(e) => setNewLessonDescription(e.target.value)}
-                    placeholder="Describe brevemente esta leccion..."
+                    placeholder="Describe el contenido de esta leccion..."
                     rows={3}
                   />
                 </div>
@@ -782,7 +839,9 @@ export default function FormationEditorPage() {
                 <Button variant="outline" onClick={() => setLessonDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={addLesson}>Crear Leccion</Button>
+                <Button onClick={addLesson} disabled={!newLessonTitle.trim()}>
+                  Crear Leccion
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -794,35 +853,48 @@ export default function FormationEditorPage() {
             <CardHeader>
               <CardTitle>Configuracion de Acceso</CardTitle>
               <CardDescription>
-                Define quien puede acceder a esta formacion
+                Configura quien puede acceder a esta formacion
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="premium">Contenido Premium</Label>
+                <div className="space-y-0.5">
+                  <Label>Formacion Premium</Label>
                   <p className="text-sm text-muted-foreground">
-                    Solo usuarios con suscripcion activa pueden acceder
+                    Solo usuarios con suscripcion pueden acceder
                   </p>
                 </div>
                 <Switch
-                  id="premium"
                   checked={formation.is_premium}
                   onCheckedChange={(checked) =>
                     setFormation({ ...formation, is_premium: checked })
                   }
                 />
               </div>
-              <Separator />
+
               <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="published">Publicar Formacion</Label>
+                <div className="space-y-0.5">
+                  <Label>Destacada</Label>
                   <p className="text-sm text-muted-foreground">
-                    Hacer visible esta formacion a los estudiantes
+                    Mostrar en la seccion destacada de la plataforma
                   </p>
                 </div>
                 <Switch
-                  id="published"
+                  checked={formation.is_featured}
+                  onCheckedChange={(checked) =>
+                    setFormation({ ...formation, is_featured: checked })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Publicada</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hacer visible para los estudiantes
+                  </p>
+                </div>
+                <Switch
                   checked={formation.is_published}
                   onCheckedChange={(checked) =>
                     setFormation({ ...formation, is_published: checked })
@@ -834,44 +906,29 @@ export default function FormationEditorPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recompensas</CardTitle>
+              <CardTitle>Precio</CardTitle>
               <CardDescription>
-                Configura las recompensas por completar esta formacion
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="xp">XP al completar</Label>
-                <Input
-                  id="xp"
-                  type="number"
-                  value={formation.xp_reward}
-                  onChange={(e) =>
-                    setFormation({
-                      ...formation,
-                      xp_reward: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-                <p className="text-sm text-muted-foreground">
-                  Puntos de experiencia que recibira el estudiante al completar la formacion
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
-              <CardDescription>
-                Acciones irreversibles para esta formacion
+                Configura el precio si se vende individualmente
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Eliminar Formacion
-              </Button>
+              <div className="space-y-2">
+                <Label htmlFor="price">Precio (USD)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formation.price}
+                  onChange={(e) =>
+                    setFormation({ ...formation, price: parseFloat(e.target.value) || 0 })
+                  }
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Deja en 0 si solo esta disponible con suscripcion
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
