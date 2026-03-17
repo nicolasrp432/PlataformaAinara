@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { api, ApiError } from "@/lib/api-client"
+import { createClient } from "@/lib/supabase/client"
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 
 export function RegisterForm() {
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [success, setSuccess] = React.useState(false)
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -39,23 +40,62 @@ export function RegisterForm() {
     }
 
     try {
-      const response = await api.register({ name, email, password })
+      const supabase = createClient()
+      
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: name,
+            avatar_url: null,
+            role: "student",
+          },
+        },
+      })
 
-      if (response.success) {
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          setError("Este email ya esta registrado. Intenta iniciar sesion.")
+        } else {
+          setError(authError.message)
+        }
+        return
+      }
+
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation required
+        setSuccess(true)
+      } else if (data.session) {
+        // Auto-confirmed (for development)
         router.push("/dashboard")
         router.refresh()
-      } else {
-        setError(response.error || "Error al crear la cuenta")
       }
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message)
-      } else {
-        setError("Ha ocurrido un error. Intenta de nuevo.")
-      }
+      setError("Ha ocurrido un error. Intenta de nuevo.")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (success) {
+    return (
+      <div className="space-y-4 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
+          <CheckCircle2 className="h-6 w-6 text-success" />
+        </div>
+        <h3 className="text-lg font-semibold">Revisa tu email</h3>
+        <p className="text-sm text-muted-foreground">
+          Te hemos enviado un enlace de confirmacion a tu correo electronico.
+          Haz clic en el enlace para activar tu cuenta.
+        </p>
+        <Button variant="outline" onClick={() => router.push("/login")} className="w-full">
+          Volver a iniciar sesion
+        </Button>
+      </div>
+    )
   }
 
   return (

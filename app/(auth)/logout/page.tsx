@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { api } from "@/lib/api-client"
+import { createClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 
 export default function LogoutPage() {
@@ -11,9 +11,10 @@ export default function LogoutPage() {
   useEffect(() => {
     async function logout() {
       try {
-        await api.logout()
+        const supabase = createClient()
+        await supabase.auth.signOut()
       } catch {
-        // Continue even if API call fails
+        // Continue even if logout fails
       } finally {
         router.push("/login")
         router.refresh()
