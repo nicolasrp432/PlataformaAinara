@@ -1,9 +1,10 @@
 // =====================================================
-// Leader Blueprint - API de Reflexiones/Comunidad
+// Leader Blueprint - API de Reflexiones/Comunidad (Supabase)
 // =====================================================
 
 import { Hono } from 'hono'
 import { requireAuth, optionalAuth } from '../middleware/auth'
+import { supabase } from '../lib/supabase'
 import type { Bindings, Variables, CreateReflectionRequest } from '../types'
 
 const reflections = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -18,78 +19,91 @@ reflections.get('/', optionalAuth, async (c) => {
     const page = parseInt(c.req.query('page') || '1')
     const limit = parseInt(c.req.query('limit') || '20')
     const filter = c.req.query('filter') // 'all', 'my_journey', 'resonated'
-    const offset = (page - 1) * limit
+    const from = (page - 1) * limit
+    const to = from + limit - 1
 
-    let whereClause = 'r.is_public = 1'
-    const params: any[] = []
+    let query = supabase
+      .from('reflections')
+      .select('*, profiles(name, avatar_url)', { count: 'exact' })
+      .eq('is_public', true)
 
     if (filter === 'my_journey' && user) {
-      whereClause = 'r.user_id = ?'
-      params.push(user.id)
+      query = query.eq('user_id', user.id)
     } else if (filter === 'resonated' && user) {
-      whereClause = `r.id IN (
-        SELECT reflection_id FROM reflection_reactions 
-        WHERE user_id = ? AND reaction_type = 'resonate'
-      )`
-      params.push(user.id)
+      // This would require a join or a specific RPC if complex, 
+      // but let's stick to a simpler logic for now: 
+      // fetch all then filter if needed, or use a subquery-like approach.
+      // For simplicity, we'll fetch reflections where the user has shared reactions.
+      const { data: reactedIds } = await supabase
+        .from('reflection_reactions')
+        .select('reflection_id')
+        .eq('user_id', user.id)
+        .eq('reaction_type', 'resonate')
+
+      const ids = reactedIds?.map(r => r.reflection_id) || []
+      query = query.in('id', ids)
     }
 
-    // Contar total
-    const countResult = await c.env.DB.prepare(
-      `SELECT COUNT(*) as total FROM reflections r WHERE ${whereClause}`
-    ).bind(...params).first<{ total: number }>()
+    const { data: reflectionsData, count, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to)
 
-    // Obtener reflexiones
-    const reflectionsResult = await c.env.DB.prepare(`
-      SELECT r.*, 
-             u.name as author_name, 
-             u.avatar_url as author_avatar,
-             (SELECT COUNT(*) FROM reflection_reactions rr 
-              WHERE rr.reflection_id = r.id AND rr.reaction_type = 'resonate') as resonate_count,
-             (SELECT COUNT(*) FROM reflection_reactions rr 
-              WHERE rr.reflection_id = r.id AND rr.reaction_type = 'support') as support_count
-      FROM reflections r
-      JOIN users u ON u.id = r.user_id
-      WHERE ${whereClause}
-      ORDER BY r.created_at DESC
-      LIMIT ? OFFSET ?
-    `).bind(...params, limit, offset).all()
+    if (error) throw error
 
-    // Si hay usuario, agregar si ha reaccionado
-    let reflectionsWithUserReactions = reflectionsResult.results
-    if (user) {
-      reflectionsWithUserReactions = await Promise.all(
-        reflectionsResult.results.map(async (r: any) => {
-          const userReactions = await c.env.DB.prepare(`
-            SELECT reaction_type FROM reflection_reactions
-            WHERE reflection_id = ? AND user_id = ?
-          `).bind(r.id, user.id).all()
+    // Fetch reaction counts for each reflection
+    // In a high-traffic app, we should use a Postgres View or RPC for this.
+    const reflectionsWithCounts = await Promise.all((reflectionsData || []).map(async (r) => {
+      const { count: resonateCount } = await supabase
+        .from('reflection_reactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('reflection_id', r.id)
+        .eq('reaction_type', 'resonate')
 
-          const reactionTypes = userReactions.results.map((rr: any) => rr.reaction_type)
+      const { count: supportCount } = await supabase
+        .from('reflection_reactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('reflection_id', r.id)
+        .eq('reaction_type', 'support')
 
-          return {
-            ...r,
-            user_resonated: reactionTypes.includes('resonate'),
-            user_supported: reactionTypes.includes('support')
-          }
-        })
-      )
-    }
+      let userResonated = false
+      let userSupported = false
+
+      if (user) {
+        const { data: userReactions } = await supabase
+          .from('reflection_reactions')
+          .select('reaction_type')
+          .eq('reflection_id', r.id)
+          .eq('user_id', user.id)
+
+        userResonated = userReactions?.some(ur => ur.reaction_type === 'resonate') || false
+        userSupported = userReactions?.some(ur => ur.reaction_type === 'support') || false
+      }
+
+      return {
+        ...r,
+        author_name: (r.profiles as any)?.name,
+        author_avatar: (r.profiles as any)?.avatar_url,
+        resonate_count: resonateCount || 0,
+        support_count: supportCount || 0,
+        user_resonated: userResonated,
+        user_supported: userSupported
+      }
+    }))
 
     return c.json({
       success: true,
-      data: reflectionsWithUserReactions,
+      data: reflectionsWithCounts,
       pagination: {
         page,
         limit,
-        total: countResult?.total || 0,
-        totalPages: Math.ceil((countResult?.total || 0) / limit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
       }
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get reflections error:', error)
-    return c.json({ success: false, error: 'Error al obtener reflexiones' }, 500)
+    return c.json({ success: false, error: error.message || 'Error al obtener reflexiones' }, 500)
   }
 })
 
@@ -100,60 +114,84 @@ reflections.get('/', optionalAuth, async (c) => {
 reflections.post('/', requireAuth, async (c) => {
   try {
     const user = c.get('user')!
-    const body = await c.req.json<CreateReflectionRequest>()
+    let body: any;
+
+    // Handle both JSON and Form Data (from Dashboard)
+    const contentType = c.req.header('content-type')
+    if (contentType?.includes('application/json')) {
+      body = await c.req.json<CreateReflectionRequest>()
+    } else {
+      const formData = await c.req.formData()
+      body = {
+        content: formData.get('content') as string,
+        is_public: formData.get('is_public') === 'true' || true,
+        lesson_id: formData.get('lesson_id') as string || undefined
+      }
+    }
 
     if (!body.content || body.content.trim().length === 0) {
-      return c.json({ success: false, error: 'El contenido es requerido' }, 400)
+      if (contentType?.includes('application/json')) {
+        return c.json({ success: false, error: 'El contenido es requerido' }, 400)
+      }
+      return c.redirect('/?error=El contenido es requerido')
     }
 
-    if (body.content.length > 2000) {
-      return c.json({ success: false, error: 'El contenido no puede exceder 2000 caracteres' }, 400)
-    }
+    const { data: reflection, error } = await supabase
+      .from('reflections')
+      .insert({
+        user_id: user.id,
+        lesson_id: body.lesson_id || null,
+        content: body.content.trim(),
+        is_public: body.is_public !== false
+      })
+      .select('*, profiles(name, avatar_url)')
+      .single()
 
-    const id = crypto.randomUUID()
-    await c.env.DB.prepare(`
-      INSERT INTO reflections (id, user_id, lesson_id, content, is_public)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(
-      id,
-      user.id,
-      body.lesson_id || null,
-      body.content.trim(),
-      body.is_public !== false ? 1 : 0
-    ).run()
+    if (error) throw error
 
-    // Otorgar XP por reflexión
+    // Grant XP for public reflection
     if (body.is_public !== false) {
-      await c.env.DB.prepare(`
-        INSERT INTO xp_log (id, user_id, xp_amount, reason, reference_type, reference_id)
-        VALUES (?, ?, 10, 'Reflexión compartida', 'reflection', ?)
-      `).bind(crypto.randomUUID(), user.id, id).run()
+      // Log XP
+      await supabase.from('xp_log').insert({
+        user_id: user.id,
+        xp_amount: 10,
+        reason: 'Reflexión compartida',
+        reference_type: 'reflection',
+        reference_id: reflection.id
+      })
 
-      // Actualizar XP total
-      await c.env.DB.prepare(`
-        UPDATE user_streaks SET total_xp = total_xp + 10, 
-               level = (total_xp + 10) / 1000 + 1,
-               updated_at = datetime('now')
-        WHERE user_id = ?
-      `).bind(user.id).run()
+      // Update XP total in user_streaks
+      // Use RPC or upsert
+      const { data: streak } = await supabase
+        .from('user_streaks')
+        .select('total_xp')
+        .eq('id', user.id)
+        .single()
+
+      const newXp = (streak?.total_xp || 0) + 10
+      await supabase
+        .from('user_streaks')
+        .update({
+          total_xp: newXp,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
     }
 
-    const reflection = await c.env.DB.prepare(`
-      SELECT r.*, u.name as author_name, u.avatar_url as author_avatar
-      FROM reflections r
-      JOIN users u ON u.id = r.user_id
-      WHERE r.id = ?
-    `).bind(id).first()
+    if (contentType?.includes('application/json')) {
+      return c.json({
+        success: true,
+        message: body.is_public !== false ? '¡Reflexión compartida! +10 XP' : 'Reflexión guardada',
+        data: reflection
+      }, 201)
+    }
 
-    return c.json({
-      success: true,
-      message: body.is_public !== false ? '¡Reflexión compartida! +10 XP' : 'Reflexión guardada',
-      data: reflection
-    }, 201)
+    // Redirect back to dashboard if it was a form post
+    return c.redirect('/?success=Reflexión guardada')
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create reflection error:', error)
-    return c.json({ success: false, error: 'Error al crear reflexión' }, 500)
+    return c.json({ success: false, error: error.message || 'Error al crear reflexión' }, 500)
   }
 })
 
@@ -166,97 +204,32 @@ reflections.delete('/:id', requireAuth, async (c) => {
     const user = c.get('user')!
     const reflectionId = c.req.param('id')
 
-    const reflection = await c.env.DB.prepare(
-      'SELECT id, user_id FROM reflections WHERE id = ?'
-    ).bind(reflectionId).first<{ id: string; user_id: string }>()
+    const { data: reflection, error: fetchError } = await supabase
+      .from('reflections')
+      .select('user_id')
+      .eq('id', reflectionId)
+      .single()
 
-    if (!reflection) {
+    if (fetchError || !reflection) {
       return c.json({ success: false, error: 'Reflexión no encontrada' }, 404)
     }
 
-    // Solo el autor o admin puede eliminar
     if (reflection.user_id !== user.id && user.role !== 'admin') {
       return c.json({ success: false, error: 'No tienes permiso para eliminar esta reflexión' }, 403)
     }
 
-    // Eliminar reacciones primero
-    await c.env.DB.prepare(
-      'DELETE FROM reflection_reactions WHERE reflection_id = ?'
-    ).bind(reflectionId).run()
+    const { error: deleteError } = await supabase
+      .from('reflections')
+      .delete()
+      .eq('id', reflectionId)
 
-    // Eliminar reflexión
-    await c.env.DB.prepare(
-      'DELETE FROM reflections WHERE id = ?'
-    ).bind(reflectionId).run()
+    if (deleteError) throw deleteError
 
-    return c.json({
-      success: true,
-      message: 'Reflexión eliminada'
-    })
+    return c.json({ success: true, message: 'Reflexión eliminada' })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete reflection error:', error)
-    return c.json({ success: false, error: 'Error al eliminar reflexión' }, 500)
-  }
-})
-
-// =====================================================
-// POST /api/reflections/:id/react - Reaccionar
-// =====================================================
-
-reflections.post('/:id/react', requireAuth, async (c) => {
-  try {
-    const user = c.get('user')!
-    const reflectionId = c.req.param('id')
-    const body = await c.req.json<{ reaction_type: 'resonate' | 'support' }>()
-
-    if (!body.reaction_type || !['resonate', 'support'].includes(body.reaction_type)) {
-      return c.json({ success: false, error: 'Tipo de reacción inválido' }, 400)
-    }
-
-    // Verificar que la reflexión existe
-    const reflection = await c.env.DB.prepare(
-      'SELECT id, user_id FROM reflections WHERE id = ?'
-    ).bind(reflectionId).first()
-
-    if (!reflection) {
-      return c.json({ success: false, error: 'Reflexión no encontrada' }, 404)
-    }
-
-    // Verificar si ya reaccionó
-    const existingReaction = await c.env.DB.prepare(`
-      SELECT id FROM reflection_reactions 
-      WHERE reflection_id = ? AND user_id = ? AND reaction_type = ?
-    `).bind(reflectionId, user.id, body.reaction_type).first()
-
-    if (existingReaction) {
-      // Quitar reacción
-      await c.env.DB.prepare(
-        'DELETE FROM reflection_reactions WHERE id = ?'
-      ).bind((existingReaction as any).id).run()
-
-      return c.json({
-        success: true,
-        message: 'Reacción eliminada',
-        data: { reacted: false }
-      })
-    } else {
-      // Agregar reacción
-      await c.env.DB.prepare(`
-        INSERT INTO reflection_reactions (id, reflection_id, user_id, reaction_type)
-        VALUES (?, ?, ?, ?)
-      `).bind(crypto.randomUUID(), reflectionId, user.id, body.reaction_type).run()
-
-      return c.json({
-        success: true,
-        message: body.reaction_type === 'resonate' ? '¡Resonaste!' : '¡Apoyo enviado!',
-        data: { reacted: true }
-      })
-    }
-
-  } catch (error) {
-    console.error('React error:', error)
-    return c.json({ success: false, error: 'Error al procesar reacción' }, 500)
+    return c.json({ success: false, error: error.message || 'Error al eliminar reflexión' }, 500)
   }
 })
 
@@ -269,42 +242,39 @@ reflections.get('/journal', requireAuth, async (c) => {
     const user = c.get('user')!
     const page = parseInt(c.req.query('page') || '1')
     const limit = parseInt(c.req.query('limit') || '20')
-    const offset = (page - 1) * limit
+    const from = (page - 1) * limit
+    const to = from + limit - 1
 
-    // Contar total
-    const countResult = await c.env.DB.prepare(
-      'SELECT COUNT(*) as total FROM reflections WHERE user_id = ?'
-    ).bind(user.id).first<{ total: number }>()
+    const { data: entries, count, error } = await supabase
+      .from('reflections')
+      .select('*, lessons(title, modules(title, formations(title)))', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(from, to)
 
-    // Obtener entradas del diario (todas, públicas y privadas)
-    const entries = await c.env.DB.prepare(`
-      SELECT r.*, 
-             l.title as lesson_title,
-             m.title as module_title,
-             f.title as formation_title
-      FROM reflections r
-      LEFT JOIN lessons l ON l.id = r.lesson_id
-      LEFT JOIN modules m ON m.id = l.module_id
-      LEFT JOIN formations f ON f.id = m.formation_id
-      WHERE r.user_id = ?
-      ORDER BY r.created_at DESC
-      LIMIT ? OFFSET ?
-    `).bind(user.id, limit, offset).all()
+    if (error) throw error
+
+    const formattedEntries = entries?.map(r => ({
+      ...r,
+      lesson_title: (r.lessons as any)?.title,
+      module_title: (r.lessons as any)?.modules?.title,
+      formation_title: (r.lessons as any)?.modules?.formations?.title
+    }))
 
     return c.json({
       success: true,
-      data: entries.results,
+      data: formattedEntries,
       pagination: {
         page,
         limit,
-        total: countResult?.total || 0,
-        totalPages: Math.ceil((countResult?.total || 0) / limit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
       }
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get journal error:', error)
-    return c.json({ success: false, error: 'Error al obtener diario' }, 500)
+    return c.json({ success: false, error: error.message || 'Error al obtener diario' }, 500)
   }
 })
 

@@ -6,7 +6,7 @@ export interface User {
   id: string
   email: string
   name: string
-  avatar_url?: string
+  avatar_url: string | null
   role: 'user' | 'admin' | 'mentor'
   status: 'active' | 'inactive' | 'suspended'
   email_verified: boolean
@@ -282,13 +282,32 @@ export interface BookSessionRequest {
 // Cloudflare Bindings
 // =====================================================
 
+export interface D1Database {
+  prepare(query: string): D1PreparedStatement
+}
+
+export interface D1PreparedStatement {
+  bind(...values: any[]): D1PreparedStatement
+  first<T = any>(colName?: string): Promise<T | null>
+  all<T = any>(): Promise<{ results: T[] }>
+  run(): Promise<any>
+}
+
 export interface Bindings {
-  DB: D1Database
   JWT_SECRET: string
   ENVIRONMENT: string
+  DB: D1Database
 }
 
 export interface Variables {
   user?: User
   userAccess?: UserAccess
+  session?: any
+  contentAccessLevel?: 'public' | 'free' | 'premium' | 'admin'
+}
+
+declare module 'hono' {
+  interface ContextRenderer {
+    (content: any, props?: { title?: string }): Response | Promise<Response>
+  }
 }

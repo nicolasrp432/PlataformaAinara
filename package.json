@@ -19,6 +19,7 @@
     "setup": "npm run build && npm run db:migrate:local && npm run db:seed:local"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.0",
     "hono": "^4.11.4"
   },
   "devDependencies": {

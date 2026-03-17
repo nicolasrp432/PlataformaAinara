@@ -1,22 +1,32 @@
+
 // =====================================================
-// Leader Blueprint - API de Autenticación
+// Leader Blueprint - API de Autenticación (D1 + Custom JWT)
 // =====================================================
 
 import { Hono } from 'hono'
-import { 
-  hashPassword, 
-  verifyPassword, 
-  generateAuthTokens, 
-  generateRefreshToken,
-  getRefreshTokenExpiry,
-  validateEmail, 
-  validatePassword,
-  sanitizeUser 
-} from '../lib/auth'
+import { setCookie, deleteCookie } from 'hono/cookie'
+import { hashPassword, verifyPassword, generateAccessToken } from '../lib/auth'
 import { requireAuth } from '../middleware/auth'
-import type { Bindings, Variables, User, RegisterRequest, LoginRequest } from '../types'
+import type { Bindings, Variables, RegisterRequest, LoginRequest, User } from '../types'
 
 const auth = new Hono<{ Bindings: Bindings; Variables: Variables }>()
+
+// Helper to set session cookies
+const setSessionCookies = (c: any, accessToken: string) => {
+  const isProd = c.env.ENVIRONMENT === 'production'
+
+  setCookie(c, 'sb-access-token', accessToken, {
+    path: '/',
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'Lax',
+    maxAge: 15 * 60 // 15 minutes
+  })
+  
+  // Refresh token logic is simplified here (just re-using access token or needing a separate table)
+  // For now, let's stick to access token or use a long-lived one for dev simplicity if needed.
+  // But ideally we should implement refresh tokens.
+}
 
 // =====================================================
 // POST /api/auth/register - Registro de Usuario
@@ -24,87 +34,45 @@ const auth = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
 auth.post('/register', async (c) => {
   try {
-    const body = await c.req.json<RegisterRequest>()
-    const { email, password, name } = body
+    const { email, password, name } = await c.req.json<RegisterRequest>()
 
-    // Validaciones
     if (!email || !password || !name) {
       return c.json({ success: false, error: 'Email, contraseña y nombre son requeridos' }, 400)
     }
 
-    if (!validateEmail(email)) {
-      return c.json({ success: false, error: 'Email inválido' }, 400)
-    }
-
-    const passwordValidation = validatePassword(password)
-    if (!passwordValidation.valid) {
-      return c.json({ success: false, error: passwordValidation.errors.join('. ') }, 400)
-    }
-
-    // Verificar si el email ya existe
-    const existingUser = await c.env.DB.prepare(
-      'SELECT id FROM users WHERE email = ?'
-    ).bind(email.toLowerCase()).first()
-
+    // Check if user exists
+    const existingUser = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first<User>()
     if (existingUser) {
-      return c.json({ success: false, error: 'Este email ya está registrado' }, 409)
+      return c.json({ success: false, error: 'El usuario ya existe' }, 400)
     }
 
-    // Crear usuario
-    const userId = crypto.randomUUID()
+    // Hash password
     const passwordHash = await hashPassword(password)
+    const userId = crypto.randomUUID()
 
-    await c.env.DB.prepare(`
-      INSERT INTO users (id, email, password_hash, name, role, status)
-      VALUES (?, ?, ?, ?, 'user', 'active')
-    `).bind(userId, email.toLowerCase(), passwordHash, name).run()
+    // Insert user
+    await c.env.DB.prepare(
+      'INSERT INTO users (id, email, password_hash, name, role, status, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(userId, email, passwordHash, name, 'user', 'active', 0).run()
 
-    // Crear acceso gratuito por defecto
-    await c.env.DB.prepare(`
-      INSERT INTO user_access (id, user_id, access_type, is_active)
-      VALUES (?, ?, 'free', 1)
-    `).bind(crypto.randomUUID(), userId).run()
+    // Create user_access (Free plan by default)
+    await c.env.DB.prepare(
+      'INSERT INTO user_access (id, user_id, plan_id, access_type, is_active) VALUES (?, ?, ?, ?, ?)'
+    ).bind(crypto.randomUUID(), userId, 'plan_free', 'free', 1).run()
 
-    // Crear registro de racha
-    await c.env.DB.prepare(`
-      INSERT INTO user_streaks (id, user_id, current_streak, longest_streak, total_xp, level)
-      VALUES (?, ?, 0, 0, 0, 1)
-    `).bind(crypto.randomUUID(), userId).run()
+    const newUser = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first<User>()
+    
+    if (!newUser) throw new Error('Error creating user')
 
-    // Obtener usuario creado
-    const user = await c.env.DB.prepare(
-      'SELECT * FROM users WHERE id = ?'
-    ).bind(userId).first<User>()
-
-    // Generar tokens
-    const secret = c.env.JWT_SECRET || 'dev-secret-key-change-in-production'
-    const tokens = await generateAuthTokens(user!, secret)
-
-    // Guardar refresh token
-    await c.env.DB.prepare(`
-      INSERT INTO user_sessions (id, user_id, refresh_token, expires_at, ip_address, user_agent)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      crypto.randomUUID(),
-      userId,
-      tokens.refreshToken,
-      getRefreshTokenExpiry().toISOString(),
-      c.req.header('CF-Connecting-IP') || 'unknown',
-      c.req.header('User-Agent') || 'unknown'
-    ).run()
-
-    // Obtener acceso
-    const access = await c.env.DB.prepare(
-      'SELECT * FROM user_access WHERE user_id = ? AND is_active = 1'
-    ).bind(userId).first()
+    const token = await generateAccessToken(newUser, c.env.JWT_SECRET)
+    setSessionCookies(c, token)
 
     return c.json({
       success: true,
       message: 'Registro exitoso',
       data: {
-        user: sanitizeUser(user),
-        tokens,
-        access
+        user: newUser,
+        session: { access_token: token }
       }
     }, 201)
 
@@ -120,65 +88,43 @@ auth.post('/register', async (c) => {
 
 auth.post('/login', async (c) => {
   try {
-    const body = await c.req.json<LoginRequest>()
-    const { email, password } = body
+    const { email, password } = await c.req.json<LoginRequest>()
 
     if (!email || !password) {
       return c.json({ success: false, error: 'Email y contraseña son requeridos' }, 400)
     }
 
-    // Buscar usuario
-    const user = await c.env.DB.prepare(
-      'SELECT * FROM users WHERE email = ?'
-    ).bind(email.toLowerCase()).first<User & { password_hash: string }>()
+    // Find user
+    const user = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first<User & { password_hash: string }>()
 
     if (!user) {
       return c.json({ success: false, error: 'Credenciales inválidas' }, 401)
     }
 
-    // Verificar estado
-    if (user.status !== 'active') {
-      return c.json({ success: false, error: 'Cuenta suspendida o inactiva' }, 403)
-    }
-
-    // Verificar contraseña
-    const isValidPassword = await verifyPassword(password, user.password_hash)
-    if (!isValidPassword) {
+    // Verify password
+    const isValid = await verifyPassword(password, user.password_hash)
+    if (!isValid) {
+      // Log failed attempt (TODO: Implement logging table)
+      console.log(`Failed login attempt for ${email}`)
       return c.json({ success: false, error: 'Credenciales inválidas' }, 401)
     }
 
-    // Generar tokens
-    const secret = c.env.JWT_SECRET || 'dev-secret-key-change-in-production'
-    const tokens = await generateAuthTokens(user, secret)
+    // Generate token
+    const token = await generateAccessToken(user, c.env.JWT_SECRET)
+    setSessionCookies(c, token)
 
-    // Guardar sesión
-    await c.env.DB.prepare(`
-      INSERT INTO user_sessions (id, user_id, refresh_token, expires_at, ip_address, user_agent)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      crypto.randomUUID(),
-      user.id,
-      tokens.refreshToken,
-      getRefreshTokenExpiry().toISOString(),
-      c.req.header('CF-Connecting-IP') || 'unknown',
-      c.req.header('User-Agent') || 'unknown'
-    ).run()
+    // Update last login (optional)
+    // await c.env.DB.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').bind(user.id).run()
 
-    // Obtener acceso actual
-    const access = await c.env.DB.prepare(`
-      SELECT * FROM user_access 
-      WHERE user_id = ? AND is_active = 1 
-      AND (expires_at IS NULL OR expires_at > datetime('now'))
-      ORDER BY created_at DESC LIMIT 1
-    `).bind(user.id).first()
+    // Remove sensitive data
+    const { password_hash, ...safeUser } = user
 
     return c.json({
       success: true,
       message: 'Inicio de sesión exitoso',
       data: {
-        user: sanitizeUser(user),
-        tokens,
-        access
+        user: safeUser,
+        session: { access_token: token }
       }
     })
 
@@ -189,132 +135,22 @@ auth.post('/login', async (c) => {
 })
 
 // =====================================================
-// POST /api/auth/refresh - Refrescar Token
-// =====================================================
-
-auth.post('/refresh', async (c) => {
-  try {
-    const body = await c.req.json<{ refreshToken: string }>()
-    const { refreshToken } = body
-
-    if (!refreshToken) {
-      return c.json({ success: false, error: 'Refresh token requerido' }, 400)
-    }
-
-    // Buscar sesión válida
-    const session = await c.env.DB.prepare(`
-      SELECT us.*, u.* FROM user_sessions us
-      JOIN users u ON us.user_id = u.id
-      WHERE us.refresh_token = ? AND us.expires_at > datetime('now')
-    `).bind(refreshToken).first<any>()
-
-    if (!session) {
-      return c.json({ success: false, error: 'Refresh token inválido o expirado' }, 401)
-    }
-
-    // Eliminar sesión antigua
-    await c.env.DB.prepare(
-      'DELETE FROM user_sessions WHERE refresh_token = ?'
-    ).bind(refreshToken).run()
-
-    // Generar nuevos tokens
-    const secret = c.env.JWT_SECRET || 'dev-secret-key-change-in-production'
-    const user: User = {
-      id: session.user_id,
-      email: session.email,
-      name: session.name,
-      avatar_url: session.avatar_url,
-      role: session.role,
-      status: session.status,
-      email_verified: Boolean(session.email_verified),
-      created_at: session.created_at,
-      updated_at: session.updated_at
-    }
-    const tokens = await generateAuthTokens(user, secret)
-
-    // Crear nueva sesión
-    await c.env.DB.prepare(`
-      INSERT INTO user_sessions (id, user_id, refresh_token, expires_at, ip_address, user_agent)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      crypto.randomUUID(),
-      user.id,
-      tokens.refreshToken,
-      getRefreshTokenExpiry().toISOString(),
-      c.req.header('CF-Connecting-IP') || 'unknown',
-      c.req.header('User-Agent') || 'unknown'
-    ).run()
-
-    return c.json({
-      success: true,
-      data: { tokens }
-    })
-
-  } catch (error) {
-    console.error('Refresh error:', error)
-    return c.json({ success: false, error: 'Error al refrescar token' }, 500)
-  }
-})
-
-// =====================================================
 // POST /api/auth/logout - Cerrar Sesión
 // =====================================================
 
-auth.post('/logout', requireAuth, async (c) => {
-  try {
-    const user = c.get('user')!
-    const body = await c.req.json<{ refreshToken?: string }>().catch(() => ({}))
-
-    if (body.refreshToken) {
-      // Eliminar sesión específica
-      await c.env.DB.prepare(
-        'DELETE FROM user_sessions WHERE user_id = ? AND refresh_token = ?'
-      ).bind(user.id, body.refreshToken).run()
-    } else {
-      // Eliminar todas las sesiones del usuario
-      await c.env.DB.prepare(
-        'DELETE FROM user_sessions WHERE user_id = ?'
-      ).bind(user.id).run()
-    }
-
-    return c.json({
-      success: true,
-      message: 'Sesión cerrada exitosamente'
-    })
-
-  } catch (error) {
-    console.error('Logout error:', error)
-    return c.json({ success: false, error: 'Error al cerrar sesión' }, 500)
-  }
+auth.post('/logout', (c) => {
+  deleteCookie(c, 'sb-access-token')
+  deleteCookie(c, 'sb-refresh-token')
+  return c.json({ success: true, message: 'Sesión cerrada' })
 })
 
 // =====================================================
-// GET /api/auth/me - Obtener Usuario Actual
+// GET /api/auth/me - Usuario Actual
 // =====================================================
 
-auth.get('/me', requireAuth, async (c) => {
-  try {
-    const user = c.get('user')!
-    const access = c.get('userAccess')
-
-    // Obtener racha
-    const streak = await c.env.DB.prepare(
-      'SELECT * FROM user_streaks WHERE user_id = ?'
-    ).bind(user.id).first()
-
-    return c.json({
-      success: true,
-      data: {
-        user: sanitizeUser(user),
-        access,
-        streak
-      }
-    })
-
-  } catch (error) {
-    console.error('Get me error:', error)
-    return c.json({ success: false, error: 'Error al obtener información del usuario' }, 500)
-  }
+auth.get('/me', requireAuth, (c) => {
+  const user = c.get('user')
+  return c.json({ success: true, data: { user } })
 })
 
 export default auth
