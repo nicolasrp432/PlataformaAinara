@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/server"
 import {
   Users,
   BookOpen,
@@ -19,31 +20,113 @@ export const metadata: Metadata = {
   description: "Dashboard de administracion de la plataforma Ainara",
 }
 
-// Mock stats - will be fetched from API
-const mockStats = {
-  totalUsers: 1234,
-  activeUsers: 856,
-  newUsersThisMonth: 124,
-  totalFormations: 8,
-  publishedFormations: 6,
-  totalLessons: 156,
-  completedLessons: 4523,
-  averageProgress: 42,
+async function getAdminStats() {
+  const supabase = await createClient()
+
+  // Get total users
+  const { count: totalUsers } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+
+  // Get total formations
+  const { count: totalFormations } = await supabase
+    .from("formations")
+    .select("*", { count: "exact", head: true })
+
+  // Get published formations
+  const { count: publishedFormations } = await supabase
+    .from("formations")
+    .select("*", { count: "exact", head: true })
+    .eq("is_published", true)
+
+  // Get total lessons
+  const { count: totalLessons } = await supabase
+    .from("lessons")
+    .select("*", { count: "exact", head: true })
+
+  // Get completed lessons
+  const { count: completedLessons } = await supabase
+    .from("user_progress")
+    .select("*", { count: "exact", head: true })
+    .eq("is_completed", true)
+
+  // Get total enrollments
+  const { count: totalEnrollments } = await supabase
+    .from("enrollments")
+    .select("*", { count: "exact", head: true })
+
+  return {
+    totalUsers: totalUsers ?? 0,
+    totalFormations: totalFormations ?? 0,
+    publishedFormations: publishedFormations ?? 0,
+    totalLessons: totalLessons ?? 0,
+    completedLessons: completedLessons ?? 0,
+    totalEnrollments: totalEnrollments ?? 0,
+  }
 }
 
-const recentUsers = [
-  { id: "1", name: "Maria Garcia", email: "maria@example.com", joinedAt: "Hace 2 horas" },
-  { id: "2", name: "Carlos Lopez", email: "carlos@example.com", joinedAt: "Hace 5 horas" },
-  { id: "3", name: "Ana Martinez", email: "ana@example.com", joinedAt: "Ayer" },
-]
+async function getRecentUsers() {
+  const supabase = await createClient()
 
-const recentActivity = [
-  { type: "formation", action: "publicada", title: "Meditacion Avanzada", time: "Hace 1 hora" },
-  { type: "lesson", action: "creada", title: "Respiracion Consciente", time: "Hace 3 horas" },
-  { type: "user", action: "registrado", title: "Carlos Lopez", time: "Hace 5 horas" },
-]
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, created_at, role")
+    .order("created_at", { ascending: false })
+    .limit(5)
 
-export default function AdminDashboardPage() {
+  if (!profiles) return []
+
+  return profiles.map((profile) => ({
+    id: profile.id,
+    name: profile.full_name || "Sin nombre",
+    role: profile.role || "student",
+    joinedAt: formatTimeAgo(profile.created_at),
+  }))
+}
+
+async function getRecentFormations() {
+  const supabase = await createClient()
+
+  const { data: formations } = await supabase
+    .from("formations")
+    .select("id, title, is_published, created_at, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(5)
+
+  if (!formations) return []
+
+  return formations.map((formation) => ({
+    id: formation.id,
+    title: formation.title,
+    isPublished: formation.is_published,
+    time: formatTimeAgo(formation.updated_at || formation.created_at),
+  }))
+}
+
+function formatTimeAgo(date: string | null): string {
+  if (!date) return "Reciente"
+  const now = new Date()
+  const past = new Date(date)
+  const diffMs = now.getTime() - past.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMins < 1) return "Ahora"
+  if (diffMins < 60) return `Hace ${diffMins}m`
+  if (diffHours < 24) return `Hace ${diffHours}h`
+  if (diffDays === 1) return "Ayer"
+  if (diffDays < 30) return `Hace ${diffDays} dias`
+  return `Hace ${Math.floor(diffDays / 30)} meses`
+}
+
+export default async function AdminDashboardPage() {
+  const [stats, recentUsers, recentFormations] = await Promise.all([
+    getAdminStats(),
+    getRecentUsers(),
+    getRecentFormations(),
+  ])
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -78,22 +161,22 @@ export default function AdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-success">+{mockStats.newUsersThisMonth}</span> este mes
+              Usuarios registrados
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuarios Activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Inscripciones</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.activeUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.totalEnrollments.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((mockStats.activeUsers / mockStats.totalUsers) * 100)}% del total
+              Inscripciones totales
             </p>
           </CardContent>
         </Card>
@@ -104,9 +187,9 @@ export default function AdminDashboardPage() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalFormations}</div>
+            <div className="text-2xl font-bold">{stats.totalFormations}</div>
             <p className="text-xs text-muted-foreground">
-              {mockStats.publishedFormations} publicadas
+              {stats.publishedFormations} publicadas
             </p>
           </CardContent>
         </Card>
@@ -117,9 +200,9 @@ export default function AdminDashboardPage() {
             <Video className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalLessons}</div>
+            <div className="text-2xl font-bold">{stats.totalLessons}</div>
             <p className="text-xs text-muted-foreground">
-              {mockStats.completedLessons.toLocaleString()} completadas
+              {stats.completedLessons.toLocaleString()} completadas
             </p>
           </CardContent>
         </Card>
@@ -146,61 +229,71 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                      {user.name.split(" ").map(n => n[0]).join("")}
+              {recentUsers.length > 0 ? (
+                recentUsers.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                        {user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {user.joinedAt}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {user.joinedAt}
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No hay usuarios registrados aun
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
+        {/* Recent Formations */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Actividad Reciente</CardTitle>
+                <CardTitle>Formaciones Recientes</CardTitle>
                 <CardDescription>
-                  Ultimas acciones en la plataforma
+                  Ultimas formaciones creadas o actualizadas
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      {activity.type === "formation" && <BookOpen className="h-4 w-4" />}
-                      {activity.type === "lesson" && <Video className="h-4 w-4" />}
-                      {activity.type === "user" && <Users className="h-4 w-4" />}
+              {recentFormations.length > 0 ? (
+                recentFormations.map((formation) => (
+                  <div key={formation.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{formation.title}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm">
-                        <span className="font-medium">{activity.title}</span>
-                        <span className="text-muted-foreground"> {activity.action}</span>
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={formation.isPublished ? "default" : "secondary"} className="text-xs">
+                        {formation.isPublished ? "Publicada" : "Borrador"}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{formation.time}</span>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {activity.time}
-                  </Badge>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No hay formaciones creadas aun
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

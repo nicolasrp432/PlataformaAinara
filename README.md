@@ -21,13 +21,29 @@ Plataforma de formación y desarrollo personal con arquitectura de micro-learnin
 | Usuario Demo | demo@leaderblueprint.com | User1234! | user | Free |
 | Usuario Premium | premium@leaderblueprint.com | User1234! | user | Premium |
 
+### 🔑 Cómo acceder sin desarrollar la verificación de correo (Supabase)
+
+Puesto que el proyecto usa **Supabase Auth** para la autenticación, los registros de nuevos usuarios requieren por defecto confirmación por correo electrónico. Como aún no tienes desarrollada esa pantalla o flujo web, tienes dos formas sencillas de acceder inmediatamente:
+
+**Opción 1: Crear el usuario manualmente en el Panel de Supabase (Recomendado)**
+1. Entra a tu proyecto en Supabase (https://supabase.com/dashboard/project/_/auth/users).
+2. Ve a la sección **Authentication** > **Users**.
+3. Haz clic en **Add user** > **Create new user**.
+4. Introduce el correo (ej. `admin@leaderblueprint.com`) y la contraseña (ej. `Admin123!`). 
+   *(Al crear el usuario por esta vía desde el panel, su correo se auto-verifica automáticamente y podrás hacer Login en la plataforma inmediatamente).*
+
+**Opción 2: Desactivar temporalmente la verificación de correos**
+1. En Supabase, ve a **Authentication** > **Providers** > **Email**.
+2. Apaga la opción **"Confirm email"** y dale a Guardar.
+3. Ahora cualquier persona que se registre en la página de tu plataforma entrará directamente sin necesidad de validar correos.
+
 ## Arquitectura del Sistema
 
 ### Stack Tecnológico
-- **Backend**: Hono (TypeScript) + Cloudflare Workers
-- **Base de Datos**: Cloudflare D1 (SQLite)
-- **Frontend**: Server-rendered JSX + Tailwind CSS + Material Symbols
-- **Autenticación**: JWT (access + refresh tokens) con SHA-256
+- **Frontend & Backend**: Next.js 15 (App Router) + TypeScript
+- **Base de Datos**: Supabase (PostgreSQL)
+- **Estilos**: Tailwind CSS + Shadcn UI
+- **Autenticación**: Supabase Auth
 
 ### Estructura del Proyecto
 ```

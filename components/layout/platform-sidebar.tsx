@@ -32,12 +32,22 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
-import type { User as UserType, UserStreak } from "@/types"
+import type { LucideIcon } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
 
+interface SidebarUser {
+  id: string
+  name: string
+  email: string
+  avatarUrl?: string | null
+  role: string
+  level: number
+  xp: number
+}
+
 interface PlatformSidebarProps {
-  user: UserType | null
-  streak: UserStreak | null
+  user: SidebarUser
+  streak: number
 }
 
 const navigation = [
@@ -105,27 +115,27 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
         </div>
 
         {/* User Stats */}
-        {user && streak && !isCollapsed && (
+        {!isCollapsed && (
           <div className="border-b p-4">
             <div className="mb-3 flex items-center gap-3">
               <div className="flex items-center gap-1 text-sm">
                 <Flame className="h-4 w-4 text-orange-500" />
-                <span className="font-medium">{streak.current_streak}</span>
+                <span className="font-medium">{streak}</span>
               </div>
               <div className="flex items-center gap-1 text-sm">
                 <Star className="h-4 w-4 text-yellow-500" />
-                <span className="font-medium">{streak.total_xp} XP</span>
+                <span className="font-medium">{user.xp} XP</span>
               </div>
             </div>
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Nivel {streak.level}</span>
+                <span className="text-muted-foreground">Nivel {user.level}</span>
                 <span className="text-muted-foreground">
-                  {Math.round(progressToNextLevel(streak.total_xp, streak.level))}%
+                  {Math.round(progressToNextLevel(user.xp, user.level))}%
                 </span>
               </div>
               <Progress
-                value={progressToNextLevel(streak.total_xp, streak.level)}
+                value={progressToNextLevel(user.xp, user.level)}
                 className="h-2"
               />
             </div>
@@ -135,7 +145,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-2">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
             return (
               <Link
                 key={item.name}
@@ -167,18 +177,18 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                 )}
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar_url || undefined} />
+                  <AvatarImage src={user.avatarUrl || undefined} />
                   <AvatarFallback>
-                    {user ? getInitials(user.name) : "?"}
+                    {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
                 {!isCollapsed && (
                   <div className="flex flex-col items-start text-left">
                     <span className="text-sm font-medium">
-                      {user?.name || "Usuario"}
+                      {user.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {user?.email}
+                      {user.email}
                     </span>
                   </div>
                 )}
@@ -199,7 +209,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                   Configuracion
                 </Link>
               </DropdownMenuItem>
-              {user?.role === "admin" && (
+              {user.role === "admin" && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>

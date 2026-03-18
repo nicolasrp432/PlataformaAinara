@@ -30,16 +30,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Formation, Module, Lesson } from "@/types"
+import type { Formation, Module as BaseModule, Lesson as BaseLesson } from "@/types"
+
+type Module = BaseModule & { order_index?: number }
+type Lesson = BaseLesson & {
+  video_duration?: number;
+  xp_reward?: number;
+  is_free?: boolean;
+  order_index?: number;
+}
 
 // Mock data
-const mockFormations: (Formation & { modules: (Module & { lessons: Lesson[] })[] })[] = [
+const mockFormations = [
   {
     id: "1",
     title: "Despertar de la Consciencia",
     slug: "despertar-consciencia",
     description: "Un viaje profundo hacia el autoconocimiento",
-    thumbnail_url: null,
+    thumbnail_url: undefined,
     category: "consciousness",
     difficulty_level: "intermediate",
     estimated_duration: 480,
@@ -60,8 +68,8 @@ const mockFormations: (Formation & { modules: (Module & { lessons: Lesson[] })[]
         created_at: "2024-01-15T10:00:00Z",
         updated_at: "2024-01-15T10:00:00Z",
         lessons: [
-          { id: "l1", module_id: "m1", title: "Que es la consciencia", description: "", video_url: "https://...", video_duration: 900, content_type: "video", order_index: 1, xp_reward: 25, is_free: true, is_published: true, created_at: "", updated_at: "" },
-          { id: "l2", module_id: "m1", title: "Niveles de consciencia", description: "", video_url: "https://...", video_duration: 1200, content_type: "video", order_index: 2, xp_reward: 30, is_free: false, is_published: true, created_at: "", updated_at: "" },
+          { id: "l1", module_id: "m1", title: "Que es la consciencia", description: "", video_url: "https://...", video_duration: 900, content_type: "video", order_index: 1, xp_reward: 25, is_free: true, is_published: true, created_at: "", updated_at: "", video_duration_seconds: 900, sort_order: 1, is_free_preview: true },
+          { id: "l2", module_id: "m1", title: "Niveles de consciencia", description: "", video_url: "https://...", video_duration: 1200, content_type: "video", order_index: 2, xp_reward: 30, is_free: false, is_published: true, created_at: "", updated_at: "", video_duration_seconds: 1200, sort_order: 2, is_free_preview: false },
         ],
       },
       {
@@ -74,7 +82,7 @@ const mockFormations: (Formation & { modules: (Module & { lessons: Lesson[] })[]
         created_at: "2024-01-16T10:00:00Z",
         updated_at: "2024-01-16T10:00:00Z",
         lessons: [
-          { id: "l3", module_id: "m2", title: "Meditacion guiada", description: "", video_url: null, video_duration: 0, content_type: "video", order_index: 1, xp_reward: 40, is_free: false, is_published: false, created_at: "", updated_at: "" },
+          { id: "l3", module_id: "m2", title: "Meditacion guiada", description: "", video_url: undefined, video_duration: 0, content_type: "video", order_index: 1, xp_reward: 40, is_free: false, is_published: false, created_at: "", updated_at: "", video_duration_seconds: 0, sort_order: 1, is_free_preview: false },
         ],
       },
     ],
@@ -84,7 +92,7 @@ const mockFormations: (Formation & { modules: (Module & { lessons: Lesson[] })[]
     title: "Sanacion Emocional",
     slug: "sanacion-emocional",
     description: "Herramientas para sanar heridas emocionales",
-    thumbnail_url: null,
+    thumbnail_url: undefined,
     category: "personal_growth",
     difficulty_level: "beginner",
     estimated_duration: 360,
@@ -108,7 +116,7 @@ const mockFormations: (Formation & { modules: (Module & { lessons: Lesson[] })[]
       },
     ],
   },
-]
+] as unknown as (Formation & { modules: (Module & { lessons: Lesson[] })[] })[]
 
 export default function ModulesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -121,7 +129,7 @@ export default function ModulesPage() {
       modules: f.modules.filter(
         (m) =>
           m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          m.lessons.some((l) =>
+          (m.lessons || []).some((l) =>
             l.title.toLowerCase().includes(searchTerm.toLowerCase())
           )
       ),
@@ -230,7 +238,7 @@ export default function ModulesPage() {
                               )}
                             </CardTitle>
                             <p className="text-sm text-muted-foreground">
-                              {module.lessons.length} lecciones
+                              {(module.lessons || []).length} lecciones
                             </p>
                           </div>
                         </div>
@@ -258,7 +266,7 @@ export default function ModulesPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {module.lessons.length === 0 ? (
+                      {!(module.lessons && module.lessons.length > 0) ? (
                         <div className="py-4 text-center border-2 border-dashed border-border rounded-lg">
                           <p className="text-sm text-muted-foreground mb-2">
                             Sin lecciones
@@ -272,7 +280,7 @@ export default function ModulesPage() {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          {module.lessons.map((lesson, lessonIndex) => (
+                          {module.lessons!.map((lesson, lessonIndex) => (
                             <Link
                               key={lesson.id}
                               href={`/admin/content/lessons/${lesson.id}`}
@@ -289,7 +297,7 @@ export default function ModulesPage() {
                                   <p className="font-medium text-sm truncate">
                                     {lesson.title}
                                   </p>
-                                  {lesson.is_free && (
+                                  {(lesson as any).is_free && (
                                     <Badge variant="outline" className="text-xs">
                                       Gratis
                                     </Badge>
@@ -297,17 +305,17 @@ export default function ModulesPage() {
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    {lesson.content_type === "video" ? (
+                                    {(lesson as any).content_type === "video" ? (
                                       <Video className="h-3 w-3" />
                                     ) : (
                                       <FileText className="h-3 w-3" />
                                     )}
-                                    {lesson.content_type === "video" ? "Video" : "Texto"}
+                                    {(lesson as any).content_type === "video" ? "Video" : "Texto"}
                                   </span>
-                                  {lesson.video_duration > 0 && (
-                                    <span>{formatDuration(lesson.video_duration)}</span>
+                                  {(lesson as any).video_duration > 0 && (
+                                    <span>{formatDuration((lesson as any).video_duration)}</span>
                                   )}
-                                  <span>{lesson.xp_reward} XP</span>
+                                  <span>{(lesson as any).xp_reward} XP</span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">

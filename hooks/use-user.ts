@@ -10,7 +10,7 @@ export interface UserProfile {
   avatar_url: string | null
   role: "student" | "mentor" | "admin"
   level: number
-  xp_total: number
+  xp: number
   streak_days: number
   created_at: string
 }

@@ -33,11 +33,18 @@ import {
   Award,
   MessageSquare,
 } from "lucide-react"
-import type { User as UserType } from "@/types"
 import { getInitials } from "@/lib/utils"
 
+interface AdminSidebarUser {
+  id: string
+  name: string
+  email: string
+  avatarUrl?: string | null
+  role: string
+}
+
 interface AdminSidebarProps {
-  user: UserType | null
+  user: AdminSidebarUser
 }
 
 const mainNavigation = [
@@ -68,7 +75,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
     if (href === "/admin") {
       return pathname === "/admin"
     }
-    return pathname.startsWith(href)
+    return pathname?.startsWith(href) ?? false
   }
 
   return (
@@ -233,15 +240,15 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
                 )}
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar_url || undefined} />
+                  <AvatarImage src={user.avatarUrl || undefined} />
                   <AvatarFallback>
-                    {user ? getInitials(user.name) : "?"}
+                    {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
                 {!isCollapsed && (
                   <div className="flex flex-col items-start text-left">
                     <span className="text-sm font-medium">
-                      {user?.name || "Admin"}
+                      {user.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       Administrador

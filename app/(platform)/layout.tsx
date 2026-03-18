@@ -30,7 +30,7 @@ export default async function PlatformLayout({
     avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url,
     role: profile?.role || "student",
     level: profile?.level || 1,
-    xp: profile?.xp_total || 0,
+    xp: profile?.xp ?? 0,
   }
 
   const streak = profile?.streak_days || 0

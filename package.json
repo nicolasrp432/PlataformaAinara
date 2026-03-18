@@ -6,14 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "db:migrate:local": "wrangler d1 migrations apply leader-blueprint-db --local",
-    "db:migrate:prod": "wrangler d1 migrations apply leader-blueprint-db",
-    "db:seed:local": "wrangler d1 execute leader-blueprint-db --local --file=./migrations/0002_seed_data.sql",
-    "db:reset": "rm -rf .wrangler/state/v3/d1 && npm run db:migrate:local && npm run db:seed:local"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20250312.0",
     "@radix-ui/react-accordion": "^1.2.7",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.1.7",
@@ -55,7 +50,6 @@
     "eslint": "^9.27.0",
     "eslint-config-next": "15.3.2",
     "tailwindcss": "^4",
-    "typescript": "^5.8.3",
-    "wrangler": "^4.4.0"
+    "typescript": "^5.8.3"
   }
 }

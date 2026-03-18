@@ -80,7 +80,7 @@ const difficultyLevels = [
 export default function FormationEditorPage() {
   const params = useParams()
   const router = useRouter()
-  const isNew = params.id === "new"
+  const isNew = params?.id === "new"
   const supabase = createClient()
   
   const [formation, setFormation] = useState<Formation | null>(null)
@@ -122,7 +122,7 @@ export default function FormationEditorPage() {
     } else {
       loadFormation()
     }
-  }, [isNew, params.id])
+  }, [isNew, params?.id])
 
   async function loadFormation() {
     try {
@@ -130,7 +130,7 @@ export default function FormationEditorPage() {
       const { data: formationData, error: formationError } = await supabase
         .from("formations")
         .select("*")
-        .eq("id", params.id)
+        .eq("id", params?.id)
         .single()
 
       if (formationError) throw formationError
@@ -143,7 +143,7 @@ export default function FormationEditorPage() {
           *,
           lessons(*)
         `)
-        .eq("formation_id", params.id)
+        .eq("formation_id", params?.id)
         .order("order_index", { ascending: true })
 
       if (modulesError) throw modulesError

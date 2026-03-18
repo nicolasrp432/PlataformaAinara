@@ -27,14 +27,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
-import type { Lesson } from "@/types"
+import type { Lesson as BaseLesson } from "@/types"
+
+type Lesson = BaseLesson & {
+  video_duration?: number;
+  xp_reward?: number;
+  is_free?: boolean;
+  order_index?: number;
+}
 
 // Mock data
-const mockLesson: Lesson & { 
-  module_title: string
-  formation_title: string
-  formation_id: string
-} = {
+const mockLesson = {
   id: "l1",
   module_id: "m1",
   title: "Que es la consciencia",
@@ -51,7 +54,7 @@ const mockLesson: Lesson & {
   module_title: "Fundamentos de la Consciencia",
   formation_title: "Despertar de la Consciencia",
   formation_id: "1",
-}
+} as unknown as Lesson & { module_title: string; formation_title: string; formation_id: string }
 
 interface VideoUploadState {
   status: "idle" | "uploading" | "processing" | "ready" | "error"
@@ -62,7 +65,7 @@ interface VideoUploadState {
 export default function LessonEditorPage() {
   const params = useParams()
   const router = useRouter()
-  const isNew = params.id === "new"
+  const isNew = params?.id === "new"
   
   const [lesson, setLesson] = useState<typeof mockLesson | null>(null)
   const [loading, setLoading] = useState(true)
@@ -80,7 +83,7 @@ export default function LessonEditorPage() {
         module_id: "",
         title: "",
         description: "",
-        video_url: null,
+        video_url: undefined,
         video_duration: 0,
         content_type: "video",
         order_index: 0,
@@ -92,7 +95,7 @@ export default function LessonEditorPage() {
         module_title: "",
         formation_title: "",
         formation_id: "",
-      })
+      } as unknown as typeof mockLesson)
       setLoading(false)
     } else {
       setTimeout(() => {
@@ -100,7 +103,7 @@ export default function LessonEditorPage() {
         setLoading(false)
       }, 500)
     }
-  }, [isNew, params.id])
+  }, [isNew, params?.id])
 
   const handleSave = async () => {
     setSaving(true)

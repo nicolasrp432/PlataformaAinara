@@ -38,12 +38,12 @@ async function getUserStats(userId: string) {
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
   
-  // Get completed formations
+  // Get completed formations (using completed_at instead of status)
   const { count: completedCount } = await supabase
     .from("enrollments")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
-    .eq("status", "completed")
+    .not("completed_at", "is", null)
   
   // Get completed lessons count
   const { count: lessonsCompleted } = await supabase
@@ -56,8 +56,8 @@ async function getUserStats(userId: string) {
     formationsInProgress: (enrollmentsCount || 0) - (completedCount || 0),
     formationsCompleted: completedCount || 0,
     lessonsCompleted: lessonsCompleted || 0,
-    totalXp: profile?.xp || 0,
-    currentStreak: profile?.streak_days || 0,
+    totalXp: profile?.xp ?? 0,
+    currentStreak: profile?.streak_days ?? 0,
     level: profile?.level || 1,
     nextLevelProgress: ((profile?.xp || 0) % 500) / 5, // 500 XP per level
   }
@@ -82,8 +82,8 @@ async function getFormationsInProgress(userId: string) {
       )
     `)
     .eq("user_id", userId)
-    .neq("status", "completed")
-    .order("updated_at", { ascending: false })
+    .is("completed_at", null)
+    .order("enrolled_at", { ascending: false })
     .limit(3)
   
   if (!enrollments) return []

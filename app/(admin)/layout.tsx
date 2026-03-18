@@ -34,7 +34,7 @@ export default async function AdminLayout({
     id: user.id,
     name: user.user_metadata?.full_name || "Admin",
     email: user.email || "",
-    avatarUrl: user.user_metadata?.avatar_url,
+    avatarUrl: user.user_metadata?.avatar_url as string | null,
     role: "admin" as const,
   }
 
