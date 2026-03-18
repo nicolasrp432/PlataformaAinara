@@ -243,11 +243,13 @@ export default function FormationEditorPage() {
     if (!formation || !newModuleTitle.trim() || isNew) return
     
     try {
+      const moduleSlug = newModuleTitle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString().slice(-4)
       const { data, error } = await supabase
         .from("modules")
         .insert({
           formation_id: formation.id,
           title: newModuleTitle,
+          slug: moduleSlug,
           description: newModuleDescription || null,
           order_index: modules.length,
           is_published: false,
@@ -273,11 +275,13 @@ export default function FormationEditorPage() {
     if (moduleIndex === -1) return
     
     try {
+      const lessonSlug = newLessonTitle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString().slice(-4)
       const { data, error } = await supabase
         .from("lessons")
         .insert({
           module_id: selectedModuleId,
           title: newLessonTitle,
+          slug: lessonSlug,
           description: newLessonDescription || null,
           order_index: modules[moduleIndex].lessons?.length || 0,
           lesson_type: "video",

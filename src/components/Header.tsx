@@ -1,4 +1,4 @@
-import type { FC } from 'hono/jsx'
+import type { FC } from 'react'
 
 interface HeaderProps {
   activePage?: 'dashboard' | 'quest' | 'taberna' | 'library' | 'mentorship'
@@ -33,6 +33,7 @@ export const Header: FC<HeaderProps> = ({
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <a 
+              key={item.id}
               href={item.href}
               className={`text-sm font-semibold transition-colors ${
                 activePage === item.id 
@@ -68,7 +69,7 @@ export const Header: FC<HeaderProps> = ({
           <div className="flex items-center gap-3">
             <div 
               className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 border border-primary/20"
-              style={`background-image: url("${userAvatar}");`}
+              style={{ backgroundImage: `url("${userAvatar}")` }}
             />
             <span className="hidden sm:inline text-sm font-medium text-charcoal">{userName}</span>
           </div>

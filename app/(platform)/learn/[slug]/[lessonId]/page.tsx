@@ -116,6 +116,16 @@ async function getLessonData(slug: string, lessonId: string, userId: string) {
     }))
   }))
   
+  // Fetch Comments
+  const { data: comments } = await supabase
+    .from("reflections")
+    .select(`
+      id, content, created_at, user_id,
+      profiles:user_id ( full_name, avatar_url, role )
+    `)
+    .eq("lesson_id", lessonId)
+    .order("created_at", { ascending: false })
+
   return {
     lesson: {
       id: currentLesson.id,
@@ -127,6 +137,7 @@ async function getLessonData(slug: string, lessonId: string, userId: string) {
       isCompleted: completedLessons.includes(currentLesson.id),
       watchedSeconds: currentProgress?.watched_seconds || 0,
     },
+    comments: comments || [],
     module: {
       id: currentModule.id,
       title: currentModule.title,

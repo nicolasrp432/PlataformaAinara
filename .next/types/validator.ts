@@ -173,6 +173,42 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/(platform)/mentorship/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/mentorship">> = Specific
+  const handler = {} as typeof import("../../app/(platform)/mentorship/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(platform)/profile/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/profile">> = Specific
+  const handler = {} as typeof import("../../app/(platform)/profile/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(platform)/quest/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/quest">> = Specific
+  const handler = {} as typeof import("../../app/(platform)/quest/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(platform)/taberna/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/taberna">> = Specific
+  const handler = {} as typeof import("../../app/(platform)/taberna/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/auth/error/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/auth/error">> = Specific

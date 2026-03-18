@@ -1,0 +1,20 @@
+{
+  "node": {
+    "70139d328d33d372b7b64366e0b5434cffef25016b": {
+      "workers": {
+        "app/(platform)/learn/[slug]/[lessonId]/page": {
+          "moduleId": "[project]/.next-internal/server/app/(platform)/learn/[slug]/[lessonId]/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(platform)/learn/[slug]/[lessonId]/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "addLessonComment",
+          "filename": "app/(platform)/learn/[slug]/[lessonId]/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(platform)/learn/[slug]/[lessonId]/page": "action-browser"
+      },
+      "exportedName": "addLessonComment",
+      "filename": "app/(platform)/learn/[slug]/[lessonId]/actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -99,19 +99,19 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-light tracking-tight text-foreground">
-          Biblioteca de <span className="font-medium">Formaciones</span>
+    <div className="space-y-8 max-w-7xl mx-auto pb-10 relative">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-2 relative z-10 mb-2">
+        <h1 className="text-4xl font-light tracking-tight text-foreground sm:text-5xl">
+          Biblioteca de <span className="font-semibold text-primary">Formaciones</span>
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Explora nuestras formaciones y comienza tu viaje de transformacion
+        <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mt-2 leading-relaxed">
+          Explora conocimiento profundo, forja nuevas habilidades y comienza tu viaje de transformación definitiva.
         </p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-card/40 backdrop-blur-md p-4 rounded-2xl border border-border/50 shadow-sm">
         <div className="flex items-center gap-2">
           <Button
             variant={view === "all" ? "default" : "outline"}
@@ -191,14 +191,15 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
               href={`/formations/${formation.slug}`}
               className="group"
             >
-              <Card className="overflow-hidden h-full border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-lg transition-all duration-300">
+              <Card className="overflow-hidden h-full border-border/50 bg-card/40 backdrop-blur-xl hover:border-primary/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-1.5 transition-all duration-500 group-hover:bg-card/60">
                 {/* Thumbnail */}
-                <div className="relative aspect-video bg-gradient-to-br from-primary/5 to-primary/10">
+                <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/5 overflow-hidden">
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
                   {formation.thumbnailUrl ? (
                     <img 
                       src={formation.thumbnailUrl} 
                       alt={formation.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -235,12 +236,12 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
                   </div>
 
                   {/* Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform duration-300">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                    <div className="w-16 h-16 rounded-full bg-background/80 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl transform scale-90 group-hover:scale-110 transition-all duration-500 hover:bg-primary text-foreground hover:border-primary group/play">
                       {formation.isPremium && !formation.isEnrolled && !isLoggedIn ? (
-                        <Lock className="h-6 w-6 text-muted-foreground" />
+                        <Lock className="h-6 w-6 text-muted-foreground group-hover/play:text-primary-foreground transition-colors" />
                       ) : (
-                        <Play className="h-7 w-7 text-primary ml-1" />
+                        <Play className="h-7 w-7 text-primary ml-1 group-hover/play:text-primary-foreground transition-colors" />
                       )}
                     </div>
                   </div>

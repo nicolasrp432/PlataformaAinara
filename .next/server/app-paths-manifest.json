@@ -2,7 +2,13 @@
   "/(auth)/login/page": "app/(auth)/login/page.js",
   "/(platform)/dashboard/page": "app/(platform)/dashboard/page.js",
   "/(platform)/formations/[slug]/page": "app/(platform)/formations/[slug]/page.js",
+  "/(platform)/learn/[slug]/[lessonId]/page": "app/(platform)/learn/[slug]/[lessonId]/page.js",
   "/(platform)/library/page": "app/(platform)/library/page.js",
+  "/(platform)/mentorship/page": "app/(platform)/mentorship/page.js",
+  "/(platform)/profile/page": "app/(platform)/profile/page.js",
+  "/(platform)/quest/page": "app/(platform)/quest/page.js",
+  "/(platform)/taberna/page": "app/(platform)/taberna/page.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/progress/route": "app/api/progress/route.js",
   "/page": "app/page.js"
 }

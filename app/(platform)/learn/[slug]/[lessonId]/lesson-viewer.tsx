@@ -13,13 +13,20 @@ import {
   X,
   Sparkles,
   MessageSquare,
-  Play
+  Play,
+  Send,
+  Paperclip
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { addLessonComment } from "./actions"
+import { useTransition } from "react"
 import { cn } from "@/lib/utils"
 
 interface LessonViewerProps {
@@ -59,6 +66,15 @@ interface LessonViewerProps {
     nextLesson: { id: string; title: string } | null
     completedCount: number
     totalCount: number
+    comments?: Array<{
+      id: string
+      content: string
+      created_at: string
+      profiles: {
+        full_name: string | null
+        avatar_url: string | null
+      } | null
+    }>
   }
 }
 
@@ -67,6 +83,8 @@ export function LessonViewer({ data }: LessonViewerProps) {
   const [showSidebar, setShowSidebar] = useState(false)
   const [lessonCompleted, setLessonCompleted] = useState(data.lesson.isCompleted)
   const [isSaving, setIsSaving] = useState(false)
+  const [commentText, setCommentText] = useState("")
+  const [isPending, startTransition] = useTransition()
   
   const { lesson, module, formation, curriculum, previousLesson, nextLesson, completedCount, totalCount } = data
   const progressPercent = Math.round((completedCount / totalCount) * 100)
@@ -75,6 +93,25 @@ export function LessonViewer({ data }: LessonViewerProps) {
     if (!seconds) return "0 min"
     const minutes = Math.floor(seconds / 60)
     return `${minutes} min`
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-ES", {
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+    })
+  }
+
+  const handleCommentSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!commentText.trim()) return
+
+    const formData = new FormData()
+    formData.append("content", commentText)
+
+    startTransition(async () => {
+      await addLessonComment(formData, lesson.id, formation.slug)
+      setCommentText("")
+    })
   }
 
   const saveProgress = useCallback(async (watchedSeconds: number, completed: boolean = false) => {
@@ -255,23 +292,82 @@ export function LessonViewer({ data }: LessonViewerProps) {
               </Card>
             )}
 
-            {/* Comments Section Placeholder */}
-            <Card className="mb-6 border-border/50 bg-card/50">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Comentarios
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="h-8 w-8 text-primary/60" />
-                  </div>
-                  <p>Los comentarios estaran disponibles proximamente</p>
+            {/* Comentarios & Recursos */}
+            <Tabs defaultValue="comments" className="mb-6 w-full">
+              <TabsList className="bg-muted/50 w-full justify-start p-1 rounded-xl h-auto">
+                <TabsTrigger value="comments" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Comentarios ({data.comments?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="resources" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  Recursos Extras
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="comments" className="space-y-6 mt-6 outline-none">
+                <div className="bg-card/30 border border-border/50 rounded-2xl p-4 flex gap-4">
+                  <Avatar className="w-10 h-10 border border-border">
+                    <AvatarFallback className="bg-primary/20 text-primary">TÚ</AvatarFallback>
+                  </Avatar>
+                  <form onSubmit={handleCommentSubmit} className="flex-1 space-y-3">
+                    <Textarea 
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Escribe tu duda, reflexión o comentario aquí..." 
+                      className="resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0 text-base"
+                      rows={2}
+                      disabled={isPending}
+                    />
+                    <div className="flex justify-end border-t border-border/50 pt-3">
+                      <Button type="submit" size="sm" disabled={isPending || !commentText.trim()} className="rounded-full px-6">
+                        <Send className="w-4 h-4 mr-2" /> 
+                        {isPending ? "Publicando..." : "Publicar"}
+                      </Button>
+                    </div>
+                  </form>
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="space-y-6 pt-4">
+                  {data.comments && data.comments.length > 0 ? (
+                    data.comments.map((comment) => (
+                      <div key={comment.id} className="flex gap-4">
+                        <Avatar className="w-10 h-10 border border-border">
+                          <AvatarImage src={comment.profiles?.avatar_url || undefined} />
+                          <AvatarFallback className="bg-muted">
+                            {comment.profiles?.full_name?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="bg-muted/30 p-4 rounded-2xl rounded-tl-none border border-border/30 flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-semibold text-sm">{comment.profiles?.full_name || "Usuario Anónimo"}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(comment.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-foreground/90 text-sm leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-10 opacity-50 border border-dashed border-border/50 rounded-xl">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                      <p>Aún no hay reflexiones en esta lección.</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="resources" className="mt-6 outline-none">
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center">
+                  <Paperclip className="w-10 h-10 mx-auto mb-3 text-primary/50" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">Recursos Descargables</h3>
+                  <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto">
+                    Los cuadernos de trabajo asociados a esta lección estarán disponibles pronto.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {/* Navigation */}
             <div className="flex items-center justify-between pt-6 border-t border-border/50">

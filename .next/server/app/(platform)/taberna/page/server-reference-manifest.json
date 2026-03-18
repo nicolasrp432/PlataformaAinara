@@ -1,0 +1,20 @@
+{
+  "node": {
+    "4081cad47193ed591160deda95cf36c92c1032b9a7": {
+      "workers": {
+        "app/(platform)/taberna/page": {
+          "moduleId": "[project]/.next-internal/server/app/(platform)/taberna/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(platform)/taberna/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createReflection",
+          "filename": "app/(platform)/taberna/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(platform)/taberna/page": "action-browser"
+      },
+      "exportedName": "createReflection",
+      "filename": "app/(platform)/taberna/actions.ts"
+    }
+  },
+  "edge": {}
+}
