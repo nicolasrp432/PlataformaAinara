@@ -36,7 +36,32 @@ export default async function ProfilePage() {
     level: profile?.level || 1,
     xp: profile?.xp ?? 0,
     streak: profile?.streak_days || 0,
+    birth_date: profile?.birth_date || null,
+    birth_time: profile?.birth_time || null,
+    birth_city: profile?.birth_city || null,
   }
+
+  // Astrological simple logic for frontend display (similar to what we use on form generation)
+  let sunSign = ""
+  let signSymbol = ""
+  if (userData.birth_date) {
+    const month = parseInt(userData.birth_date.split("-")[1] || "1", 10)
+    const day = parseInt(userData.birth_date.split("-")[2] || "1", 10)
+    
+    if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) { sunSign = "Aries"; signSymbol = "♈" }
+    else if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) { sunSign = "Tauro"; signSymbol = "♉" }
+    else if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) { sunSign = "Géminis"; signSymbol = "♊" }
+    else if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) { sunSign = "Cáncer"; signSymbol = "♋" }
+    else if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) { sunSign = "Leo"; signSymbol = "♌" }
+    else if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) { sunSign = "Virgo"; signSymbol = "♍" }
+    else if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) { sunSign = "Libra"; signSymbol = "♎" }
+    else if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) { sunSign = "Escorpio"; signSymbol = "♏" }
+    else if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) { sunSign = "Sagitario"; signSymbol = "♐" }
+    else if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) { sunSign = "Capricornio"; signSymbol = "♑" }
+    else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) { sunSign = "Acuario"; signSymbol = "♒" }
+    else if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) { sunSign = "Piscis"; signSymbol = "♓" }
+  }
+
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10 relative">
@@ -127,7 +152,42 @@ export default async function ProfilePage() {
 
         {/* Right Column: Settings */}
         <div className="lg:col-span-2 space-y-6">
-           <ProfileForm initialData={{ id: userData.id, full_name: userData.name, avatar_url: userData.avatarUrl }} />
+          
+           {userData.birth_date && sunSign && (
+             <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md relative overflow-hidden group">
+                <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-700 pointer-events-none" />
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-serif text-foreground flex items-center gap-2">
+                    <Star className="w-5 h-5 text-primary" /> Diseño Cósmico
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+                      <span className="text-4xl text-primary drop-shadow-sm">{signSymbol}</span>
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <h3 className="text-lg font-bold text-foreground">Signo Solar {sunSign}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Naciste en <strong>{userData.birth_city}</strong> marcando tu entrada al sistema con una energía vital única. 
+                        Este es el comienzo de tu transformación biológica.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+             </Card>
+           )}
+
+           <ProfileForm 
+             initialData={{ 
+               id: userData.id, 
+               full_name: userData.name, 
+               avatar_url: userData.avatarUrl,
+               birth_date: userData.birth_date,
+               birth_time: userData.birth_time,
+               birth_city: userData.birth_city
+             }} 
+           />
 
            <Card className="border-border/50 shadow-sm bg-card/40 backdrop-blur-sm relative overflow-hidden">
              {/* Decorative element */}

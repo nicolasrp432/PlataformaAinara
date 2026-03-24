@@ -106,21 +106,40 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$
 ;
 ;
 ;
-const buttonVariants = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$class$2d$variance$2d$authority$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cva"])("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0", {
+const buttonVariants = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$class$2d$variance$2d$authority$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cva"])(// Base: transitions only for composited properties (no layout thrash)
+[
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap",
+    "text-sm font-medium leading-none select-none",
+    "rounded-[var(--radius)]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0",
+    "transition-colors duration-150 ease-out"
+], {
     variants: {
         variant: {
-            default: "bg-primary text-primary-foreground hover:bg-primary/90",
-            destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-            outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-            secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-            ghost: "hover:bg-accent hover:text-accent-foreground",
-            link: "text-primary underline-offset-4 hover:underline"
+            // Primary: rich gold — main CTA
+            default: "bg-primary text-primary-foreground shadow-sm hover:bg-[oklch(0.56_0.13_74)] active:scale-[0.98]",
+            // Destructive
+            destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+            // Gold outline: secondary actions on light backgrounds
+            outline: "border border-[oklch(0.62_0.13_74_/_0.35)] bg-transparent text-primary hover:bg-[oklch(0.93_0.030_73)] hover:border-[oklch(0.62_0.13_74_/_0.55)] active:scale-[0.98]",
+            // Champagne secondary
+            secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm",
+            // Ghost: for navigation and subtle interactions
+            ghost: "text-foreground hover:bg-muted hover:text-foreground/90",
+            // Link: gold underline style
+            link: "text-primary underline-offset-4 hover:underline p-0 h-auto",
+            // Premium: gold gradient — hero CTAs
+            premium: "gold-gradient text-white shadow-md hover:shadow-lg hover:brightness-105 active:scale-[0.98] font-semibold tracking-wide"
         },
         size: {
-            default: "h-10 px-4 py-2",
-            sm: "h-9 rounded-md px-3",
-            lg: "h-11 rounded-md px-8",
-            icon: "h-10 w-10"
+            default: "h-10 px-5 py-2.5",
+            sm: "h-8 px-3 py-1.5 text-xs rounded-[var(--radius-sm)]",
+            lg: "h-12 px-7 py-3 text-base rounded-[var(--radius-lg)]",
+            xl: "h-14 px-9 py-4 text-lg rounded-[var(--radius-xl)]",
+            icon: "h-10 w-10",
+            "icon-sm": "h-8 w-8"
         }
     },
     defaultVariants: {
@@ -140,7 +159,7 @@ const Button = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$nod
         ...props
     }, void 0, false, {
         fileName: "[project]/components/ui/button.tsx",
-        lineNumber: 42,
+        lineNumber: 74,
         columnNumber: 7
     }, ("TURBOPACK compile-time value", void 0));
 });
@@ -163,7 +182,13 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$
 const Input = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["forwardRef"](({ className, type, ...props }, ref)=>{
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
         type: type,
-        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", className),
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])(// Base
+        "flex h-10 w-full px-3.5 py-2 text-sm", // Styling: warm ivory background, gold-tint border
+        "rounded-[var(--radius)] border bg-background", "border-[oklch(0.86_0.028_72)] text-foreground", "placeholder:text-muted-foreground/60", // Focus: gold ring
+        "focus-visible:outline-none focus-visible:ring-2", "focus-visible:ring-[oklch(0.62_0.13_74_/_0.50)] focus-visible:ring-offset-1", "focus-visible:border-primary", // Transitions
+        "transition-colors duration-150", // File input reset
+        "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground", // Disabled
+        "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted", className),
         ref: ref,
         ...props
     }, void 0, false, {

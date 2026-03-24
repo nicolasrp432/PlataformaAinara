@@ -13,6 +13,9 @@ interface ProfileFormProps {
     id: string
     full_name: string
     avatar_url: string | null
+    birth_date?: string | null
+    birth_time?: string | null
+    birth_city?: string | null
   }
 }
 
@@ -78,6 +81,50 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 placeholder="https://ejemplo.com/mifoto.jpg" 
                 className="bg-background/50 border-border/50 focus:border-primary/50"
               />
+            </div>
+
+            {/* Carta Natal Fields */}
+            <div className="pt-4 border-t border-border/50">
+              <h3 className="text-md font-serif font-medium text-primary mb-4">Información de Carta Natal</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="birth_date" className="text-sm font-medium">
+                    Fecha de Nacimiento
+                  </Label>
+                  <Input 
+                    id="birth_date" 
+                    name="birth_date" 
+                    type="date"
+                    defaultValue={initialData.birth_date || ""} 
+                    className="bg-background/50 border-border/50 focus:border-primary/50"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="birth_time" className="text-sm font-medium">
+                    Hora Exacta
+                  </Label>
+                  <Input 
+                    id="birth_time" 
+                    name="birth_time" 
+                    type="time"
+                    defaultValue={initialData.birth_time || ""} 
+                    className="bg-background/50 border-border/50 focus:border-primary/50"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2 mt-4">
+                <Label htmlFor="birth_city" className="text-sm font-medium">
+                  Ciudad y País de Nacimiento
+                </Label>
+                <Input 
+                  id="birth_city" 
+                  name="birth_city" 
+                  type="text"
+                  placeholder="Ej. Madrid, España"
+                  defaultValue={initialData.birth_city || ""} 
+                  className="bg-background/50 border-border/50 focus:border-primary/50"
+                />
+              </div>
             </div>
           </div>
 

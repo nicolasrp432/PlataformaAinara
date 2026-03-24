@@ -1,48 +1,19 @@
 {
   "app": {
-    "[project]/app/(auth)/login/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
-    ],
     "[project]/app/(platform)/dashboard/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
+      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2"
     ],
     "[project]/app/(platform)/formations/[slug]/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
-    ],
-    "[project]/app/(platform)/learn/[slug]/[lessonId]/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
+      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2"
     ],
     "[project]/app/(platform)/library/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
-    ],
-    "[project]/app/(platform)/mentorship/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
+      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2"
     ],
     "[project]/app/(platform)/profile/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
-    ],
-    "[project]/app/(platform)/quest/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
-    ],
-    "[project]/app/(platform)/taberna/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
-    ],
-    "[project]/app/_not-found/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
+      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2"
     ],
     "[project]/app/page": [
-      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2",
-      "static/media/70bc3e132a0a741e-s.p.15008bfb.woff2"
+      "static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2"
     ]
   },
   "appUsingSizeAdjust": true,

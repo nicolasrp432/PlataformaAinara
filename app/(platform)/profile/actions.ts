@@ -13,13 +13,19 @@ export async function updateProfile(formData: FormData) {
 
   const fullName = formData.get("full_name") as string
   const avatarUrl = formData.get("avatar_url") as string
+  const birthDate = formData.get("birth_date") as string
+  const birthTime = formData.get("birth_time") as string
+  const birthCity = formData.get("birth_city") as string
 
   // Actualizar la tabla profiles conectada a tu usuario.
   const { error } = await supabase
     .from("profiles")
     .update({ 
       full_name: fullName, 
-      ...(avatarUrl ? { avatar_url: avatarUrl } : {})
+      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      birth_date: birthDate || null,
+      birth_time: birthTime || null,
+      birth_city: birthCity || null,
     })
     .eq("id", user.id)
 

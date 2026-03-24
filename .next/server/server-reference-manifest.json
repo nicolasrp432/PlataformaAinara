@@ -1,20 +1,5 @@
 {
   "node": {
-    "4081cad47193ed591160deda95cf36c92c1032b9a7": {
-      "workers": {
-        "app/(platform)/taberna/page": {
-          "moduleId": "[project]/.next-internal/server/app/(platform)/taberna/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(platform)/taberna/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "createReflection",
-          "filename": "app/(platform)/taberna/actions.ts"
-        }
-      },
-      "layer": {
-        "app/(platform)/taberna/page": "action-browser"
-      },
-      "filename": "app/(platform)/taberna/actions.ts",
-      "exportedName": "createReflection"
-    },
     "40d9b3ac04e6e96e119857a6ed31f23f706779d65e": {
       "workers": {
         "app/(platform)/profile/page": {
@@ -29,21 +14,6 @@
       },
       "filename": "app/(platform)/profile/actions.ts",
       "exportedName": "updateProfile"
-    },
-    "70139d328d33d372b7b64366e0b5434cffef25016b": {
-      "workers": {
-        "app/(platform)/learn/[slug]/[lessonId]/page": {
-          "moduleId": "[project]/.next-internal/server/app/(platform)/learn/[slug]/[lessonId]/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(platform)/learn/[slug]/[lessonId]/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "addLessonComment",
-          "filename": "app/(platform)/learn/[slug]/[lessonId]/actions.ts"
-        }
-      },
-      "layer": {
-        "app/(platform)/learn/[slug]/[lessonId]/page": "action-browser"
-      },
-      "filename": "app/(platform)/learn/[slug]/[lessonId]/actions.ts",
-      "exportedName": "addLessonComment"
     }
   },
   "edge": {},

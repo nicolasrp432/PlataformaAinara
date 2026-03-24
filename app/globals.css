@@ -1,166 +1,441 @@
 @import "tailwindcss";
 
+/* ============================================================
+   AINARA PLATFORM — LUXURY LIGHT GOLD DESIGN SYSTEM
+   Theme: Warm ivory + rich gold, elegant & transformational
+   ============================================================ */
+
 @theme inline {
-  /* Color Palette - Ainara Platform - Luxury White & Gold */
-  
-  /* Primary: Elegant Gold - Represents wisdom and enlightenment */
-  --color-primary: oklch(0.65 0.14 75);
-  --color-primary-foreground: oklch(0.15 0.02 75);
-  
-  /* Secondary: Deep Charcoal - Sophistication and depth */
-  --color-secondary: oklch(0.25 0.01 240);
-  --color-secondary-foreground: oklch(0.98 0.005 60);
-  
-  /* Accent: Warm Gold - Premium feel */
-  --color-accent: oklch(0.72 0.12 80);
-  --color-accent-foreground: oklch(0.18 0.02 80);
-  
-  /* Background: Pure White with warmth */
-  --color-background: oklch(0.995 0.002 60);
-  --color-foreground: oklch(0.18 0.01 240);
-  
-  /* Muted: Soft cream tones */
-  --color-muted: oklch(0.97 0.008 60);
-  --color-muted-foreground: oklch(0.45 0.01 240);
-  
-  /* Card: Clean white */
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.18 0.01 240);
-  
-  /* Popover */
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.18 0.01 240);
-  
-  /* Borders: Subtle warm gray */
-  --color-border: oklch(0.92 0.005 60);
-  --color-input: oklch(0.92 0.005 60);
-  --color-ring: oklch(0.65 0.14 75);
-  
-  /* Semantic colors */
-  --color-destructive: oklch(0.55 0.20 25);
+
+  /* —— GOLD SPECTRUM —— */
+  /* Deep gold - primary CTA, active states */
+  --color-primary:            oklch(0.62 0.13 74);
+  --color-primary-foreground: oklch(0.99 0.005 74);
+
+  /* Rich amber gold - hover states, accents */
+  --color-accent:             oklch(0.70 0.12 78);
+  --color-accent-foreground:  oklch(0.20 0.04 74);
+
+  /* Muted champagne - secondary elements */
+  --color-secondary:          oklch(0.94 0.025 74);
+  --color-secondary-foreground: oklch(0.32 0.06 74);
+
+  /* —— WARMTH SPECTRUM - Backgrounds —— */
+  /* Warm ivory - main background */
+  --color-background:         oklch(0.990 0.006 70);
+  --color-foreground:         oklch(0.18 0.015 50);
+
+  /* Soft cream - cards & panels */
+  --color-card:               oklch(1 0 0);
+  --color-card-foreground:    oklch(0.18 0.015 50);
+
+  /* Ultra-light cream - popovers */
+  --color-popover:            oklch(1 0 0);
+  --color-popover-foreground: oklch(0.18 0.015 50);
+
+  /* Pearl muted - disabled, placeholder areas */
+  --color-muted:              oklch(0.966 0.012 68);
+  --color-muted-foreground:   oklch(0.50 0.02 60);
+
+  /* —— BORDERS & RINGS —— */
+  --color-border:             oklch(0.88 0.025 72);
+  --color-input:              oklch(0.88 0.025 72);
+  --color-ring:               oklch(0.62 0.13 74);
+
+  /* —— SEMANTIC COLORS —— */
+  --color-destructive:        oklch(0.55 0.20 25);
   --color-destructive-foreground: oklch(0.98 0.01 25);
-  
-  --color-success: oklch(0.60 0.15 145);
-  --color-success-foreground: oklch(0.98 0.01 145);
-  
-  --color-warning: oklch(0.72 0.12 80);
-  --color-warning-foreground: oklch(0.18 0.02 80);
-  
-  /* Sidebar: Elegant dark */
-  --color-sidebar: oklch(0.12 0.01 240);
-  --color-sidebar-foreground: oklch(0.92 0.005 60);
-  --color-sidebar-accent: oklch(0.18 0.01 240);
-  --color-sidebar-accent-foreground: oklch(0.98 0.005 60);
-  --color-sidebar-border: oklch(0.22 0.01 240);
-  
-  /* Chart colors */
-  --color-chart-1: oklch(0.65 0.14 75);
-  --color-chart-2: oklch(0.55 0.08 240);
-  --color-chart-3: oklch(0.72 0.12 80);
-  --color-chart-4: oklch(0.60 0.15 145);
-  --color-chart-5: oklch(0.45 0.10 280);
-  
-  /* Radius */
-  --radius: 0.5rem;
-  
-  /* Fonts */
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-serif: var(--font-playfair), Georgia, serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  --color-success:            oklch(0.55 0.14 148);
+  --color-success-foreground: oklch(0.99 0.01 148);
+
+  --color-warning:            oklch(0.70 0.13 78);
+  --color-warning-foreground: oklch(0.20 0.04 78);
+
+  /* —— SIDEBAR - Light version with gold accents —— */
+  --color-sidebar:                  oklch(0.976 0.014 70);
+  --color-sidebar-foreground:       oklch(0.25 0.025 55);
+  --color-sidebar-accent:           oklch(0.93 0.035 73);
+  --color-sidebar-accent-foreground: oklch(0.22 0.06 72);
+  --color-sidebar-border:           oklch(0.88 0.025 72);
+
+  /* —— CHART PALETTE —— */
+  --color-chart-1: oklch(0.62 0.13 74);
+  --color-chart-2: oklch(0.58 0.10 240);
+  --color-chart-3: oklch(0.70 0.12 78);
+  --color-chart-4: oklch(0.55 0.14 148);
+  --color-chart-5: oklch(0.50 0.10 280);
+
+  /* —— RADIUS SCALE —— */
+  --radius:    0.6rem;
+  --radius-sm: 0.4rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 1.2rem;
+  --radius-2xl: 1.6rem;
+
+  /* —— TYPOGRAPHY —— */
+  --font-sans:  var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-mono:  var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* —— SHADOWS — Warm gold-tinted shadows —— */
+  --shadow-sm:  0 1px 3px oklch(0.62 0.13 74 / 0.07), 0 1px 2px oklch(0 0 0 / 0.06);
+  --shadow:     0 4px 12px oklch(0.62 0.13 74 / 0.10), 0 2px 6px oklch(0 0 0 / 0.05);
+  --shadow-md:  0 8px 24px oklch(0.62 0.13 74 / 0.12), 0 4px 10px oklch(0 0 0 / 0.06);
+  --shadow-lg:  0 16px 40px oklch(0.62 0.13 74 / 0.14), 0 6px 16px oklch(0 0 0 / 0.06);
+  --shadow-xl:  0 24px 64px oklch(0.62 0.13 74 / 0.18), 0 8px 24px oklch(0 0 0 / 0.08);
+
+  /* —— TRANSITIONS —— */
+  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base:   250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Dark mode - Elegant dark with gold accents */
-@media (prefers-color-scheme: dark) {
-  @theme inline {
-    --color-background: oklch(0.10 0.01 240);
-    --color-foreground: oklch(0.95 0.005 60);
-    
-    --color-muted: oklch(0.16 0.01 240);
-    --color-muted-foreground: oklch(0.65 0.01 60);
-    
-    --color-card: oklch(0.14 0.01 240);
-    --color-card-foreground: oklch(0.95 0.005 60);
-    
-    --color-popover: oklch(0.14 0.01 240);
-    --color-popover-foreground: oklch(0.95 0.005 60);
-    
-    --color-border: oklch(0.24 0.01 240);
-    --color-input: oklch(0.24 0.01 240);
-    
-    --color-primary: oklch(0.72 0.14 75);
-    --color-primary-foreground: oklch(0.12 0.01 75);
-    
-    --color-secondary: oklch(0.30 0.01 240);
-    --color-secondary-foreground: oklch(0.95 0.005 60);
-    
-    --color-sidebar: oklch(0.08 0.01 240);
-    --color-sidebar-foreground: oklch(0.90 0.005 60);
-    --color-sidebar-accent: oklch(0.14 0.01 240);
-    --color-sidebar-accent-foreground: oklch(0.95 0.005 60);
-    --color-sidebar-border: oklch(0.18 0.01 240);
+/* ============================================================
+   PERFORMANCE: Layer hints for compositor
+   ============================================================ */
+
+/* Critical: Will-change hints on interactive elements only */
+@layer base {
+
+  /* Optimized base reset */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    border-color: var(--color-border);
+    /* Smooth rendering across the board */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Prevents layout shifts from scrollbar */
+    scrollbar-gutter: stable;
+    /* Performance: GPU text rendering */
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    /* Prevent invisible text during font load */
+    font-display: swap;
+    line-height: 1.6;
+  }
+
+  /* Heading hierarchy - Playfair for luxury feel */
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--color-foreground);
+  }
+
+  h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Performance: Only animate composited properties */
+  a, button {
+    transition: color var(--transition-fast),
+                background-color var(--transition-fast),
+                border-color var(--transition-fast),
+                opacity var(--transition-fast);
+  }
+
+  /* Image defaults */
+  img, svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Form baseline */
+  input, textarea, select {
+    font-family: inherit;
   }
 }
 
-/* Base styles */
-* {
-  border-color: var(--color-border);
+/* ============================================================
+   LAYERS: Organized CSS for faster parsing
+   ============================================================ */
+
+@layer components {
+
+  /* ---- INTERACTIVE FOCUS RING ---- */
+  .focus-ring {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  }
+
+  /* ---- SELECTION ---- */
+  ::selection {
+    background-color: oklch(0.70 0.12 78 / 0.25);
+    color: var(--color-foreground);
+  }
+
+  /* ---- SCROLLBAR — Refined gold scrollbar ---- */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-muted);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.80 0.06 74);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.65 0.10 74);
+  }
+
+  /* ---- GOLD GRADIENT UTILITIES ---- */
+  .gold-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.72 0.15 68) 0%,
+      oklch(0.65 0.13 74) 40%,
+      oklch(0.58 0.11 80) 100%
+    );
+  }
+
+  .gold-gradient-subtle {
+    background: linear-gradient(
+      135deg,
+      oklch(0.96 0.020 70) 0%,
+      oklch(0.93 0.030 73) 100%
+    );
+  }
+
+  .text-gold-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.72 0.15 68) 0%,
+      oklch(0.60 0.13 74) 60%,
+      oklch(0.55 0.10 80) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ---- LUXURY CARD SYSTEM ---- */
+
+  /* Base luxury card */
+  .luxury-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
+  }
+
+  .luxury-card:hover {
+    border-color: oklch(0.62 0.13 74 / 0.45);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Premium card variant */
+  .premium-card {
+    background: linear-gradient(145deg, oklch(1 0 0), oklch(0.975 0.010 70));
+    border: 1px solid oklch(0.62 0.13 74 / 0.20);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow), inset 0 1px 0 oklch(0.62 0.13 74 / 0.15);
+    transition: box-shadow var(--transition-base), transform var(--transition-spring);
+    will-change: transform;
+  }
+
+  .premium-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  /* Stat card with gold accent bar */
+  .stat-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    border-left: 3px solid var(--color-primary);
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem 1.5rem;
+    transition: box-shadow var(--transition-base), border-color var(--transition-fast);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-md);
+    border-left-color: oklch(0.70 0.12 78);
+  }
+
+  /* ---- GOLD ACCENT BORDER ---- */
+  .gold-border {
+    border: 1px solid oklch(0.62 0.13 74 / 0.30);
+  }
+
+  .gold-ring {
+    box-shadow: 0 0 0 1px oklch(0.62 0.13 74 / 0.30);
+  }
+
+  /* ---- GLASS SURFACE (light version) ---- */
+  .glass-surface {
+    background: oklch(1 0 0 / 0.80);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid oklch(0.62 0.13 74 / 0.15);
+  }
+
+  /* ---- PROSE SECTION HEADINGS ---- */
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-foreground);
+    line-height: 1.2;
+  }
+
+  .section-subtitle {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    color: var(--color-muted-foreground);
+    font-weight: 400;
+    margin-top: 0.25rem;
+  }
+
+  /* ---- PAGE CONTAINER ---- */
+  .page-container {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* ---- ANIMATED SHIMMER (loading skeleton) ---- */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--color-muted) 25%,
+      oklch(0.950 0.018 70) 50%,
+      var(--color-muted) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+  }
+
+  /* ---- FADE-IN ANIMATIONS ---- */
+  .animate-fade-in {
+    animation: fade-in var(--transition-slow) both;
+  }
+
+  .animate-slide-up {
+    animation: slide-up var(--transition-slow) both;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---- GOLD DOT DECORATOR ---- */
+  .gold-dot::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+
+  /* ---- DIVIDER WITH GOLD FADE ---- */
+  .gold-divider {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      oklch(0.62 0.13 74 / 0.30),
+      transparent
+    );
+    margin: 1.5rem 0;
+  }
+
+  /* ---- TYPOGRAPHY UTILITIES ---- */
+  .label-luxury {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+
+  /* ---- CONTAINER SURFACE ---- */
+  .surface-raised {
+    background: var(--color-card);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-lg);
+  }
+
+  .surface-inset {
+    background: var(--color-muted);
+    border-radius: var(--radius);
+  }
+
+  /* ---- INTERACTIVE HIGHLIGHT (nav items) ---- */
+  .nav-item-active {
+    background: var(--color-sidebar-accent);
+    color: var(--color-sidebar-accent-foreground);
+    font-weight: 600;
+  }
+
+  .nav-item-hover {
+    transition: background-color var(--transition-fast);
+  }
+
+  .nav-item-hover:hover {
+    background: oklch(0.93 0.035 73 / 0.60);
+  }
 }
 
-body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-}
+/* ============================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================ */
 
-/* Focus ring utility */
-.focus-ring {
-  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-}
+/* 1. Content-visibility for off-screen sections */
+@layer utilities {
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 300px;
+  }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
+  /* 2. GPU-accelerated transforms only */
+  .gpu {
+    transform: translateZ(0);
+    will-change: transform;
+  }
 
-/* Selection color - Gold tint */
-::selection {
-  background-color: oklch(0.72 0.12 80 / 0.25);
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-muted);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted-foreground);
-}
-
-/* Gold gradient utility */
-.text-gold-gradient {
-  background: linear-gradient(135deg, oklch(0.72 0.14 75), oklch(0.60 0.12 80));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Luxury card hover effect */
-.luxury-card {
-  transition: all 0.3s ease;
-  border: 1px solid var(--color-border);
-}
-
-.luxury-card:hover {
-  border-color: oklch(0.72 0.12 80 / 0.5);
-  box-shadow: 0 8px 30px oklch(0.65 0.14 75 / 0.1);
+  /* 3. Prevent repaint from opacity changes */
+  .isolate-layer {
+    isolation: isolate;
+  }
 }
