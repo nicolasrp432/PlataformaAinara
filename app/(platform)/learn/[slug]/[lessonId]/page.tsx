@@ -137,7 +137,12 @@ async function getLessonData(slug: string, lessonId: string, userId: string) {
       isCompleted: completedLessons.includes(currentLesson.id),
       watchedSeconds: currentProgress?.watched_seconds || 0,
     },
-    comments: comments || [],
+    comments: (comments || []).map((c: any) => ({
+      id: c.id,
+      content: c.content,
+      created_at: c.created_at,
+      profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles
+    })),
     module: {
       id: currentModule.id,
       title: currentModule.title,

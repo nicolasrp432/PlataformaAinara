@@ -1,0 +1,80 @@
+{
+  "node": {
+    "4005c3d6fcf9899283814bc07e49e907ec56cf4cd4": {
+      "workers": {
+        "app/(admin)/admin/content/formations/[id]/page": {
+          "moduleId": "[project]/.next-internal/server/app/(admin)/admin/content/formations/[id]/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(admin)/admin/content/formations/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/(admin)/admin/content/formations/upload-action.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createFormationAction",
+          "filename": "app/(admin)/admin/content/formations/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(admin)/admin/content/formations/[id]/page": "action-browser"
+      },
+      "exportedName": "createFormationAction",
+      "filename": "app/(admin)/admin/content/formations/actions.ts"
+    },
+    "604aacada42cfcf806fc221c1600eee7bf1607bb71": {
+      "workers": {
+        "app/(admin)/admin/content/formations/[id]/page": {
+          "moduleId": "[project]/.next-internal/server/app/(admin)/admin/content/formations/[id]/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(admin)/admin/content/formations/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/(admin)/admin/content/formations/upload-action.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "updateFormationAction",
+          "filename": "app/(admin)/admin/content/formations/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(admin)/admin/content/formations/[id]/page": "action-browser"
+      },
+      "exportedName": "updateFormationAction",
+      "filename": "app/(admin)/admin/content/formations/actions.ts"
+    },
+    "4010a421318d1ac1579e9ba0192b4e8148d1edc89f": {
+      "workers": {
+        "app/(admin)/admin/content/formations/[id]/page": {
+          "moduleId": "[project]/.next-internal/server/app/(admin)/admin/content/formations/[id]/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(admin)/admin/content/formations/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/(admin)/admin/content/formations/upload-action.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createModuleAction",
+          "filename": "app/(admin)/admin/content/formations/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(admin)/admin/content/formations/[id]/page": "action-browser"
+      },
+      "exportedName": "createModuleAction",
+      "filename": "app/(admin)/admin/content/formations/actions.ts"
+    },
+    "603333ce70a36f27086918fbd1bc5e6878c727a180": {
+      "workers": {
+        "app/(admin)/admin/content/formations/[id]/page": {
+          "moduleId": "[project]/.next-internal/server/app/(admin)/admin/content/formations/[id]/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(admin)/admin/content/formations/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/(admin)/admin/content/formations/upload-action.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteModuleAction",
+          "filename": "app/(admin)/admin/content/formations/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(admin)/admin/content/formations/[id]/page": "action-browser"
+      },
+      "exportedName": "deleteModuleAction",
+      "filename": "app/(admin)/admin/content/formations/actions.ts"
+    },
+    "401b694bdb29918b04487be65008d9b665ff2b5b34": {
+      "workers": {
+        "app/(admin)/admin/content/formations/[id]/page": {
+          "moduleId": "[project]/.next-internal/server/app/(admin)/admin/content/formations/[id]/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/(admin)/admin/content/formations/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/(admin)/admin/content/formations/upload-action.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "uploadThumbnailAction",
+          "filename": "app/(admin)/admin/content/formations/upload-action.ts"
+        }
+      },
+      "layer": {
+        "app/(admin)/admin/content/formations/[id]/page": "action-browser"
+      },
+      "exportedName": "uploadThumbnailAction",
+      "filename": "app/(admin)/admin/content/formations/upload-action.ts"
+    }
+  },
+  "edge": {}
+}

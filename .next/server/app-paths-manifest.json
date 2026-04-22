@@ -1,6 +1,7 @@
 {
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(auth)/register/page": "app/(auth)/register/page.js",
   "/(platform)/dashboard/page": "app/(platform)/dashboard/page.js",
-  "/(platform)/formations/[slug]/page": "app/(platform)/formations/[slug]/page.js",
   "/(platform)/library/page": "app/(platform)/library/page.js",
   "/(platform)/profile/page": "app/(platform)/profile/page.js",
   "/page": "app/page.js"
