@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { getAuthUser, getQuestData } from "@/lib/data-access"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -13,45 +13,19 @@ export const metadata: Metadata = {
 }
 
 export default async function QuestPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Reutiliza getAuthUser cacheado del layout
+  const user = await getAuthUser()
 
   if (!user) {
     redirect("/login")
   }
 
-  // Obtenemos los stats reales del usuario
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("level, xp, streak_days")
-    .eq("id", user.id)
-    .single()
+  // 3 queries en paralelo en vez de secuenciales
+  const questData = await getQuestData(user.id)
 
-  const level = profile?.level || 1
-  const xp = profile?.xp || 0
-  const xpForNextLevel = level * 500 // Fórmula simple: 500 XP = Nivel 2, 1000 XP = Nivel 3, etc.
+  const { level, xp } = questData
+  const xpForNextLevel = level * 500
   const progressPercent = Math.min(100, Math.round((xp / xpForNextLevel) * 100))
-
-  // Determinamos el estado de las misiones (Quests) basados en datos reales
-  // Para este MVP, calculamos localmente si el usuario cumplió ciertas misiones.
-  
-  // 1. Misión de Inicio de Sesión
-  const questLoginCompleted = true // Ya está aquí
-
-  // 2. Misión de Taberna (Comprobar si tiene una reflexión)
-  const { count: reflexCount } = await supabase
-    .from("reflections")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-  const questTabernaCompleted = (reflexCount || 0) > 0
-
-  // 3. Misión de Primera Lección
-  const { count: lessonsCount } = await supabase
-    .from("user_progress")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("is_completed", true)
-  const questLessonCompleted = (lessonsCount || 0) > 0
 
   const quests = [
     {
@@ -60,7 +34,7 @@ export default async function QuestPage() {
       description: "Entra a la plataforma por primera vez y descubre tu destino.",
       xpReward: 50,
       icon: Compass,
-      completed: questLoginCompleted,
+      completed: true, // Ya está aquí
       color: "text-primary",
       bgBase: "bg-primary/10",
       borderBase: "border-primary/20"
@@ -71,7 +45,7 @@ export default async function QuestPage() {
       description: "Completa exitosamente tu primera lección en la Biblioteca.",
       xpReward: 150,
       icon: Sword,
-      completed: questLessonCompleted,
+      completed: questData.hasCompletedLesson,
       color: "text-primary/80",
       bgBase: "bg-primary/10",
       borderBase: "border-primary/20"
@@ -82,7 +56,7 @@ export default async function QuestPage() {
       description: "Publica tu primer pensamiento o duda en La Taberna.",
       xpReward: 100,
       icon: Target,
-      completed: questTabernaCompleted,
+      completed: questData.hasReflection,
       color: "text-primary/70",
       bgBase: "bg-primary/10",
       borderBase: "border-primary/20"

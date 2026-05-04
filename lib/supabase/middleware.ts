@@ -1,7 +1,17 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+// ── Routes that NEVER need auth ──────────────────────────────────────
+const PUBLIC_ROUTES = ["/", "/re-conectate", "/evaluacion", "/herramientas"]
+
 export async function updateSession(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Fast-path: skip auth entirely for known public routes (~100ms saved)
+  if (PUBLIC_ROUTES.includes(pathname)) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -43,20 +53,20 @@ export async function updateSession(request: NextRequest) {
   const authRoutes = ["/login", "/register"]
 
   const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   )
   const isAdminRoute = adminRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   )
   const isAuthRoute = authRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   )
 
   // Redirect unauthenticated users to login
   if (!user && (isProtectedRoute || isAdminRoute)) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
-    url.searchParams.set("redirect", request.nextUrl.pathname)
+    url.searchParams.set("redirect", pathname)
     return NextResponse.redirect(url)
   }
 
@@ -67,16 +77,30 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Check admin access
+  // Check admin access with cached role cookie
   if (user && isAdminRoute) {
-    // Get user profile to check role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
+    const cachedRole = request.cookies.get("x-user-role")?.value
 
-    if (!profile || (profile.role !== "admin" && profile.role !== "mentor")) {
+    let role = cachedRole
+    if (!role) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+      role = profile?.role || "student"
+
+      // Cache the role for 5 minutes to avoid repeated DB queries
+      supabaseResponse.cookies.set("x-user-role", role, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 5, // 5 minutes
+        path: "/",
+      })
+    }
+
+    if (role !== "admin" && role !== "mentor") {
       const url = request.nextUrl.clone()
       url.pathname = "/dashboard"
       return NextResponse.redirect(url)

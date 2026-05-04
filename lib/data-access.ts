@@ -293,6 +293,289 @@ export const getReflections = cache(async () => {
   return data || []
 })
 
+// ─── Formation Detail (replaces inline getFormation) ───────────────────
+
+export const getFormationBySlug = cache(
+  async (slug: string, userId: string | null) => {
+    const supabase = await createClient()
+
+    const { data: formation, error } = await supabase
+      .from("formations")
+      .select(`
+        *,
+        modules (
+          id,
+          title,
+          description,
+          sort_order,
+          lessons (
+            id,
+            title,
+            description,
+            duration_seconds,
+            video_url,
+            is_free,
+            sort_order
+          )
+        )
+      `)
+      .eq("slug", slug)
+      .eq("is_published", true)
+      .single()
+
+    if (error || !formation) return null
+
+    // Sort modules and lessons by sort_order
+    formation.modules = formation.modules
+      ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map((mod: any) => ({
+        ...mod,
+        lessons:
+          mod.lessons?.sort(
+            (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)
+          ) || [],
+      })) || []
+
+    // If no user, return formation without enrollment data
+    if (!userId) {
+      return {
+        ...formation,
+        isEnrolled: false,
+        progress: 0,
+        completedLessons: [] as string[],
+      }
+    }
+
+    // Parallel: enrollment + progress in 1 batch
+    const lessonIds =
+      formation.modules?.flatMap(
+        (mod: any) => mod.lessons?.map((l: any) => l.id) || []
+      ) || []
+
+    const [{ data: enrollment }, progressRes] = await Promise.all([
+      supabase
+        .from("enrollments")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("formation_id", formation.id)
+        .single(),
+      lessonIds.length > 0
+        ? supabase
+            .from("user_progress")
+            .select("lesson_id")
+            .eq("user_id", userId)
+            .in("lesson_id", lessonIds)
+            .eq("is_completed", true)
+        : Promise.resolve({ data: [] as any[] }),
+    ])
+
+    const isEnrolled = !!enrollment
+    const completedLessons =
+      (progressRes.data as any[])?.map((p: any) => p.lesson_id) || []
+    const totalLessons = lessonIds.length
+    const progress =
+      isEnrolled && totalLessons > 0
+        ? Math.round((completedLessons.length / totalLessons) * 100)
+        : 0
+
+    return {
+      ...formation,
+      isEnrolled,
+      progress,
+      completedLessons,
+    }
+  }
+)
+
+// ─── Lesson Page Data (replaces inline getLessonData) ──────────────────
+
+export const getLessonPageData = cache(
+  async (slug: string, lessonId: string, userId: string) => {
+    const supabase = await createClient()
+
+    // 1. Get formation structure
+    const { data: formation, error: formationError } = await supabase
+      .from("formations")
+      .select(`
+        id, title, slug,
+        modules (
+          id, title, sort_order,
+          lessons (
+            id, title, description, duration_seconds, video_url, is_free, sort_order
+          )
+        )
+      `)
+      .eq("slug", slug)
+      .single()
+
+    if (formationError || !formation) return null
+
+    // Sort modules and lessons
+    formation.modules = formation.modules
+      ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map((mod: any) => ({
+        ...mod,
+        lessons:
+          mod.lessons?.sort(
+            (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)
+          ) || [],
+      })) || []
+
+    // Flatten all lessons
+    const allLessons: any[] = []
+    formation.modules.forEach((mod: any) => {
+      mod.lessons.forEach((les: any) => {
+        allLessons.push({ ...les, module: mod })
+      })
+    })
+
+    // Find current, previous, next
+    let currentLesson: any = null
+    let currentModule: any = null
+    let previousLesson: any = null
+    let nextLesson: any = null
+
+    for (let i = 0; i < allLessons.length; i++) {
+      if (allLessons[i].id === lessonId) {
+        currentLesson = allLessons[i]
+        currentModule = allLessons[i].module
+        if (i > 0) previousLesson = allLessons[i - 1]
+        if (i < allLessons.length - 1) nextLesson = allLessons[i + 1]
+        break
+      }
+    }
+
+    if (!currentLesson) return null
+
+    // 2. Parallel: enrollment + progress + comments (3 queries → 1 batch)
+    const lessonIds = allLessons.map((l) => l.id)
+
+    const [{ data: enrollment }, { data: userProgress }, { data: comments }] =
+      await Promise.all([
+        supabase
+          .from("enrollments")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("formation_id", formation.id)
+          .single(),
+        supabase
+          .from("user_progress")
+          .select("lesson_id, is_completed, watched_seconds")
+          .eq("user_id", userId)
+          .in("lesson_id", lessonIds),
+        supabase
+          .from("reflections")
+          .select(
+            "id, content, created_at, user_id, profiles:user_id(full_name, avatar_url, role)"
+          )
+          .eq("lesson_id", lessonId)
+          .order("created_at", { ascending: false }),
+      ])
+
+    const isEnrolled = !!enrollment
+
+    // If not enrolled and lesson is not free, signal redirect
+    if (!isEnrolled && !currentLesson.is_free) {
+      return { notEnrolled: true, formationSlug: formation.slug }
+    }
+
+    const completedLessons =
+      userProgress?.filter((p) => p.is_completed).map((p) => p.lesson_id) || []
+    const currentProgress = userProgress?.find(
+      (p) => p.lesson_id === lessonId
+    )
+
+    // Build curriculum with completion status
+    const curriculum = formation.modules.map(
+      (mod: any, modIndex: number) => ({
+        id: mod.id,
+        title: mod.title,
+        order: modIndex + 1,
+        lessons: mod.lessons.map((les: any) => ({
+          id: les.id,
+          title: les.title,
+          isCompleted: completedLessons.includes(les.id),
+          isCurrent: les.id === lessonId,
+        })),
+      })
+    )
+
+    return {
+      lesson: {
+        id: currentLesson.id,
+        title: currentLesson.title,
+        description: currentLesson.description,
+        videoUrl: currentLesson.video_url,
+        durationSeconds: currentLesson.duration_seconds,
+        xpReward: 50,
+        isCompleted: completedLessons.includes(currentLesson.id),
+        watchedSeconds: currentProgress?.watched_seconds || 0,
+      },
+      comments: (comments || []).map((c: any) => ({
+        id: c.id,
+        content: c.content,
+        created_at: c.created_at,
+        profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+      })),
+      module: {
+        id: currentModule.id,
+        title: currentModule.title,
+        order:
+          formation.modules.findIndex(
+            (m: any) => m.id === currentModule.id
+          ) + 1,
+      },
+      formation: {
+        id: formation.id,
+        title: formation.title,
+        slug: formation.slug,
+      },
+      curriculum,
+      previousLesson: previousLesson
+        ? { id: previousLesson.id, title: previousLesson.title }
+        : null,
+      nextLesson: nextLesson
+        ? { id: nextLesson.id, title: nextLesson.title }
+        : null,
+      completedCount: completedLessons.length,
+      totalCount: allLessons.length,
+    }
+  }
+)
+
+// ─── Quest Data (3 sequential queries → 1 parallel batch) ─────────────
+
+export const getQuestData = cache(async (userId: string) => {
+  const supabase = await createClient()
+
+  // All 3 queries in parallel instead of sequential
+  const [{ data: profile }, { count: reflexCount }, { count: lessonsCount }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("level, xp, streak_days")
+        .eq("id", userId)
+        .single(),
+      supabase
+        .from("reflections")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId),
+      supabase
+        .from("user_progress")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("is_completed", true),
+    ])
+
+  return {
+    level: profile?.level || 1,
+    xp: profile?.xp || 0,
+    streakDays: profile?.streak_days || 0,
+    hasReflection: (reflexCount || 0) > 0,
+    hasCompletedLesson: (lessonsCount || 0) > 0,
+  }
+})
+
 // ─── Helpers ───────────────────────────────────────────────────────────
 
 function formatTimeAgo(date: string | null): string {
