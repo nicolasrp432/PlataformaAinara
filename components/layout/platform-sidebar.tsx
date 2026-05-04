@@ -72,7 +72,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
       <Button
         variant="ghost"
         size="icon-sm"
-        className="fixed left-4 top-4 z-50 md:hidden bg-card border border-border shadow-[var(--shadow-sm)] rounded-[var(--radius)]"
+        className="fixed left-4 top-4 z-50 md:hidden bg-card border border-border shadow-[var(--shadow-sm)] rounded-lg"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         aria-label="Toggle menu"
       >
@@ -99,7 +99,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           // Light sidebar: warm ivory with gold accents
           "bg-sidebar border-r border-sidebar-border",
           // Shadow: warm gold-tinted depth
-          "shadow-[4px_0_20px_oklch(0.62_0.13_74_/_0.06)]",
+          "shadow-sm",
           // Transition: only transform & width (GPU-composited)
           "transition-all duration-300 ease-out",
           isCollapsed ? "w-16" : "w-64",
@@ -118,12 +118,12 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             onClick={() => setIsMobileOpen(false)}
           >
             {/* Gold icon mark */}
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] gold-gradient shadow-sm">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg gold-gradient shadow-sm">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <span className="font-serif text-base font-bold text-foreground tracking-tight leading-none block">
+                <span className="text-base font-bold text-foreground tracking-tight leading-none block">
                   Ainara
                 </span>
                 <span className="text-[10px] text-muted-foreground tracking-widest uppercase font-medium leading-none">
@@ -155,15 +155,15 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             {/* Streak & XP row */}
             <div className="mb-3 flex items-center gap-4">
               <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100">
-                  <Flame className="h-3.5 w-3.5 text-orange-500" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary">
+                  <Flame className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <span className="text-sm font-semibold text-foreground">{streak}</span>
                 <span className="text-xs text-muted-foreground">días</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100">
-                  <Star className="h-3.5 w-3.5 text-amber-500" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary">
+                  <Star className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <span className="text-sm font-semibold text-foreground">{user.xp.toLocaleString()}</span>
                 <span className="text-xs text-muted-foreground">XP</span>
@@ -191,8 +191,8 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
         {/* Collapsed: mini XP indicator */}
         {isCollapsed && (
           <div className="border-b border-sidebar-border py-3 flex justify-center">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 border border-amber-200">
-              <Star className="h-3.5 w-3.5 text-amber-500" />
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-secondary border border-border">
+              <Star className="h-3.5 w-3.5 text-primary" />
               {/* Circular progress hint */}
               <svg
                 className="absolute inset-0 h-8 w-8 -rotate-90"
@@ -201,18 +201,19 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                 <circle
                   cx="16" cy="16" r="13"
                   fill="none"
-                  stroke="oklch(0.62 0.13 74 / 0.15)"
+                  stroke="currentColor"
                   strokeWidth="2"
+                  className="text-primary/15"
                 />
                 <circle
                   cx="16" cy="16" r="13"
                   fill="none"
-                  stroke="oklch(0.62 0.13 74)"
+                  stroke="currentColor"
                   strokeWidth="2"
                   strokeDasharray={`${2 * Math.PI * 13}`}
                   strokeDashoffset={`${2 * Math.PI * 13 * (1 - progress / 100)}`}
                   strokeLinecap="round"
-                  className="transition-all duration-700"
+                  className="text-primary transition-all duration-700"
                 />
               </svg>
             </div>
@@ -234,13 +235,13 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                   onClick={() => setIsMobileOpen(false)}
                   className={cn(
                     // Base nav item
-                    "flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5",
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5",
                     "text-sm font-medium leading-none",
                     "transition-colors duration-150",
                     isCollapsed && "justify-center px-2",
                     isActive
                       ? // Active: gold-tinted background
-                        "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1.5px_oklch(0.62_0.13_74_/_0.20)]"
+                        "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-primary/15"
                       : // Idle: subtle hover
                         "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                   )}
@@ -275,14 +276,14 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full h-auto py-2.5 px-3 rounded-[var(--radius)]",
+                  "w-full h-auto py-2.5 px-3 rounded-lg",
                   "hover:bg-sidebar-accent/60",
                   "justify-start gap-3 text-left",
                   isCollapsed && "justify-center px-2 gap-0"
                 )}
                 aria-label="Menú de usuario"
               >
-                <Avatar className="h-8 w-8 shrink-0 ring-2 ring-[oklch(0.62_0.13_74_/_0.20)]">
+                <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/20">
                   <AvatarImage src={user.avatarUrl || undefined} alt={user.name} />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                     {getInitials(user.name)}
@@ -305,9 +306,9 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
               align="end"
               side="top"
               sideOffset={8}
-              className="w-56 rounded-[var(--radius-lg)] border-[oklch(0.88_0.025_72)] shadow-[var(--shadow-lg)]"
+              className="w-56 rounded-xl border-border shadow-lg"
             >
-              <DropdownMenuLabel className="font-serif text-base">
+              <DropdownMenuLabel className="text-base font-semibold">
                 Mi cuenta
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

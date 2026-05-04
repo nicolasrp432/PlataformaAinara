@@ -1,27 +1,22 @@
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 import { PlatformSidebar } from "@/components/layout/platform-sidebar"
-import { createClient } from "@/lib/supabase/server"
+import { getAuthUser, getUserProfile } from "@/lib/data-access"
 
 export default async function PlatformLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   // Redirect to login if not authenticated
-  if (error || !user) {
+  if (!user) {
     redirect("/login")
   }
 
-  // Fetch profile data
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
+  // Fetch profile data (deduplicada via React.cache si una page la pide también)
+  const profile = await getUserProfile(user.id)
 
   const userData = {
     id: user.id,
@@ -40,7 +35,7 @@ export default async function PlatformLayout({
       <PlatformSidebar user={userData} streak={streak} />
       <main className="md:pl-64 transition-all duration-300">
         <div className="container mx-auto p-6 pt-20 md:pt-6">
-          {children}
+          <Suspense>{children}</Suspense>
         </div>
       </main>
     </div>

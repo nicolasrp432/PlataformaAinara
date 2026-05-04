@@ -309,7 +309,7 @@ export function VideoPlayer({
 
       {/* Completed Badge */}
       {hasCompleted && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-500/90 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-success/90 text-white px-3 py-1.5 rounded-full text-sm font-medium">
           <CheckCircle2 className="h-4 w-4" />
           Completado
         </div>

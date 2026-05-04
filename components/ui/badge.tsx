@@ -6,41 +6,41 @@ const badgeVariants = cva(
   [
     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5",
     "text-xs font-semibold leading-none",
-    "border transition-colors duration-150",
+    "border transition-colors duration-200",
     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
   ],
   {
     variants: {
       variant: {
-        // Gold: primary status, featured items
+        // Gold primary
         default:
           "border-transparent bg-primary text-primary-foreground",
 
-        // Champagne: secondary status
+        // Gray secondary
         secondary:
-          "border-[oklch(0.62_0.13_74_/_0.25)] bg-secondary text-secondary-foreground",
+          "border-border bg-secondary text-secondary-foreground",
 
-        // Soft gold outline: neutral labels
+        // Gold outline
         outline:
-          "border-[oklch(0.62_0.13_74_/_0.35)] text-primary bg-transparent",
+          "border-primary/30 text-primary bg-transparent",
 
-        // Error / destructive
+        // Destructive
         destructive:
           "border-transparent bg-destructive/15 text-destructive border-destructive/20",
 
         // Success
         success:
-          "border-transparent bg-[oklch(0.55_0.14_148_/_0.15)] text-[oklch(0.40_0.14_148)] border-[oklch(0.55_0.14_148_/_0.25)]",
+          "border-transparent bg-success/15 text-success border-success/20",
 
-        // Warning / warm
+        // Warning
         warning:
-          "border-transparent bg-[oklch(0.70_0.13_78_/_0.15)] text-[oklch(0.45_0.12_74)] border-[oklch(0.70_0.13_78_/_0.25)]",
+          "border-transparent bg-warning/15 text-warning border-warning/20",
 
-        // Premium: gradient gold
+        // Premium: gold gradient
         premium:
           "border-transparent gold-gradient text-white shadow-sm font-bold tracking-wide",
 
-        // Muted: very subtle
+        // Muted
         muted:
           "border-transparent bg-muted text-muted-foreground",
       },

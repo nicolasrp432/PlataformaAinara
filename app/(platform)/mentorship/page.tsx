@@ -1,11 +1,18 @@
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
+import { getAuthUser } from "@/lib/data-access"
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CalendarDays, Clock, Sparkles, MessageSquare, ArrowRight } from "lucide-react"
+import {
+  CalendarDays,
+  Clock,
+  Sparkles,
+  MessageSquare,
+  ArrowRight,
+} from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Mentoría | Ainara",
@@ -25,21 +32,22 @@ const defaultMentor = {
 }
 
 export default async function MentorshipPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   if (!user) {
     redirect("/login")
   }
 
-  // Intentamos obtener mentores de la base de datos
+  // Solo necesitamos mentores, no el perfil del usuario
+  const supabase = await createClient()
   const { data: dbMentors } = await supabase
     .from("mentors")
     .select("*")
     .eq("is_active", true)
 
   // Si no hay mentores en la BD, usamos a Ainara por defecto
-  const mentors = dbMentors && dbMentors.length > 0 ? dbMentors : [defaultMentor]
+  const mentors =
+    dbMentors && dbMentors.length > 0 ? dbMentors : [defaultMentor]
 
   return (
     <div className="space-y-10 max-w-6xl mx-auto pb-16 relative animation-fade-in">
@@ -50,22 +58,30 @@ export default async function MentorshipPage() {
           <span>Acelera tu evolución</span>
         </div>
         <h1 className="text-4xl font-light tracking-tight text-foreground sm:text-6xl">
-          Mentoría <span className="font-semibold text-primary">Exclusiva</span>
+          Mentoría{" "}
+          <span className="font-semibold text-primary">Exclusiva</span>
         </h1>
         <p className="text-muted-foreground text-base sm:text-xl max-w-2xl mt-2 leading-relaxed">
-          El conocimiento te da las herramientas, pero la mentoría traza el mapa. Conecta 1 a 1 para recibir guía personalizada.
+          El conocimiento te da las herramientas, pero la mentoría traza el
+          mapa. Conecta 1 a 1 para recibir guía personalizada.
         </p>
       </div>
 
       {/* Grid de Mentores */}
       <div className="grid gap-8 lg:grid-cols-2">
         {mentors.map((mentor) => (
-          <Card key={mentor.id} className="border-border/50 bg-card/40 backdrop-blur-xl shadow-xl shadow-black/5 overflow-hidden group hover:border-primary/40 transition-all duration-500 hover:-translate-y-1">
+          <Card
+            key={mentor.id}
+            className="border-border/50 bg-card/40 backdrop-blur-xl shadow-xl shadow-black/5 overflow-hidden group hover:border-primary/40 transition-all duration-500 hover:-translate-y-1"
+          >
             <div className="h-32 bg-gradient-to-br from-primary/20 via-primary/5 to-background w-full relative transition-all duration-500 group-hover:from-primary/30" />
             <CardContent className="px-6 sm:px-8 pb-8 relative z-10">
               <div className="flex justify-between items-end -mt-16 mb-6">
                 <Avatar className="h-32 w-32 border-[6px] border-background shadow-2xl transition-transform duration-500 group-hover:scale-105 group-hover:rotate-2">
-                  <AvatarImage src={mentor.avatar_url} className="object-cover" />
+                  <AvatarImage
+                    src={mentor.avatar_url}
+                    className="object-cover"
+                  />
                   <AvatarFallback className="text-4xl bg-primary text-primary-foreground font-bold">
                     {mentor.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -79,20 +95,31 @@ export default async function MentorshipPage() {
 
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">{mentor.name}</h2>
-                  <p className="text-sm font-medium text-primary mt-1 uppercase tracking-wider">{mentor.title || "Mentor Experto"}</p>
+                  <h2 className="text-2xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+                    {mentor.name}
+                  </h2>
+                  <p className="text-sm font-medium text-primary mt-1 uppercase tracking-wider">
+                    {mentor.title || "Mentor Experto"}
+                  </p>
                 </div>
 
                 <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
-                  {mentor.bio || "Experto dedicado a guiarte en tu camino de transformación."}
+                  {mentor.bio ||
+                    "Experto dedicado a guiarte en tu camino de transformación."}
                 </p>
 
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {mentor.specialties?.map((specialty: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted/80">
-                      {specialty}
-                    </Badge>
-                  ))}
+                  {mentor.specialties?.map(
+                    (specialty: string, i: number) => (
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className="bg-muted text-muted-foreground hover:bg-muted/80"
+                      >
+                        {specialty}
+                      </Badge>
+                    )
+                  )}
                 </div>
 
                 <div className="flex items-center gap-6 pt-6 border-t border-border/50 mt-6">
@@ -125,11 +152,19 @@ export default async function MentorshipPage() {
           <Badge className="bg-primary text-primary-foreground mb-4 font-bold tracking-widest uppercase">
             Próximamente
           </Badge>
-          <h3 className="text-2xl font-semibold text-foreground mb-3">Ainara AI Companion</h3>
+          <h3 className="text-2xl font-semibold text-foreground mb-3">
+            Ainara AI Companion
+          </h3>
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-sm">
-            Estamos entrenando a una inteligencia artificial con el conocimiento completo de la plataforma. Pronto podrás chatear directamente y recibir respuestas en tiempo real basadas en la sabiduría de Ainara.
+            Estamos entrenando a una inteligencia artificial con el conocimiento
+            completo de la plataforma. Pronto podrás chatear directamente y
+            recibir respuestas en tiempo real basadas en la sabiduría de Ainara.
           </p>
-          <Button variant="link" className="mt-6 text-primary hover:text-primary/80" disabled>
+          <Button
+            variant="link"
+            className="mt-6 text-primary hover:text-primary/80"
+            disabled
+          >
             Saber más <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </Card>

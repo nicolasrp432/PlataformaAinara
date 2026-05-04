@@ -61,9 +61,9 @@ export default async function QuestPage() {
       xpReward: 50,
       icon: Compass,
       completed: questLoginCompleted,
-      color: "text-blue-500",
-      bgBase: "bg-blue-500/10",
-      borderBase: "border-blue-500/20"
+      color: "text-primary",
+      bgBase: "bg-primary/10",
+      borderBase: "border-primary/20"
     },
     {
       id: 2,
@@ -72,9 +72,9 @@ export default async function QuestPage() {
       xpReward: 150,
       icon: Sword,
       completed: questLessonCompleted,
-      color: "text-rose-500",
-      bgBase: "bg-rose-500/10",
-      borderBase: "border-rose-500/20"
+      color: "text-primary/80",
+      bgBase: "bg-primary/10",
+      borderBase: "border-primary/20"
     },
     {
       id: 3,
@@ -83,9 +83,9 @@ export default async function QuestPage() {
       xpReward: 100,
       icon: Target,
       completed: questTabernaCompleted,
-      color: "text-amber-500",
-      bgBase: "bg-amber-500/10",
-      borderBase: "border-amber-500/20"
+      color: "text-primary/70",
+      bgBase: "bg-primary/10",
+      borderBase: "border-primary/20"
     }
   ]
 
@@ -97,14 +97,14 @@ export default async function QuestPage() {
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 sm:p-10 rounded-3xl bg-card/60 backdrop-blur-xl border border-border/50 shadow-2xl relative overflow-hidden">
         {/* Decoración de fondo */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[100px] -z-10" />
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-500/10 rounded-full blur-[80px] -z-10" />
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-primary/10 rounded-full blur-[80px] -z-10" />
         
         <div className="flex-1 space-y-4 text-center md:text-left">
           <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-none px-3 py-1 text-xs tracking-widest uppercase mb-2">
             Diario de Misiones
           </Badge>
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Tu Gran <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-500">Aventura</span>
+            Tu Gran <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">Aventura</span>
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto md:mx-0">
             Forja tu leyenda. Completa misiones para ganar conocimiento, experiencia y subir de nivel en la jerarquía de la comunidad.
@@ -190,7 +190,7 @@ export default async function QuestPage() {
           <Card className="border-border/50 bg-card/40 backdrop-blur-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500/20" /> Logros
+                <Star className="w-5 h-5 text-primary fill-primary/20" /> Logros
               </CardTitle>
             </CardHeader>
             <CardContent>

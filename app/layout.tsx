@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google"
+import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 
 // Performance: subset + display swap to avoid FOIT
@@ -8,15 +8,6 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
   preload: true,
-})
-
-// Luxury serif for headings - only needed weights
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-  weight: ["600", "700", "800"],
-  preload: false, // Non-critical, load after Inter
 })
 
 // Monospace only if needed (load lazily)
@@ -84,7 +75,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {children}
       </body>

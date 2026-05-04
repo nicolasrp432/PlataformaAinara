@@ -7,10 +7,11 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={cn(
-        // Luxury light card: clean white with warm gold border + shadow
-        "rounded-[var(--radius-lg)] border bg-card text-card-foreground",
-        "border-[oklch(0.88_0.025_72)] shadow-[var(--shadow-sm)]",
-        "transition-shadow duration-250 ease-out",
+        // Cards: rounded-2xl (16px) per refined DS — white bg, warm border
+        "rounded-2xl border border-border bg-card text-card-foreground",
+        "shadow-[var(--shadow-sm)]",
+        "transition-shadow duration-200 ease-out",
+        "hover:shadow-[var(--shadow-md)]",
         className
       )}
       {...props}
@@ -31,13 +32,13 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 )
 CardHeader.displayName = "CardHeader"
 
-// ── Card Title — Uses serif for luxury headings ─────────────
+// ── Card Title ─────────────────────────────────────────────
 const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        "font-serif text-xl font-semibold leading-tight tracking-tight text-card-foreground",
+        "text-xl font-semibold leading-tight tracking-tight text-card-foreground",
         className
       )}
       {...props}
@@ -72,7 +73,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
     <div
       ref={ref}
       className={cn(
-        "flex items-center p-6 pt-0 border-t border-[oklch(0.92_0.015_70)] mt-0",
+        "flex items-center p-6 pt-0 border-t border-border mt-0",
         className
       )}
       {...props}

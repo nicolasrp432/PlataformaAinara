@@ -162,7 +162,7 @@ export function NatalChartForm() {
                 {state.sunSign?.slice(-1) || "✨"}
               </motion.div>
               
-              <h2 className="text-3xl font-serif font-bold text-foreground mb-2">
+              <h2 className="text-3xl font-bold text-foreground mb-2">
                 Tu Signo Solar es {state.sunSign?.slice(0, -2)}
               </h2>
               <p className="text-lg text-muted-foreground">

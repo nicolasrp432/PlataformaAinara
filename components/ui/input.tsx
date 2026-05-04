@@ -9,16 +9,16 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
         className={cn(
           // Base
           "flex h-10 w-full px-3.5 py-2 text-sm",
-          // Styling: warm ivory background, gold-tint border
-          "rounded-[var(--radius)] border bg-background",
-          "border-[oklch(0.86_0.028_72)] text-foreground",
+          // Styling: card-white bg at rest, warm border — per design system
+          "rounded-xl border border-border bg-card",
+          "text-foreground",
           "placeholder:text-muted-foreground/60",
-          // Focus: gold ring
+          // Focus: gold border + ring
           "focus-visible:outline-none focus-visible:ring-2",
-          "focus-visible:ring-[oklch(0.62_0.13_74_/_0.50)] focus-visible:ring-offset-1",
-          "focus-visible:border-primary",
+          "focus-visible:ring-primary/50 focus-visible:ring-offset-1",
+          "focus-visible:border-primary focus-visible:bg-background",
           // Transitions
-          "transition-colors duration-150",
+          "transition-colors duration-200",
           // File input reset
           "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground",
           // Disabled

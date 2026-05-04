@@ -14,7 +14,7 @@ export default function UsuarioDashboardPage() {
         
         <div className="text-center mb-12 animate-fade-in">
           <p className="label-luxury mb-4 text-primary">Biología & Cosmos</p>
-          <h1 className="text-4xl lg:text-5xl font-serif font-bold text-foreground mb-4">
+          <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Tu Transformación Biológica
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">

@@ -85,7 +85,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
             {/* Carta Natal Fields */}
             <div className="pt-4 border-t border-border/50">
-              <h3 className="text-md font-serif font-medium text-primary mb-4">Información de Carta Natal</h3>
+              <h3 className="text-md font-medium text-primary mb-4">Información de Carta Natal</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="birth_date" className="text-sm font-medium">
