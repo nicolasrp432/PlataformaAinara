@@ -1,16 +1,12 @@
 import type {
   ApiResponse,
   PaginatedResponse,
-  User,
-  UserAccess,
+  Profile,
   Formation,
   Module,
   Lesson,
   UserProgress,
-  UserStreak,
   Reflection,
-  Mentor,
-  MentorshipSession,
   LoginRequest,
   RegisterRequest,
   CreateFormationRequest,
@@ -63,14 +59,14 @@ class ApiClient {
   // Authentication
   // =====================================================
 
-  async login(data: LoginRequest): Promise<ApiResponse<{ user: User; session: { access_token: string } }>> {
+  async login(data: LoginRequest): Promise<ApiResponse<{ user: Profile; session: { access_token: string } }>> {
     return this.request("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     })
   }
 
-  async register(data: RegisterRequest): Promise<ApiResponse<{ user: User; session: { access_token: string } }>> {
+  async register(data: RegisterRequest): Promise<ApiResponse<{ user: Profile; session: { access_token: string } }>> {
     return this.request("/api/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
@@ -83,7 +79,7 @@ class ApiClient {
     })
   }
 
-  async getCurrentUser(): Promise<ApiResponse<{ user: User }>> {
+  async getCurrentUser(): Promise<ApiResponse<{ user: Profile }>> {
     return this.request("/api/auth/me")
   }
 
@@ -193,7 +189,7 @@ class ApiClient {
     id: string,
     data: Partial<CreateLessonRequest> & {
       video_url?: string
-      video_duration_seconds?: number
+      duration_seconds?: number
       transcript?: string
       resources?: string
       is_published?: boolean
@@ -233,7 +229,7 @@ class ApiClient {
     return this.request("/api/users/progress")
   }
 
-  async getUserStreak(): Promise<ApiResponse<UserStreak>> {
+  async getUserStreak(): Promise<ApiResponse<{ streak_days: number; last_activity_date: string | null }>> {
     return this.request("/api/users/streak")
   }
 
@@ -281,11 +277,11 @@ class ApiClient {
   // Mentorship
   // =====================================================
 
-  async getMentors(): Promise<ApiResponse<Mentor[]>> {
+  async getMentors(): Promise<ApiResponse<Record<string, unknown>[]>> {
     return this.request("/api/mentorship/mentors")
   }
 
-  async getMentor(id: string): Promise<ApiResponse<Mentor>> {
+  async getMentor(id: string): Promise<ApiResponse<Record<string, unknown>>> {
     return this.request(`/api/mentorship/mentors/${id}`)
   }
 
@@ -293,14 +289,14 @@ class ApiClient {
     mentor_id: string
     scheduled_at: string
     user_notes?: string
-  }): Promise<ApiResponse<MentorshipSession>> {
+  }): Promise<ApiResponse<Record<string, unknown>>> {
     return this.request("/api/mentorship/sessions", {
       method: "POST",
       body: JSON.stringify(data),
     })
   }
 
-  async getMySessions(): Promise<ApiResponse<MentorshipSession[]>> {
+  async getMySessions(): Promise<ApiResponse<Record<string, unknown>[]>> {
     return this.request("/api/mentorship/sessions")
   }
 
@@ -324,7 +320,7 @@ class ApiClient {
     limit?: number
     role?: string
     status?: string
-  }): Promise<PaginatedResponse<User>> {
+  }): Promise<PaginatedResponse<Profile>> {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set("page", String(params.page))
     if (params?.limit) searchParams.set("limit", String(params.limit))
@@ -343,7 +339,7 @@ class ApiClient {
       access_reason?: string
       expires_at?: string
     }
-  ): Promise<ApiResponse<UserAccess>> {
+  ): Promise<ApiResponse<null>> {
     return this.request(`/api/admin/users/${userId}/access`, {
       method: "PUT",
       body: JSON.stringify(data),

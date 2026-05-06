@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,7 +11,7 @@ import { createReflection } from "./actions"
 
 interface ReflectionFormProps {
   user: {
-    name: string
+    full_name: string
     avatarUrl: string | null
   }
 }
@@ -34,7 +35,8 @@ export function ReflectionForm({ user }: ReflectionFormProps) {
         if (result.error) {
           setError(result.error)
         } else {
-          setContent("") // Clear form on success
+          setContent("")
+          toast.success("Publicación enviada.")
         }
       } catch (err) {
         setError("Ocurrió un error al enviar tu publicación.")
@@ -50,7 +52,7 @@ export function ReflectionForm({ user }: ReflectionFormProps) {
             <Avatar className="h-10 w-10 shrink-0 border border-border/50 hidden sm:block">
               <AvatarImage src={user.avatarUrl || ""} />
               <AvatarFallback className="bg-primary/10 text-primary">
-                {user.name.charAt(0).toUpperCase()}
+                {user.full_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-3">

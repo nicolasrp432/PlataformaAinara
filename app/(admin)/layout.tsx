@@ -32,7 +32,7 @@ export default async function AdminLayout({
 
   const userData = {
     id: user.id,
-    name: user.user_metadata?.full_name || "Admin",
+    full_name: user.user_metadata?.full_name || "Admin",
     email: user.email || "",
     avatarUrl: user.user_metadata?.avatar_url as string | null,
     role: "admin" as const,

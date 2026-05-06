@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 // POST - Enroll user in a formation
 export async function POST(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   }
   
   const body = await request.json()
-  const { formationId } = body
+  const { formationId, slug } = body
   
   if (!formationId) {
     return NextResponse.json({ error: "Missing formationId" }, { status: 400 })
@@ -62,7 +63,10 @@ export async function POST(request: NextRequest) {
   if (enrollError) {
     return NextResponse.json({ error: enrollError.message }, { status: 500 })
   }
-  
+
+  revalidatePath('/library')
+  if (slug) revalidatePath(`/formations/${slug}`)
+
   return NextResponse.json({ enrollment })
 }
 

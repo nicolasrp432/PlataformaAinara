@@ -91,7 +91,7 @@ export async function updateSession(request: NextRequest) {
       role = profile?.role || "student"
 
       // Cache the role for 5 minutes to avoid repeated DB queries
-      supabaseResponse.cookies.set("x-user-role", role, {
+      supabaseResponse.cookies.set("x-user-role", role ?? "student", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

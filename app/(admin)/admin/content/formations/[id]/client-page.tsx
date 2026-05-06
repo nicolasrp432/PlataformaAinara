@@ -29,11 +29,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { 
-  createFormationAction, 
-  updateFormationAction, 
-  createModuleAction, 
-  deleteModuleAction 
+import {
+  createFormationAction,
+  updateFormationAction,
+  createModuleAction,
+  deleteModuleAction
 } from "../actions"
 import { uploadThumbnailAction } from "../upload-action"
 
@@ -45,13 +45,13 @@ interface Formation {
   long_description: string | null
   thumbnail_url: string | null
   difficulty: string
-  duration_hours: number
+  duration_minutes: number
   is_published: boolean
   is_premium: boolean
   is_featured: boolean
   xp_reward: number
   price: number
-  order_index: number
+  sort_order: number
 }
 
 interface Module {
@@ -59,7 +59,7 @@ interface Module {
   formation_id: string
   title: string
   description: string | null
-  order_index: number
+  sort_order: number
   is_published: boolean
   lessons?: Lesson[]
 }
@@ -70,11 +70,11 @@ interface Lesson {
   title: string
   description: string | null
   video_url: string | null
-  video_duration: number
-  lesson_type: string
-  order_index: number
+  duration_seconds: number
+  content_type: string
+  sort_order: number
   is_published: boolean
-  is_preview: boolean
+  is_free: boolean
   xp_reward: number
 }
 
@@ -87,18 +87,18 @@ const difficultyLevels = [
 export default function FormationEditorClientPage({ isNew, initialData }: { isNew: boolean; initialData: any }) {
   const router = useRouter()
   const supabase = createClient()
-  
-  const [formation, setFormation] = useState<any>(initialData || { title: '', description: '', price: 0, status: 'draft', is_published: false, difficulty: 'beginner', order_index: 0 });
+
+  const [formation, setFormation] = useState<any>(initialData || { title: '', description: '', price: 0, status: 'draft', is_published: false, difficulty: 'beginner', sort_order: 0 });
   const [modules, setModules] = useState<Module[]>(initialData?.modules || [])
   const [loading] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState("details")
-  
+
   // Dialogs
   const [moduleDialogOpen, setModuleDialogOpen] = useState(false)
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false)
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
-  
+
   // Form state for new module/lesson
   const [newModuleTitle, setNewModuleTitle] = useState("")
   const [newModuleDescription, setNewModuleDescription] = useState("")
@@ -107,17 +107,18 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
 
   function handleSave() {
     if (!formation) return
-    
+
     startTransition(async () => {
       try {
         const payload = {
+          sort_order: formation?.sort_order ?? 0,
           title: formation?.title || "",
           slug: formation?.slug || "",
           description: formation?.description || null,
           long_description: formation?.long_description || null,
           thumbnail_url: formation?.thumbnail_url || null,
           difficulty: (formation?.difficulty || "beginner") as any,
-          duration_hours: formation?.duration_hours || 0,
+          duration_minutes: formation?.duration_minutes || 0,
           is_published: formation?.is_published || false,
           is_premium: formation?.is_premium || false,
           is_featured: formation?.is_featured || false,
@@ -160,15 +161,14 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
 
   async function addModule() {
     if (!formation || !newModuleTitle.trim() || isNew) return
-    
+
     try {
       const res = await createModuleAction({
         formation_id: formation?.id || "",
         title: newModuleTitle,
         description: newModuleDescription || null,
-        order_index: modules?.length || 0,
+        sort_order: modules?.length || 0,
         is_published: false,
-        xp_reward: 50,
       })
 
       if (!res.success) throw new Error(res.error)
@@ -184,10 +184,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
 
   async function addLesson() {
     if (!selectedModuleId || !newLessonTitle.trim()) return
-    
+
     const moduleIndex = modules?.findIndex(m => m.id === selectedModuleId) ?? -1
     if (moduleIndex === -1) return
-    
+
     try {
       const lessonSlug = newLessonTitle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString().slice(-4)
       const { data, error } = await supabase
@@ -197,10 +197,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
           title: newLessonTitle,
           slug: lessonSlug,
           description: newLessonDescription || null,
-          order_index: modules[moduleIndex].lessons?.length || 0,
-          lesson_type: "video",
+          sort_order: modules[moduleIndex].lessons?.length || 0,
+          content_type: "video",
           is_published: false,
-          is_preview: false,
+          is_free: false,
           xp_reward: 25,
         })
         .select()
@@ -214,7 +214,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
         lessons: [...(updatedModules[moduleIndex].lessons || []), data]
       }
       setModules(updatedModules)
-      
+
       setNewLessonTitle("")
       setNewLessonDescription("")
       setLessonDialogOpen(false)
@@ -287,7 +287,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
 
   const totalLessons = modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 0
   const totalDuration = modules?.reduce(
-    (acc, m) => acc + (m.lessons?.reduce((acc2, l) => acc2 + (l.video_duration || 0), 0) || 0),
+    (acc, m) => acc + (m.lessons?.reduce((acc2, l) => acc2 + (l.duration_seconds || 0), 0) || 0),
     0
   ) || 0
 
@@ -475,14 +475,14 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duracion (horas)</Label>
+                  <Label htmlFor="duration">Duracion (minutos)</Label>
                   <Input
                     id="duration"
                     type="number"
                     min={0}
-                    value={formation?.duration_hours || 0}
+                    value={formation?.duration_minutes || 0}
                     onChange={(e) =>
-                      setFormation((prev: any) => ({ ...prev, duration_hours: parseInt(e.target.value) || 0 }))
+                      setFormation((prev: any) => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))
                     }
                   />
                 </div>
@@ -685,17 +685,17 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{lesson.title}</p>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="capitalize">{lesson.lesson_type}</span>
-                                {lesson.video_duration > 0 && (
+                                <span className="capitalize">{lesson.content_type}</span>
+                                {lesson.duration_seconds > 0 && (
                                   <>
                                     <span>-</span>
-                                    <span>{formatDuration(lesson.video_duration)}</span>
+                                    <span>{formatDuration(lesson.duration_seconds)}</span>
                                   </>
                                 )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {lesson.is_preview && (
+                              {lesson.is_free && (
                                 <Badge variant="secondary" className="text-xs">Preview</Badge>
                               )}
                               <Badge variant={lesson.is_published ? "default" : "outline"} className="text-xs">
@@ -706,8 +706,8 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                                   <Video className="h-4 w-4" />
                                 </Link>
                               </Button>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => deleteLesson(lesson.id, module.id)}
                               >

@@ -1,344 +1,164 @@
-// =====================================================
-// Plataforma Ainara - Tipos TypeScript
-// Sistema de Educación Transformacional
-// =====================================================
+// ── Enums / Union Types ──────────────────────────────────────
+export type UserRole = 'student' | 'mentor' | 'admin'
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced'
+export type ContentType = 'video' | 'text' | 'quiz' | 'exercise' | 'meditation'
+export type ProgressStatus = 'not_started' | 'in_progress' | 'completed'
+export type EnrollmentStatus = 'active' | 'completed' | 'cancelled'
 
-// =====================================================
-// User & Authentication Types
-// =====================================================
-
-export type UserRole = "user" | "admin" | "mentor"
-export type UserStatus = "active" | "inactive" | "suspended"
-export type AccessType = "free" | "paid" | "manual" | "trial"
-
-export interface User {
+// ── Profile ──────────────────────────────────────────────────
+export interface Profile {
   id: string
-  email: string
-  name: string
+  full_name: string | null
   avatar_url: string | null
   role: UserRole
-  status: UserStatus
-  email_verified: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface UserSession {
-  id: string
-  user_id: string
-  refresh_token: string
-  expires_at: string
-  ip_address?: string
-  user_agent?: string
-  created_at: string
-}
-
-export interface UserAccess {
-  id: string
-  user_id: string
-  plan_id?: string
-  access_type: AccessType
-  access_granted_by?: string
-  access_reason?: string
-  starts_at: string
-  expires_at?: string
-  is_active: boolean
-  payment_reference?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface UserStreak {
-  id: string
-  user_id: string
-  current_streak: number
-  longest_streak: number
-  total_xp: number
+  status: string | null
   level: number
-  last_activity_date?: string
+  xp: number
+  streak_days: number
+  last_activity_date: string | null
+  birth_date: string | null
+  birth_time: string | null
+  birth_city: string | null
   created_at: string
   updated_at: string
 }
 
-// =====================================================
-// Content Types (Formations, Modules, Lessons)
-// =====================================================
-
-export type ContentLevel = "beginner" | "intermediate" | "advanced"
-export type ContentType = "video" | "audio" | "text" | "quiz" | "exercise"
-export type ProgressStatus = "not_started" | "in_progress" | "completed"
-
+// ── Formation ────────────────────────────────────────────────
 export interface Formation {
   id: string
   title: string
   slug: string
-  description?: string
-  short_description?: string
-  thumbnail_url?: string
-  trailer_url?: string
-  level: ContentLevel
+  description: string | null
+  short_description: string | null
+  long_description: string | null
+  thumbnail_url: string | null
+  trailer_url: string | null
+  difficulty: Difficulty
   duration_minutes: number
   is_premium: boolean
   is_published: boolean
+  is_featured: boolean
   sort_order: number
+  xp_reward: number
+  price: number
   created_at: string
   updated_at: string
-  // Relations
+  // Relaciones opcionales
   modules?: Module[]
   modules_count?: number
   lessons_count?: number
-  progress?: number
 }
 
+// ── Module ───────────────────────────────────────────────────
 export interface Module {
   id: string
   formation_id: string
   title: string
-  slug: string
-  description?: string
-  thumbnail_url?: string
+  slug: string | null
+  description: string | null
+  thumbnail_url: string | null
   sort_order: number
   is_published: boolean
   created_at: string
   updated_at: string
-  // Relations
-  formation?: Formation
+  // Relaciones opcionales
   lessons?: Lesson[]
   lessons_count?: number
-  progress?: number
 }
 
+// ── Lesson ───────────────────────────────────────────────────
 export interface Lesson {
   id: string
   module_id: string
   title: string
-  slug: string
-  description?: string
+  slug: string | null
+  description: string | null
   content_type: ContentType
-  video_url?: string
-  video_duration_seconds: number
-  thumbnail_url?: string
-  transcript?: string
-  resources?: LessonResource[]
+  video_url: string | null
+  duration_seconds: number
+  thumbnail_url: string | null
+  transcript: string | null
+  resources: LessonResource[] | null
   sort_order: number
-  is_free_preview: boolean
+  is_free: boolean
   is_published: boolean
+  xp_reward: number
   created_at: string
   updated_at: string
-  // Relations
+  // Relaciones opcionales
   module?: Module
-  user_progress?: UserProgress
+  user_progress?: UserProgress | null
 }
 
 export interface LessonResource {
   title: string
   url: string
-  type: "pdf" | "audio" | "worksheet" | "link"
+  type: 'pdf' | 'link' | 'video'
 }
 
+// ── Enrollment ───────────────────────────────────────────────
+export interface Enrollment {
+  id: string
+  user_id: string
+  formation_id: string
+  status: EnrollmentStatus
+  enrolled_at: string
+  completed_at: string | null
+  progress_percent: number
+}
+
+// ── UserProgress ─────────────────────────────────────────────
 export interface UserProgress {
   id: string
   user_id: string
   lesson_id: string
   status: ProgressStatus
+  is_completed: boolean
   progress_percent: number
+  watched_seconds: number
   last_position_seconds: number
-  completed_at?: string
+  started_at: string | null
+  completed_at: string | null
   created_at: string
   updated_at: string
 }
 
-// =====================================================
-// Comments System
-// =====================================================
-
-export interface LessonComment {
-  id: string
-  lesson_id: string
-  user_id: string
-  parent_id?: string
-  content: string
-  is_pinned: boolean
-  is_hidden: boolean
-  created_at: string
-  updated_at: string
-  // Relations
-  author?: Pick<User, "id" | "name" | "avatar_url">
-  replies?: LessonComment[]
-  likes_count?: number
-  user_has_liked?: boolean
-}
-
-// =====================================================
-// Quiz System
-// =====================================================
-
-export type QuestionType = "multiple_choice" | "true_false" | "open_ended"
-
-export interface Quiz {
-  id: string
-  lesson_id?: string
-  module_id?: string
-  title: string
-  description?: string
-  passing_score: number
-  max_attempts: number
-  time_limit_minutes?: number
-  is_published: boolean
-  created_at: string
-  // Relations
-  questions?: QuizQuestion[]
-}
-
-export interface QuizQuestion {
-  id: string
-  quiz_id: string
-  question_type: QuestionType
-  question_text: string
-  options?: string[] // JSON array for multiple choice
-  correct_answer: string
-  explanation?: string
-  points: number
-  sort_order: number
-}
-
-export interface QuizAttempt {
-  id: string
-  quiz_id: string
-  user_id: string
-  score: number
-  passed: boolean
-  answers: Record<string, string> // questionId -> answer
-  started_at: string
-  completed_at?: string
-  created_at: string
-}
-
-// =====================================================
-// Certificates
-// =====================================================
-
-export interface Certificate {
-  id: string
-  user_id: string
-  formation_id: string
-  certificate_number: string
-  issued_at: string
-  pdf_url?: string
-  // Relations
-  user?: Pick<User, "id" | "name" | "email">
-  formation?: Pick<Formation, "id" | "title" | "slug">
-}
-
-// =====================================================
-// Reflections & Community
-// =====================================================
-
+// ── Reflection ───────────────────────────────────────────────
 export interface Reflection {
   id: string
   user_id: string
-  lesson_id?: string
+  lesson_id: string | null
   content: string
   is_public: boolean
   created_at: string
   updated_at: string
-  // Relations
-  author?: Pick<User, "id" | "name" | "avatar_url">
-  lesson?: Pick<Lesson, "id" | "title" | "slug">
-  reactions?: {
-    resonates: number
-    supports: number
-    user_resonated?: boolean
-    user_supported?: boolean
-  }
+  // Join opcional
+  profiles?: Pick<Profile, 'full_name' | 'avatar_url' | 'role'> | null
 }
 
-// =====================================================
-// Mentorship
-// =====================================================
-
-export type SessionStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show"
-
-export interface Mentor {
-  id: string
-  user_id?: string
-  name: string
-  title?: string
-  bio?: string
-  avatar_url?: string
-  specialties: string[]
-  session_price?: number
-  session_duration_minutes: number
-  calendar_link?: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
+// ── Tipos de UI (no son tablas de BD) ────────────────────────
+export interface FormationWithProgress extends Formation {
+  isEnrolled: boolean
+  progress: number
+  completedLessons: string[]
 }
 
-export interface MentorAvailability {
+export interface LibraryFormation {
   id: string
-  mentor_id: string
-  day_of_week: number
-  start_time: string
-  end_time: string
-  is_active: boolean
-  created_at: string
-}
-
-export interface MentorshipSession {
-  id: string
-  mentor_id: string
-  user_id: string
-  scheduled_at: string
-  duration_minutes: number
-  status: SessionStatus
-  meeting_link?: string
-  notes?: string
-  user_notes?: string
-  payment_reference?: string
-  cancelled_by?: string
-  cancelled_reason?: string
-  created_at: string
-  updated_at: string
-  // Relations
-  mentor?: Mentor
-  user?: Pick<User, "id" | "name" | "email" | "avatar_url">
-}
-
-// =====================================================
-// Subscription Plans
-// =====================================================
-
-export interface SubscriptionPlan {
-  id: string
-  name: string
+  title: string
   slug: string
-  description?: string
-  price_monthly?: number
-  price_yearly?: number
-  features: string[]
-  is_active: boolean
-  created_at: string
+  description: string | null
+  thumbnailUrl: string | null
+  difficulty: Difficulty
+  duration: number           // en minutos
+  lessonsCount: number
+  isPremium: boolean
+  progress: number
+  isEnrolled: boolean
+  isCompleted: boolean
 }
 
-// =====================================================
-// XP & Gamification
-// =====================================================
-
-export interface XPLog {
-  id: string
-  user_id: string
-  xp_amount: number
-  reason: string
-  reference_type?: string
-  reference_id?: string
-  created_at: string
-}
-
-// =====================================================
-// API Types
-// =====================================================
-
+// ── API utility types ─────────────────────────────────────────
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -357,76 +177,7 @@ export interface PaginatedResponse<T> {
   }
 }
 
-export interface AuthTokens {
-  accessToken: string
-  refreshToken: string
-  expiresIn: number
-}
-
-export interface LoginResponse {
-  user: Omit<User, "password_hash">
-  tokens: AuthTokens
-  access: UserAccess | null
-}
-
-// =====================================================
-// Form/Request Types
-// =====================================================
-
-export interface RegisterRequest {
-  email: string
-  password: string
-  name: string
-}
-
-export interface LoginRequest {
-  email: string
-  password: string
-}
-
-export interface CreateFormationRequest {
-  title: string
-  slug?: string
-  description?: string
-  short_description?: string
-  thumbnail_url?: string
-  level: ContentLevel
-  is_premium?: boolean
-}
-
-export interface UpdateFormationRequest extends Partial<CreateFormationRequest> {
-  is_published?: boolean
-  sort_order?: number
-}
-
-export interface CreateModuleRequest {
-  formation_id: string
-  title: string
-  slug?: string
-  description?: string
-}
-
-export interface CreateLessonRequest {
-  module_id: string
-  title: string
-  slug?: string
-  description?: string
-  content_type?: ContentType
-  video_url?: string
-  is_free_preview?: boolean
-}
-
-export interface UpdateProgressRequest {
-  lesson_id: string
-  progress_percent: number
-  last_position_seconds: number
-  status?: ProgressStatus
-}
-
-// =====================================================
-// Dashboard Stats
-// =====================================================
-
+// ── Dashboard Stats ───────────────────────────────────────────
 export interface DashboardStats {
   totalUsers: number
   activeUsers: number
@@ -446,4 +197,62 @@ export interface UserDashboardStats {
   currentStreak: number
   level: number
   nextLevelProgress: number
+}
+
+// ── Form / Request Types ──────────────────────────────────────
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface RegisterRequest {
+  email: string
+  password: string
+  full_name: string
+}
+
+export interface CreateFormationRequest {
+  title: string
+  slug?: string
+  description?: string
+  difficulty?: Difficulty
+  is_premium?: boolean
+}
+
+export interface UpdateFormationRequest extends Partial<CreateFormationRequest> {
+  is_published?: boolean
+  sort_order?: number
+  duration_minutes?: number
+  is_featured?: boolean
+  xp_reward?: number
+  price?: number
+  long_description?: string
+  thumbnail_url?: string
+  trailer_url?: string
+}
+
+export interface CreateModuleRequest {
+  formation_id: string
+  title: string
+  slug?: string
+  description?: string
+  sort_order?: number
+}
+
+export interface CreateLessonRequest {
+  module_id: string
+  title: string
+  slug?: string
+  description?: string
+  content_type?: ContentType
+  video_url?: string
+  is_free?: boolean
+  sort_order?: number
+}
+
+export interface UpdateProgressRequest {
+  lesson_id: string
+  progress_percent: number
+  last_position_seconds: number
+  status?: ProgressStatus
 }

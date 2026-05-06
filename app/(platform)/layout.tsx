@@ -20,7 +20,7 @@ export default async function PlatformLayout({
 
   const userData = {
     id: user.id,
-    name: user.user_metadata?.full_name || profile?.full_name || "Usuario",
+    full_name: user.user_metadata?.full_name || profile?.full_name || "Usuario",
     email: user.email || "",
     avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url,
     role: profile?.role || "student",

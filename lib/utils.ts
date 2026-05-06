@@ -53,13 +53,15 @@ export function truncate(text: string, length: number): string {
   return text.slice(0, length) + "..."
 }
 
-export function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
+export function getInitials(name?: string | null): string {
+  if (typeof name !== "string" || name.trim() === "") {
+    return "U"
+  }
+  
+  const parts = name.split(" ").filter(Boolean)
+  if (parts.length === 0) return "U"
+  
+  return parts.map((n) => n[0]).join("").toUpperCase().slice(0, 2)
 }
 
 export function calculateLevel(xp: number): number {

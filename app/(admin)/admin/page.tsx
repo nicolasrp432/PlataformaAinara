@@ -78,7 +78,7 @@ async function getRecentUsers() {
 
   return profiles.map((profile) => ({
     id: profile.id,
-    name: profile.full_name || "Sin nombre",
+    full_name: profile.full_name || "Sin nombre",
     role: profile.role || "student",
     joinedAt: formatTimeAgo(profile.created_at),
   }))
@@ -234,10 +234,10 @@ export default async function AdminDashboardPage() {
                   <div key={user.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                        {user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                        {user.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                       </div>
                       <div>
-                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-sm font-medium">{user.full_name}</p>
                         <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
                       </div>
                     </div>

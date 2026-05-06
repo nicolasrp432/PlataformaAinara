@@ -177,8 +177,12 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
             </div>
             <h3 className="text-xl font-medium mb-2 text-foreground">No se encontraron formaciones</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              {formations.length === 0 
+              {formations.length === 0
                 ? "Aun no hay formaciones disponibles. Vuelve pronto para ver nuevo contenido."
+                : view === "enrolled"
+                ? "Todavia no tienes formaciones en progreso. Explora la biblioteca y comienza una."
+                : view === "completed"
+                ? "Todavia no has completado ninguna formacion. Sigue adelante."
                 : "Intenta con otros filtros o terminos de busqueda"}
             </p>
           </CardContent>

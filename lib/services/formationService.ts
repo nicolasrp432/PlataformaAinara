@@ -47,14 +47,14 @@ export async function getFormationById(id: string) {
       lessons(*)
     `)
     .eq('formation_id', id)
-    .order('order_index', { ascending: true });
+    .order('sort_order', { ascending: true });
 
   if (modulesError) throw new Error(modulesError.message);
   
   // Sort lessons within each module
   const sortedModules = (modulesData || []).map((m: any) => ({
     ...m,
-    lessons: (m.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index)
+    lessons: (m.lessons || []).sort((a: any, b: any) => a.sort_order - b.sort_order)
   }));
   
   return { ...formationData, modules: sortedModules };

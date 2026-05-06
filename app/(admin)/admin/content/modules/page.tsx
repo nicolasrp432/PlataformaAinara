@@ -32,13 +32,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Formation, Module as BaseModule, Lesson as BaseLesson } from "@/types"
 
-type Module = BaseModule & { order_index?: number }
-type Lesson = BaseLesson & {
-  video_duration?: number;
-  xp_reward?: number;
-  is_free?: boolean;
-  order_index?: number;
-}
+type Module = BaseModule
+type Lesson = BaseLesson
 
 // Mock data
 const mockFormations = [
@@ -54,7 +49,7 @@ const mockFormations = [
     xp_reward: 500,
     is_premium: true,
     is_published: true,
-    order_index: 1,
+    sort_order: 1,
     created_at: "2024-01-15T10:00:00Z",
     updated_at: "2024-01-20T15:30:00Z",
     modules: [
@@ -63,13 +58,13 @@ const mockFormations = [
         formation_id: "1",
         title: "Fundamentos de la Consciencia",
         description: "Principios basicos de la consciencia",
-        order_index: 1,
+        sort_order: 1,
         is_published: true,
         created_at: "2024-01-15T10:00:00Z",
         updated_at: "2024-01-15T10:00:00Z",
         lessons: [
-          { id: "l1", module_id: "m1", title: "Que es la consciencia", description: "", video_url: "https://...", video_duration: 900, content_type: "video", order_index: 1, xp_reward: 25, is_free: true, is_published: true, created_at: "", updated_at: "", video_duration_seconds: 900, sort_order: 1, is_free_preview: true },
-          { id: "l2", module_id: "m1", title: "Niveles de consciencia", description: "", video_url: "https://...", video_duration: 1200, content_type: "video", order_index: 2, xp_reward: 30, is_free: false, is_published: true, created_at: "", updated_at: "", video_duration_seconds: 1200, sort_order: 2, is_free_preview: false },
+          { id: "l1", module_id: "m1", title: "Que es la consciencia", description: "", video_url: "https://...", duration_seconds: 900, content_type: "video", sort_order: 1, xp_reward: 25, is_free: true, is_published: true, created_at: "", updated_at: "" },
+          { id: "l2", module_id: "m1", title: "Niveles de consciencia", description: "", video_url: "https://...", duration_seconds: 1200, content_type: "video", sort_order: 2, xp_reward: 30, is_free: false, is_published: true, created_at: "", updated_at: "" },
         ],
       },
       {
@@ -77,12 +72,12 @@ const mockFormations = [
         formation_id: "1",
         title: "Practicas de Despertar",
         description: "Tecnicas y ejercicios",
-        order_index: 2,
+        sort_order: 2,
         is_published: false,
         created_at: "2024-01-16T10:00:00Z",
         updated_at: "2024-01-16T10:00:00Z",
         lessons: [
-          { id: "l3", module_id: "m2", title: "Meditacion guiada", description: "", video_url: undefined, video_duration: 0, content_type: "video", order_index: 1, xp_reward: 40, is_free: false, is_published: false, created_at: "", updated_at: "", video_duration_seconds: 0, sort_order: 1, is_free_preview: false },
+          { id: "l3", module_id: "m2", title: "Meditacion guiada", description: "", video_url: undefined, duration_seconds: 0, content_type: "video", sort_order: 1, xp_reward: 40, is_free: false, is_published: false, created_at: "", updated_at: "" },
         ],
       },
     ],
@@ -99,7 +94,7 @@ const mockFormations = [
     xp_reward: 400,
     is_premium: true,
     is_published: true,
-    order_index: 2,
+    sort_order: 2,
     created_at: "2024-02-01T10:00:00Z",
     updated_at: "2024-02-10T15:30:00Z",
     modules: [
@@ -108,7 +103,7 @@ const mockFormations = [
         formation_id: "2",
         title: "Reconocer las Emociones",
         description: "Identificar y nombrar emociones",
-        order_index: 1,
+        sort_order: 1,
         is_published: true,
         created_at: "2024-02-01T10:00:00Z",
         updated_at: "2024-02-01T10:00:00Z",
@@ -312,8 +307,8 @@ export default function ModulesPage() {
                                     )}
                                     {(lesson as any).content_type === "video" ? "Video" : "Texto"}
                                   </span>
-                                  {(lesson as any).video_duration > 0 && (
-                                    <span>{formatDuration((lesson as any).video_duration)}</span>
+                                  {lesson.duration_seconds > 0 && (
+                                    <span>{formatDuration(lesson.duration_seconds)}</span>
                                   )}
                                   <span>{(lesson as any).xp_reward} XP</span>
                                 </div>

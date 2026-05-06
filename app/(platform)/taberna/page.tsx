@@ -2,10 +2,11 @@ import { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getAuthUser, getUserProfile, getReflections } from "@/lib/data-access"
 import { ReflectionForm } from "./reflection-form"
+import { ResonanceButton } from "./resonance-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Heart, MessageCircle, Share2 } from "lucide-react"
+import { MessageCircle, Share2 } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "La Taberna | Ainara",
@@ -42,7 +43,7 @@ export default async function TabernaPage() {
   ])
 
   const currentUser = {
-    name:
+    full_name:
       user.user_metadata?.full_name || profile?.full_name || "Aventurero",
     avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url || "",
   }
@@ -149,10 +150,10 @@ export default async function TabernaPage() {
 
                         {/* Acciones base del muro de reflexiones */}
                         <div className="flex items-center gap-6 mt-4 pt-3 border-t border-border/30">
-                          <button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group/btn">
-                            <Heart className="w-4 h-4 fill-transparent group-hover/btn:fill-primary/20" />
-                            <span>Resonar</span>
-                          </button>
+                          <ResonanceButton
+                            reflectionId={reflection.id}
+                            initialCount={(reflection as any).likes_count || 0}
+                          />
                           <button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
                             <MessageCircle className="w-4 h-4" />
                             <span>Debatir</span>

@@ -50,7 +50,7 @@ interface Formation {
   slug: string
   description: string | null
   difficulty: string
-  duration_hours: number
+  duration_minutes: number
   is_published: boolean
   is_premium: boolean
   created_at: string
@@ -71,11 +71,13 @@ function getLevelBadge(level: string) {
   }
 }
 
-function formatDuration(hours: number): string {
-  if (hours >= 1) {
-    return `${hours}h`
+function formatDuration(minutes: number): string {
+  if (minutes >= 60) {
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    return m > 0 ? `${h}h ${m}m` : `${h}h`
   }
-  return `${Math.round(hours * 60)}m`
+  return `${minutes}m`
 }
 
 export default function FormationsClientPage({ initialData }: { initialData: Formation[] }) {
@@ -256,7 +258,7 @@ export default function FormationsClientPage({ initialData }: { initialData: For
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        {formatDuration(formation.duration_hours || 0)}
+                        {formatDuration(formation.duration_minutes || 0)}
                       </div>
                     </div>
                   </div>

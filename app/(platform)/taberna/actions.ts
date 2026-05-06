@@ -32,3 +32,27 @@ export async function createReflection(formData: FormData) {
   revalidatePath("/taberna")
   return { success: true }
 }
+
+export async function resonarReflection(reflectionId: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { error: "Debes iniciar sesión para resonar." }
+  }
+
+  // Read current count then increment (atomic enough for a small platform)
+  const { data: current } = await supabase
+    .from("reflections")
+    .select("likes_count")
+    .eq("id", reflectionId)
+    .single()
+
+  const { error } = await supabase
+    .from("reflections")
+    .update({ likes_count: (current?.likes_count || 0) + 1 })
+    .eq("id", reflectionId)
+
+  if (error) return { error: error.message }
+  return { success: true }
+}

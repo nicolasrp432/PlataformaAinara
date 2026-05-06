@@ -243,7 +243,7 @@ export const getLibraryFormations = cache(
       const isEnrolled = !!enrollment
 
       const completed = isEnrolled
-        ? lessonIds.filter((id) => completedLessonIds.includes(id)).length
+        ? lessonIds.filter((id: string) => completedLessonIds.includes(id)).length
         : 0
       const progress =
         isEnrolled && lessonsCount > 0
@@ -401,7 +401,7 @@ export const getLessonPageData = cache(
         modules (
           id, title, sort_order,
           lessons (
-            id, title, description, duration_seconds, video_url, is_free, sort_order
+            id, title, description, duration_seconds, video_url, is_free, sort_order, xp_reward
           )
         )
       `)
@@ -507,7 +507,7 @@ export const getLessonPageData = cache(
         description: currentLesson.description,
         videoUrl: currentLesson.video_url,
         durationSeconds: currentLesson.duration_seconds,
-        xpReward: 50,
+        xpReward: currentLesson.xp_reward ?? 50,
         isCompleted: completedLessons.includes(currentLesson.id),
         watchedSeconds: currentProgress?.watched_seconds || 0,
       },
@@ -575,6 +575,54 @@ export const getQuestData = cache(async (userId: string) => {
     hasCompletedLesson: (lessonsCount || 0) > 0,
   }
 })
+
+// ─── Enrollment & Progress Point Queries ───────────────────────────────
+
+export const getEnrollmentStatus = cache(
+  async (userId: string, formationId: string) => {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from("enrollments")
+      .select("id, status, enrolled_at, completed_at, progress_percent")
+      .eq("user_id", userId)
+      .eq("formation_id", formationId)
+      .single()
+
+    if (error && error.code !== "PGRST116") return null
+    if (!data) return null
+
+    return {
+      isEnrolled: true,
+      status: data.status as "active" | "completed" | "cancelled",
+      progressPercent: data.progress_percent ?? 0,
+      enrolledAt: data.enrolled_at,
+      completedAt: data.completed_at,
+    }
+  }
+)
+
+export const getUserWatchedLesson = cache(
+  async (userId: string, lessonId: string) => {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from("user_progress")
+      .select("watched_seconds, last_position_seconds, is_completed, status, completed_at")
+      .eq("user_id", userId)
+      .eq("lesson_id", lessonId)
+      .single()
+
+    if (error && error.code !== "PGRST116") return null
+    if (!data) return null
+
+    return {
+      watchedSeconds: data.watched_seconds ?? 0,
+      lastPositionSeconds: data.last_position_seconds ?? 0,
+      isCompleted: data.is_completed ?? false,
+      status: data.status as "in_progress" | "completed" | null,
+      completedAt: data.completed_at,
+    }
+  }
+)
 
 // ─── Helpers ───────────────────────────────────────────────────────────
 

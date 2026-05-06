@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, CheckCircle2 } from "lucide-react"
+import { Loader2, CheckCircle2, Upload } from "lucide-react"
 import { updateProfile } from "./actions"
 
 interface ProfileFormProps {
@@ -22,6 +22,8 @@ interface ProfileFormProps {
 export function ProfileForm({ initialData }: ProfileFormProps) {
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -71,16 +73,42 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="avatar_url" className="text-sm font-medium">
-                URL del Avatar (Opcional)
-              </Label>
-              <Input 
-                id="avatar_url" 
-                name="avatar_url" 
-                defaultValue={initialData.avatar_url || ""} 
-                placeholder="https://ejemplo.com/mifoto.jpg" 
-                className="bg-background/50 border-border/50 focus:border-primary/50"
+              <Label className="text-sm font-medium">Avatar</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                name="avatar_file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => setAvatarFileName(e.target.files?.[0]?.name || null)}
               />
+              <div className="flex gap-2">
+                <Input
+                  id="avatar_url"
+                  name="avatar_url"
+                  defaultValue={initialData.avatar_url || ""}
+                  placeholder="https://ejemplo.com/mifoto.jpg"
+                  className="bg-background/50 border-border/50 focus:border-primary/50 flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  Subir
+                </Button>
+              </div>
+              {avatarFileName && (
+                <p className="text-xs text-primary">
+                  Archivo seleccionado: {avatarFileName}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Sube una imagen o pega una URL. JPG, PNG o WebP.
+              </p>
             </div>
 
             {/* Carta Natal Fields */}

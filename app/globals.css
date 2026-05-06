@@ -11,7 +11,7 @@
 
   /* —— GOLD PRIMARY (Action CTA) —— */
   --color-primary: #F6D25C;
-  a --color-primary-foreground: #171717;
+  --color-primary-foreground: #171717;
 
   /* —— RICH AMBER ACCENT (Hover / Active emphasis) —— */
   --color-accent: #E8C544;

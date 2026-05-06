@@ -17,6 +17,7 @@ import {
   Send,
   Paperclip
 } from "lucide-react"
+import { VideoPlayer } from "@/components/video/video-player"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,9 +26,10 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { addLessonComment } from "./actions"
+import { addLessonComment, markLessonCompleted } from "./actions"
 import { useTransition } from "react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface LessonViewerProps {
   data: {
@@ -137,9 +139,13 @@ export function LessonViewer({ data }: LessonViewerProps) {
   const handleMarkComplete = async () => {
     setIsSaving(true)
     await saveProgress(lesson.durationSeconds || 0, true)
+    const result = await markLessonCompleted(lesson.id, formation.slug)
     setIsSaving(false)
-    
-    // If there's a next lesson, navigate to it
+    if (result && !result.error && !result.alreadyCompleted) {
+      toast.success(`¡Lección completada! +${result.xpEarned} XP`, {
+        description: result.leveledUp ? "¡Subiste de nivel! 🎉" : undefined,
+      })
+    }
     if (nextLesson) {
       router.push(`/learn/${formation.slug}/${nextLesson.id}`)
     }
@@ -149,7 +155,7 @@ export function LessonViewer({ data }: LessonViewerProps) {
     <div className="min-h-screen bg-background">
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center justify-between h-14 px-4 pl-14 md:pl-4">
           <div className="flex items-center gap-4">
             <Link href={`/formations/${formation.slug}`}>
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -196,26 +202,14 @@ export function LessonViewer({ data }: LessonViewerProps) {
             <div className="max-w-5xl mx-auto">
               <div className="aspect-video flex items-center justify-center">
                 {lesson.videoUrl ? (
-                  <video
+                  <VideoPlayer
                     src={lesson.videoUrl}
-                    controls
+                    title={lesson.title}
+                    lessonId={lesson.id}
+                    initialProgress={lesson.watchedSeconds}
+                    onProgress={(currentTime) => saveProgress(Math.floor(currentTime))}
+                    onComplete={() => { if (!lessonCompleted) saveProgress(lesson.durationSeconds || 0, true) }}
                     className="w-full h-full"
-                    onTimeUpdate={(e) => {
-                      const video = e.currentTarget
-                      // Save progress every 30 seconds
-                      if (Math.floor(video.currentTime) % 30 === 0 && video.currentTime > 0) {
-                        saveProgress(Math.floor(video.currentTime))
-                      }
-                      // Auto-complete at 90%
-                      if (!lessonCompleted && video.duration && video.currentTime / video.duration >= 0.9) {
-                        saveProgress(Math.floor(video.currentTime), true)
-                      }
-                    }}
-                    onEnded={() => {
-                      if (!lessonCompleted) {
-                        saveProgress(lesson.durationSeconds || 0, true)
-                      }
-                    }}
                   />
                 ) : (
                   <div className="text-center text-white/60">

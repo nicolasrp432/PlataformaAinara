@@ -37,7 +37,7 @@ import { getInitials, progressToNextLevel } from "@/lib/utils"
 
 interface SidebarUser {
   id: string
-  name: string
+  full_name: string
   email: string
   avatarUrl?: string | null
   role: string
@@ -284,15 +284,15 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                 aria-label="Menú de usuario"
               >
                 <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/20">
-                  <AvatarImage src={user.avatarUrl || undefined} alt={user.name} />
+                  <AvatarImage src={user.avatarUrl || undefined} alt={user.full_name} />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                    {getInitials(user.name)}
+                    {getInitials(user.full_name)}
                   </AvatarFallback>
                 </Avatar>
                 {!isCollapsed && (
                   <div className="flex min-w-0 flex-col text-left">
                     <span className="truncate text-sm font-semibold text-foreground leading-tight">
-                      {user.name}
+                      {user.full_name}
                     </span>
                     <span className="truncate text-xs text-muted-foreground leading-tight">
                       {user.email}

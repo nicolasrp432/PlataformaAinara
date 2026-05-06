@@ -2,79 +2,48 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { 
-  ArrowLeft, 
-  Save, 
-  Eye, 
-  Trash2, 
-  Upload, 
-  Video, 
-  FileText, 
-  Clock, 
+import {
+  ArrowLeft,
+  Save,
+  Eye,
+  Trash2,
+  Video,
+  FileText,
+  Clock,
   Star,
   Play,
-  CheckCircle2,
-  AlertCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
+import { VideoUploader } from "@/components/admin/video-uploader"
 import type { Lesson as BaseLesson } from "@/types"
 
-type Lesson = BaseLesson & {
-  video_duration?: number;
-  xp_reward?: number;
-  is_free?: boolean;
-  order_index?: number;
-}
-
-// Mock data
-const mockLesson = {
-  id: "l1",
-  module_id: "m1",
-  title: "Que es la consciencia",
-  description: "Una introduccion al concepto de consciencia desde diferentes perspectivas filosoficas, cientificas y espirituales. Exploraremos las distintas definiciones y como cada una aporta una vision unica.",
-  video_url: "https://customer-xxx.cloudflarestream.com/video-id/manifest/video.m3u8",
-  video_duration: 900,
-  content_type: "video",
-  order_index: 1,
-  xp_reward: 25,
-  is_free: true,
-  is_published: true,
-  created_at: "2024-01-15T10:00:00Z",
-  updated_at: "2024-01-15T10:00:00Z",
-  module_title: "Fundamentos de la Consciencia",
-  formation_title: "Despertar de la Consciencia",
-  formation_id: "1",
-} as unknown as Lesson & { module_title: string; formation_title: string; formation_id: string }
-
-interface VideoUploadState {
-  status: "idle" | "uploading" | "processing" | "ready" | "error"
-  progress: number
-  error?: string
+type LessonWithContext = BaseLesson & {
+  xp_reward?: number
+  sort_order?: number
+  module_title: string
+  formation_title: string
+  formation_id: string
 }
 
 export default function LessonEditorPage() {
   const params = useParams()
   const router = useRouter()
-  const isNew = params?.id === "new"
-  
-  const [lesson, setLesson] = useState<typeof mockLesson | null>(null)
+  const lessonId = params?.id as string
+  const isNew = lessonId === "new"
+
+  const [lesson, setLesson] = useState<LessonWithContext | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("details")
-  const [videoUpload, setVideoUpload] = useState<VideoUploadState>({
-    status: "idle",
-    progress: 0,
-  })
 
   useEffect(() => {
     if (isNew) {
@@ -83,10 +52,10 @@ export default function LessonEditorPage() {
         module_id: "",
         title: "",
         description: "",
-        video_url: undefined,
-        video_duration: 0,
+        video_url: null,
+        duration_seconds: 0,
         content_type: "video",
-        order_index: 0,
+        sort_order: 0,
         xp_reward: 25,
         is_free: false,
         is_published: false,
@@ -95,50 +64,56 @@ export default function LessonEditorPage() {
         module_title: "",
         formation_title: "",
         formation_id: "",
-      } as unknown as typeof mockLesson)
+      } as LessonWithContext)
       setLoading(false)
-    } else {
-      setTimeout(() => {
-        setLesson(mockLesson)
-        setLoading(false)
-      }, 500)
+      return
     }
-  }, [isNew, params?.id])
+
+    fetch(`/api/admin/lessons/${lessonId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Leccion no encontrada")
+        return res.json()
+      })
+      .then((data) => {
+        setLesson(data)
+        setLoading(false)
+      })
+      .catch(() => {
+        setLoading(false)
+      })
+  }, [lessonId, isNew])
 
   const handleSave = async () => {
+    if (!lesson || isNew) return
     setSaving(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setSaving(false)
-  }
+    setSaveError(null)
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setVideoUpload({ status: "uploading", progress: 0 })
-
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setVideoUpload((prev) => {
-        if (prev.progress >= 100) {
-          clearInterval(interval)
-          return { status: "processing", progress: 100 }
-        }
-        return { ...prev, progress: prev.progress + 10 }
+    try {
+      const res = await fetch(`/api/admin/lessons/${lessonId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: lesson.title,
+          description: lesson.description,
+          video_url: lesson.video_url,
+          duration_seconds: lesson.duration_seconds,
+          xp_reward: lesson.xp_reward,
+          is_free: lesson.is_free,
+          is_published: lesson.is_published,
+          content_type: lesson.content_type,
+          sort_order: lesson.sort_order,
+        }),
       })
-    }, 500)
 
-    // Simulate processing
-    setTimeout(() => {
-      setVideoUpload({ status: "ready", progress: 100 })
-      if (lesson) {
-        setLesson({
-          ...lesson,
-          video_url: "https://customer-xxx.cloudflarestream.com/new-video/manifest/video.m3u8",
-          video_duration: 600,
-        })
+      if (!res.ok) {
+        const data = await res.json()
+        setSaveError(data.error || "Error al guardar")
       }
-    }, 7000)
+    } catch {
+      setSaveError("Error de conexión al guardar")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const formatDuration = (seconds: number) => {
@@ -160,7 +135,7 @@ export default function LessonEditorPage() {
   }
 
   if (!lesson) {
-    return <div>Leccion no encontrada</div>
+    return <div className="p-8 text-muted-foreground">Leccion no encontrada</div>
   }
 
   return (
@@ -174,27 +149,35 @@ export default function LessonEditorPage() {
           <div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <span>{lesson.formation_title}</span>
-              <span>/</span>
+              {lesson.formation_title && <span>/</span>}
               <span>{lesson.module_title}</span>
             </div>
             <h1 className="text-2xl font-bold text-foreground">
-              {isNew ? "Nueva Leccion" : lesson.title}
+              {isNew ? "Nueva Leccion" : lesson.title || "Sin título"}
             </h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {!isNew && lesson.video_url && (
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-2" />
-              Vista Previa
+            <Button variant="outline" size="sm" asChild>
+              <a href={`/learn/${lesson.formation_id}/${lessonId}`} target="_blank" rel="noopener noreferrer">
+                <Eye className="h-4 w-4 mr-2" />
+                Vista Previa
+              </a>
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || isNew}>
             <Save className="h-4 w-4 mr-2" />
             {saving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       </div>
+
+      {saveError && (
+        <div className="px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+          {saveError}
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -210,9 +193,7 @@ export default function LessonEditorPage() {
           <Card>
             <CardHeader>
               <CardTitle>Informacion de la Leccion</CardTitle>
-              <CardDescription>
-                Configura el titulo y descripcion de esta leccion
-              </CardDescription>
+              <CardDescription>Configura el titulo y descripcion de esta leccion</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -242,7 +223,7 @@ export default function LessonEditorPage() {
                   <Select
                     value={lesson.content_type}
                     onValueChange={(value) =>
-                      setLesson({ ...lesson, content_type: value as Lesson["content_type"] })
+                      setLesson({ ...lesson, content_type: value as BaseLesson["content_type"] })
                     }
                   >
                     <SelectTrigger>
@@ -276,7 +257,7 @@ export default function LessonEditorPage() {
                   <Input
                     id="xp"
                     type="number"
-                    value={lesson.xp_reward}
+                    value={lesson.xp_reward ?? 25}
                     onChange={(e) =>
                       setLesson({ ...lesson, xp_reward: parseInt(e.target.value) || 0 })
                     }
@@ -293,136 +274,23 @@ export default function LessonEditorPage() {
             <CardHeader>
               <CardTitle>Video de la Leccion</CardTitle>
               <CardDescription>
-                Sube el video para esta leccion. Formatos soportados: MP4, MOV, WebM
+                Sube el video directamente a Cloudflare Stream. MP4, MOV o WebM hasta 5GB.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {lesson.video_url && videoUpload.status !== "uploading" && videoUpload.status !== "processing" ? (
-                <div className="space-y-4">
-                  {/* Video Preview */}
-                  <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-white">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
-                          <Play className="h-8 w-8" />
-                        </div>
-                        <p className="text-sm opacity-80">Video cargado correctamente</p>
-                        <p className="text-xs opacity-60 mt-1">
-                          Duracion: {formatDuration(lesson.video_duration || 0)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Video Info */}
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Video listo</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDuration(lesson.video_duration || 0)} de duracion
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Previsualizar
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Reemplazar
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Upload Area */}
-                  {videoUpload.status === "idle" && (
-                    <label className="block border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={handleVideoUpload}
-                        className="hidden"
-                      />
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                        <Upload className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                      <h3 className="text-lg font-medium mb-2">Subir Video</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Arrastra tu video aqui o haz click para seleccionar
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        MP4, MOV o WebM hasta 5GB
-                      </p>
-                    </label>
-                  )}
-
-                  {/* Uploading State */}
-                  {videoUpload.status === "uploading" && (
-                    <div className="border rounded-lg p-8">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 rounded-lg bg-primary/10">
-                          <Upload className="h-6 w-6 text-primary animate-pulse" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">Subiendo video...</p>
-                          <p className="text-sm text-muted-foreground">
-                            Por favor no cierres esta ventana
-                          </p>
-                        </div>
-                        <span className="text-lg font-semibold">{videoUpload.progress}%</span>
-                      </div>
-                      <Progress value={videoUpload.progress} className="h-2" />
-                    </div>
-                  )}
-
-                  {/* Processing State */}
-                  {videoUpload.status === "processing" && (
-                    <div className="border rounded-lg p-8">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-secondary/10">
-                          <Video className="h-6 w-6 text-secondary animate-pulse" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">Procesando video...</p>
-                          <p className="text-sm text-muted-foreground">
-                            Generando versiones optimizadas para diferentes dispositivos
-                          </p>
-                        </div>
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error State */}
-                  {videoUpload.status === "error" && (
-                    <div className="border border-destructive rounded-lg p-8">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-destructive/10">
-                          <AlertCircle className="h-6 w-6 text-destructive" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-destructive">Error al subir</p>
-                          <p className="text-sm text-muted-foreground">
-                            {videoUpload.error || "Ha ocurrido un error. Por favor intenta de nuevo."}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={() => setVideoUpload({ status: "idle", progress: 0 })}
-                        >
-                          Reintentar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              <VideoUploader
+                lessonId={lesson.id || undefined}
+                currentVideoUrl={lesson.video_url || null}
+                currentDuration={lesson.duration_seconds || undefined}
+                onUploadComplete={(data) => {
+                  setLesson({
+                    ...lesson,
+                    video_url: data.videoUrl,
+                    duration_seconds: Math.round(data.duration),
+                  })
+                }}
+                onUploadError={(err) => setSaveError(`Error de video: ${err.message}`)}
+              />
             </CardContent>
           </Card>
 
@@ -434,17 +302,20 @@ export default function LessonEditorPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Duracion Manual (segundos)</Label>
+                  <Label>
+                    <Clock className="h-4 w-4 inline mr-1" />
+                    Duracion (segundos)
+                  </Label>
                   <Input
                     type="number"
-                    value={lesson.video_duration || 0}
+                    value={lesson.duration_seconds || 0}
                     onChange={(e) =>
-                      setLesson({ ...lesson, video_duration: parseInt(e.target.value) || 0 })
+                      setLesson({ ...lesson, duration_seconds: parseInt(e.target.value) || 0 })
                     }
                     placeholder="Se detecta automaticamente"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Normalmente se detecta automaticamente al subir el video
+                    {lesson.duration_seconds ? formatDuration(lesson.duration_seconds) : "No configurada"}
                   </p>
                 </div>
 
@@ -452,7 +323,7 @@ export default function LessonEditorPage() {
                   <Label>URL del Video (avanzado)</Label>
                   <Input
                     value={lesson.video_url || ""}
-                    onChange={(e) => setLesson({ ...lesson, video_url: e.target.value })}
+                    onChange={(e) => setLesson({ ...lesson, video_url: e.target.value || null })}
                     placeholder="https://..."
                   />
                   <p className="text-xs text-muted-foreground">
@@ -470,7 +341,7 @@ export default function LessonEditorPage() {
             <CardHeader>
               <CardTitle>Materiales Complementarios</CardTitle>
               <CardDescription>
-                Agrega archivos descargables, enlaces o recursos adicionales para esta leccion
+                Agrega archivos descargables, enlaces o recursos adicionales
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -479,29 +350,10 @@ export default function LessonEditorPage() {
                   <FileText className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <h3 className="font-medium mb-2">No hay recursos todavia</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Agrega PDFs, hojas de trabajo o enlaces utiles
+                <p className="text-sm text-muted-foreground">
+                  Disponible en una proxima version
                 </p>
-                <Button variant="outline">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Subir Recurso
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Contenido de Texto</CardTitle>
-              <CardDescription>
-                Agrega notas, transcripcion o contenido escrito complementario
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Escribe contenido adicional aqui... Puedes usar Markdown para formato."
-                rows={10}
-              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -517,7 +369,7 @@ export default function LessonEditorPage() {
                 <div>
                   <Label htmlFor="free">Leccion Gratuita</Label>
                   <p className="text-sm text-muted-foreground">
-                    Permite acceso sin suscripcion (preview del contenido)
+                    Permite acceso sin inscripcion (preview del contenido)
                   </p>
                 </div>
                 <Switch
@@ -547,7 +399,7 @@ export default function LessonEditorPage() {
             <CardHeader>
               <CardTitle>Recompensas</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Star className="h-5 w-5 text-primary" />
@@ -560,7 +412,7 @@ export default function LessonEditorPage() {
                 </div>
                 <Input
                   type="number"
-                  value={lesson.xp_reward}
+                  value={lesson.xp_reward ?? 25}
                   onChange={(e) =>
                     setLesson({ ...lesson, xp_reward: parseInt(e.target.value) || 0 })
                   }
@@ -570,17 +422,22 @@ export default function LessonEditorPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button variant="destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Eliminar Leccion
-              </Button>
-            </CardContent>
-          </Card>
+          {!isNew && (
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button variant="destructive" disabled>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar Leccion
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Disponible pronto. Por ahora usa Supabase directamente.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

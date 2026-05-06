@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Flame, Star } from "lucide-react"
+import { getSunSign } from "@/lib/utils/astrology"
 
 export const metadata: Metadata = {
   title: "Mi Perfil | Ainara",
@@ -24,7 +25,7 @@ export default async function ProfilePage() {
 
   const userData = {
     id: user.id,
-    name: user.user_metadata?.full_name || profile?.full_name || "Usuario",
+    full_name: user.user_metadata?.full_name || profile?.full_name || "Usuario",
     email: user.email || "",
     avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url || "",
     role: profile?.role || "student",
@@ -36,51 +37,9 @@ export default async function ProfilePage() {
     birth_city: profile?.birth_city || null,
   }
 
-  // Astrological simple logic for frontend display (similar to what we use on form generation)
-  let sunSign = ""
-  let signSymbol = ""
-  if (userData.birth_date) {
-    const month = parseInt(userData.birth_date.split("-")[1] || "1", 10)
-    const day = parseInt(userData.birth_date.split("-")[2] || "1", 10)
-
-    if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) {
-      sunSign = "Aries"
-      signSymbol = "♈"
-    } else if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) {
-      sunSign = "Tauro"
-      signSymbol = "♉"
-    } else if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) {
-      sunSign = "Géminis"
-      signSymbol = "♊"
-    } else if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) {
-      sunSign = "Cáncer"
-      signSymbol = "♋"
-    } else if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) {
-      sunSign = "Leo"
-      signSymbol = "♌"
-    } else if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) {
-      sunSign = "Virgo"
-      signSymbol = "♍"
-    } else if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) {
-      sunSign = "Libra"
-      signSymbol = "♎"
-    } else if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) {
-      sunSign = "Escorpio"
-      signSymbol = "♏"
-    } else if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) {
-      sunSign = "Sagitario"
-      signSymbol = "♐"
-    } else if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) {
-      sunSign = "Capricornio"
-      signSymbol = "♑"
-    } else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) {
-      sunSign = "Acuario"
-      signSymbol = "♒"
-    } else if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) {
-      sunSign = "Piscis"
-      signSymbol = "♓"
-    }
-  }
+  const astro = userData.birth_date ? getSunSign(userData.birth_date) : null
+  const sunSign = astro?.sign || ""
+  const signSymbol = astro?.symbol || ""
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10 relative">
@@ -110,14 +69,14 @@ export default async function ProfilePage() {
                     className="object-cover"
                   />
                   <AvatarFallback className="text-3xl bg-primary/10 text-primary font-bold">
-                    {userData.name.charAt(0).toUpperCase()}
+                    {userData.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </div>
 
               <div className="space-y-1.5 mb-6">
                 <h2 className="text-xl font-bold text-foreground tracking-tight">
-                  {userData.name}
+                  {userData.full_name}
                 </h2>
                 <p className="text-sm text-muted-foreground font-medium">
                   {userData.email}
@@ -233,7 +192,7 @@ export default async function ProfilePage() {
           <ProfileForm
             initialData={{
               id: userData.id,
-              full_name: userData.name,
+              full_name: userData.full_name,
               avatar_url: userData.avatarUrl,
               birth_date: userData.birth_date,
               birth_time: userData.birth_time,

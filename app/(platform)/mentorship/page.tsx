@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 // Simulamos los datos de Ainara por si la base de datos de mentores aún está vacía
 const defaultMentor = {
   id: "ainara-default",
-  name: "Ainara",
+  full_name: "Ainara",
   title: "Fundadora & Mentora Principal",
   bio: "Guía estratégica para líderes disruptivos. Te ayudo a desbloquear tu máximo potencial, conectar con tu propósito y escalar tu visión con claridad y enfoque láser.",
   avatar_url: "",
@@ -83,7 +83,7 @@ export default async function MentorshipPage() {
                     className="object-cover"
                   />
                   <AvatarFallback className="text-4xl bg-primary text-primary-foreground font-bold">
-                    {mentor.name.charAt(0).toUpperCase()}
+                    {mentor.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="mb-2">
@@ -96,7 +96,7 @@ export default async function MentorshipPage() {
               <div className="space-y-4">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
-                    {mentor.name}
+                    {mentor.full_name}
                   </h2>
                   <p className="text-sm font-medium text-primary mt-1 uppercase tracking-wider">
                     {mentor.title || "Mentor Experto"}

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 // Performance: subset + display swap to avoid FOIT
@@ -78,6 +79,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {children}
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
   )

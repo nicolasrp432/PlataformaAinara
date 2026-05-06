@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -78,6 +79,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
     formation.modules.slice(0, 2).map((m) => m.id)
   )
   const [isEnrolling, setIsEnrolling] = useState(false)
+  const [isEnrolledOptimistic, setIsEnrolledOptimistic] = useState(formation.isEnrolled)
 
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "0 min"
@@ -117,20 +119,27 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
       router.push("/login?redirect=" + encodeURIComponent(`/formations/${formation.slug}`))
       return
     }
-    
+
     setIsEnrolling(true)
+    setIsEnrolledOptimistic(true)
     try {
       const res = await fetch("/api/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formationId: formation.id }),
+        body: JSON.stringify({ formationId: formation.id, slug: formation.slug }),
       })
-      
+
       if (res.ok) {
+        toast.success("¡Inscripción exitosa!", { description: "Ya puedes empezar la formación." })
         router.refresh()
+      } else {
+        setIsEnrolledOptimistic(false)
+        toast.error("No se pudo inscribir. Inténtalo de nuevo.")
       }
     } catch (error) {
       console.error("Error enrolling:", error)
+      setIsEnrolledOptimistic(false)
+      toast.error("Error de conexión. Inténtalo de nuevo.")
     } finally {
       setIsEnrolling(false)
     }
@@ -202,7 +211,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
           </div>
 
           {/* Progress (if enrolled) */}
-          {formation.isEnrolled && (
+          {isEnrolledOptimistic && (
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
@@ -260,7 +269,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                 </div>
               </div>
 
-              {formation.isEnrolled ? (
+              {isEnrolledOptimistic ? (
                 <>
                   <div className="text-center py-2">
                     <p className="text-sm text-muted-foreground mb-1">Tu progreso</p>
@@ -378,7 +387,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                             </CardTitle>
                             <p className="text-sm text-muted-foreground mt-1">
                               {module.lessons.length} lecciones
-                              {formation.isEnrolled && (
+                              {isEnrolledOptimistic && (
                                 <span className="ml-2">
                                   · {moduleCompletedLessons}/{module.lessons.length} completadas
                                 </span>
@@ -395,7 +404,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                       <div className="space-y-1 border-t border-border/50 pt-4">
                         {module.lessons.map((lesson, lessonIndex) => {
                           const isCompleted = formation.completedLessons.includes(lesson.id)
-                          const canAccess = formation.isEnrolled || lesson.is_free
+                          const canAccess = isEnrolledOptimistic || lesson.is_free
                           
                           return (
                             <Link

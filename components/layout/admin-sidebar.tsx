@@ -37,7 +37,7 @@ import { getInitials } from "@/lib/utils"
 
 interface AdminSidebarUser {
   id: string
-  name: string
+  full_name: string
   email: string
   avatarUrl?: string | null
   role: string
@@ -242,13 +242,13 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.avatarUrl || undefined} />
                   <AvatarFallback>
-                    {getInitials(user.name)}
+                    {getInitials(user.full_name)}
                   </AvatarFallback>
                 </Avatar>
                 {!isCollapsed && (
                   <div className="flex flex-col items-start text-left">
                     <span className="text-sm font-medium">
-                      {user.name}
+                      {user.full_name}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       Administrador
