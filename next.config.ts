@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     // Aggressive caching: 30 days for optimized images
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
+      // Cloudflare Stream / Images
       {
         protocol: "https",
         hostname: "**.cloudflare.com",
@@ -19,6 +20,29 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "customer-*.cloudflarestream.com",
+      },
+      // Supabase Storage
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.in",
+      },
+      // YouTube thumbnails (used for lesson thumbnails)
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+      },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+      },
+      // Vimeo thumbnails
+      {
+        protocol: "https",
+        hostname: "i.vimeocdn.com",
       },
     ],
   },
@@ -51,7 +75,7 @@ const nextConfig: NextConfig = {
 
   // ── Compiler options ──────────────────────────────────────
   compiler: {
-    // Remove console.log in production
+    // Remove console.log in production (keep errors and warnings)
     removeConsole: process.env.NODE_ENV === "production"
       ? { exclude: ["error", "warn"] }
       : false,
@@ -63,7 +87,6 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          // Prevent layout shifts from font loading
           {
             key: "Link",
             value: "<https://fonts.googleapis.com>; rel=preconnect",

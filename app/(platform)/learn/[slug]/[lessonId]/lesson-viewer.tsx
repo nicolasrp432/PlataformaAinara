@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { 
@@ -87,6 +87,7 @@ export function LessonViewer({ data }: LessonViewerProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [isPending, startTransition] = useTransition()
+  const progressDebounceRef = useRef<NodeJS.Timeout | null>(null)
   
   const { lesson, module, formation, curriculum, previousLesson, nextLesson, completedCount, totalCount } = data
   const progressPercent = Math.round((completedCount / totalCount) * 100)
@@ -117,22 +118,28 @@ export function LessonViewer({ data }: LessonViewerProps) {
   }
 
   const saveProgress = useCallback(async (watchedSeconds: number, completed: boolean = false) => {
-    try {
-      await fetch("/api/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lessonId: lesson.id,
-          watchedSeconds,
-          isCompleted: completed,
-        }),
-      })
-      
-      if (completed && !lessonCompleted) {
-        setLessonCompleted(true)
+    const doFetch = async () => {
+      try {
+        await fetch("/api/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lessonId: lesson.id, watchedSeconds, isCompleted: completed }),
+        })
+        if (completed && !lessonCompleted) setLessonCompleted(true)
+      } catch (err) {
+        console.error("Error saving progress:", err)
       }
-    } catch (error) {
-      console.error("Error saving progress:", error)
+    }
+
+    // Completion saves immediately; regular progress is debounced 2s to prevent
+    // concurrent requests when the video player fires onProgress at the same time
+    // as a manual completion action.
+    if (completed) {
+      if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current)
+      await doFetch()
+    } else {
+      if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current)
+      progressDebounceRef.current = setTimeout(doFetch, 2000)
     }
   }, [lesson.id, lessonCompleted])
 
@@ -145,6 +152,8 @@ export function LessonViewer({ data }: LessonViewerProps) {
       toast.success(`¡Lección completada! +${result.xpEarned} XP`, {
         description: result.leveledUp ? "¡Subiste de nivel! 🎉" : undefined,
       })
+      // Refresca el Server Component del layout para actualizar XP/nivel en el sidebar
+      router.refresh()
     }
     if (nextLesson) {
       router.push(`/learn/${formation.slug}/${nextLesson.id}`)

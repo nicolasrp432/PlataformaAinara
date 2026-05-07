@@ -9,7 +9,11 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
   return user
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   const supabase = await createClient()
   if (!await requireAdmin(supabase)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -18,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const { data: lesson, error } = await supabase
     .from("lessons")
     .select(`*, modules ( id, title, formations ( id, title ) )`)
-    .eq("id", params.id)
+    .eq("id", id)
     .single()
 
   if (error || !lesson) {
@@ -36,7 +40,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   })
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   const supabase = await createClient()
   if (!await requireAdmin(supabase)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -52,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const { data, error } = await supabase
     .from("lessons")
     .update(updates)
-    .eq("id", params.id)
+    .eq("id", id)
     .select()
     .single()
 

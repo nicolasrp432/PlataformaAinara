@@ -1,17 +1,17 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { 
-  Play, 
-  Pause, 
-  Volume2, 
-  VolumeX, 
-  Maximize, 
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
   Minimize,
   Settings,
   SkipBack,
   SkipForward,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -23,26 +23,248 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
+// ─── YouTube IFrame API types ────────────────────────────────────────────────
+
+declare global {
+  interface Window {
+    YT: {
+      Player: new (
+        element: HTMLElement | string,
+        config: {
+          videoId: string
+          playerVars?: Record<string, unknown>
+          events?: {
+            onReady?: () => void
+            onStateChange?: (event: { data: number }) => void
+          }
+        }
+      ) => YTPlayerInstance
+      PlayerState: { ENDED: 0; PLAYING: 1; PAUSED: 2; BUFFERING: 3; CUED: 5 }
+    }
+    onYouTubeIframeAPIReady?: () => void
+    _ytApiPromise?: Promise<void>
+  }
+}
+
+interface YTPlayerInstance {
+  getCurrentTime: () => number
+  getDuration: () => number
+  getPlayerState: () => number
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void
+  destroy: () => void
+}
+
+// ─── Shared props ─────────────────────────────────────────────────────────────
+
 interface VideoPlayerProps {
   src: string
   poster?: string
   title?: string
   lessonId?: string
-  onProgress?: (progress: number, duration: number) => void
+  onProgress?: (currentTime: number, duration: number) => void
   onComplete?: () => void
   initialProgress?: number
   autoTrackProgress?: boolean
   className?: string
 }
 
-const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
-const COMPLETION_THRESHOLD = 0.9 // 90% watched = completed
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-export function VideoPlayer({
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const COMPLETION_THRESHOLD = 0.9
+const TRACK_INTERVAL_MS = 10_000
+
+// ─── URL detection ────────────────────────────────────────────────────────────
+
+type VideoType = "youtube" | "vimeo" | "native"
+
+function detectVideoType(src: string): VideoType {
+  if (!src) return "native"
+  const lower = src.toLowerCase()
+  if (lower.includes("youtube.com") || lower.includes("youtu.be")) return "youtube"
+  if (lower.includes("vimeo.com")) return "vimeo"
+  return "native" // covers Cloudflare Stream, MP4, WebM, HLS, etc.
+}
+
+function extractYouTubeId(url: string): string {
+  const patterns = [
+    /[?&]v=([^&]+)/,
+    /youtu\.be\/([^?#]+)/,
+    /youtube\.com\/embed\/([^?#]+)/,
+    /youtube\.com\/shorts\/([^?#]+)/,
+  ]
+  for (const re of patterns) {
+    const m = url.match(re)
+    if (m) return m[1]
+  }
+  return ""
+}
+
+function extractVimeoId(url: string): string {
+  const m = url.match(/vimeo\.com\/(\d+)/)
+  return m ? m[1] : ""
+}
+
+// ─── Load YouTube IFrame API (singleton) ─────────────────────────────────────
+
+function loadYouTubeAPI(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve()
+  if (window.YT?.Player) return Promise.resolve()
+  if (window._ytApiPromise) return window._ytApiPromise
+
+  window._ytApiPromise = new Promise<void>((resolve) => {
+    const prev = window.onYouTubeIframeAPIReady
+    window.onYouTubeIframeAPIReady = () => {
+      prev?.()
+      resolve()
+    }
+    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      const script = document.createElement("script")
+      script.src = "https://www.youtube.com/iframe_api"
+      document.head.appendChild(script)
+    }
+  })
+
+  return window._ytApiPromise
+}
+
+// ─── YouTube Player ───────────────────────────────────────────────────────────
+
+function YouTubePlayer({
+  src,
+  onProgress,
+  onComplete,
+  initialProgress = 0,
+  autoTrackProgress = true,
+  className,
+}: Omit<VideoPlayerProps, "poster" | "title" | "lessonId">) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const playerRef = useRef<YTPlayerInstance | null>(null)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const hasCompletedRef = useRef(false)
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  const videoId = extractYouTubeId(src)
+
+  // Stable callbacks via refs so we don't re-run the effect on every render
+  const onProgressRef = useRef(onProgress)
+  const onCompleteRef = useRef(onComplete)
+  useEffect(() => { onProgressRef.current = onProgress }, [onProgress])
+  useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
+
+  useEffect(() => {
+    if (!containerRef.current || !videoId) return
+    let destroyed = false
+
+    loadYouTubeAPI().then(() => {
+      if (destroyed || !containerRef.current) return
+
+      playerRef.current = new window.YT.Player(containerRef.current, {
+        videoId,
+        playerVars: {
+          start: Math.floor(initialProgress),
+          rel: 0,
+          modestbranding: 1,
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: () => {
+            if (!destroyed) setIsLoaded(true)
+          },
+          onStateChange: (event) => {
+            if (destroyed) return
+            // Video ended → trigger completion
+            if (event.data === 0 && !hasCompletedRef.current) {
+              hasCompletedRef.current = true
+              onCompleteRef.current?.()
+            }
+          },
+        },
+      })
+    })
+
+    return () => {
+      destroyed = true
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      playerRef.current?.destroy()
+      playerRef.current = null
+    }
+  }, [videoId, initialProgress])
+
+  // Progress tracking — starts only after player is ready
+  useEffect(() => {
+    if (!isLoaded || !autoTrackProgress) return
+
+    intervalRef.current = setInterval(() => {
+      const p = playerRef.current
+      if (!p || p.getPlayerState() !== 1) return // 1 = playing
+
+      const currentTime = p.getCurrentTime()
+      const duration = p.getDuration()
+      onProgressRef.current?.(currentTime, duration)
+
+      if (!hasCompletedRef.current && duration > 0 && currentTime / duration >= COMPLETION_THRESHOLD) {
+        hasCompletedRef.current = true
+        onCompleteRef.current?.()
+      }
+    }, TRACK_INTERVAL_MS)
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [isLoaded, autoTrackProgress])
+
+  return (
+    // aspect-video aquí porque YT.Player reemplaza containerRef con un <iframe>
+    // y ese iframe no hereda las clases CSS — sin aspect-video en el outer div
+    // el contenedor colapsa y queda área negra debajo del iframe.
+    // [&>iframe]:* fuerza al iframe generado por YT a llenar el contenedor.
+    <div className={cn(
+      "relative bg-black rounded-lg overflow-hidden aspect-video",
+      "[&>iframe]:absolute [&>iframe]:inset-0 [&>iframe]:w-full [&>iframe]:h-full",
+      className
+    )}>
+      {/* YT.Player reemplaza este div con un <iframe> */}
+      <div ref={containerRef} className="w-full h-full" />
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
+            <p className="text-white/60 text-sm">Cargando video...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Vimeo Player ─────────────────────────────────────────────────────────────
+
+function VimeoPlayer({
+  src,
+  className,
+}: Pick<VideoPlayerProps, "src" | "className">) {
+  const videoId = extractVimeoId(src)
+
+  return (
+    <div className={cn("relative bg-black rounded-lg overflow-hidden", className)}>
+      <iframe
+        src={`https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0`}
+        className="w-full aspect-video"
+        allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
+        allowFullScreen
+        title="Vimeo video player"
+      />
+    </div>
+  )
+}
+
+// ─── Native Video Player (Cloudflare Stream, MP4, WebM, HLS) ─────────────────
+
+function NativePlayer({
   src,
   poster,
   title,
-  lessonId,
   onProgress,
   onComplete,
   initialProgress = 0,
@@ -52,7 +274,7 @@ export function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<NodeJS.Timeout | null>(null)
-  
+
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -63,9 +285,8 @@ export function VideoPlayer({
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [isBuffering, setIsBuffering] = useState(false)
   const [hasCompleted, setHasCompleted] = useState(false)
-  const [controlsTimeout, setControlsTimeout] = useState<NodeJS.Timeout | null>(null)
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Format time as mm:ss or hh:mm:ss
   const formatTime = (seconds: number) => {
     if (isNaN(seconds)) return "0:00"
     const h = Math.floor(seconds / 3600)
@@ -77,82 +298,67 @@ export function VideoPlayer({
     return `${m}:${s.toString().padStart(2, "0")}`
   }
 
-  // Initialize video
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
-    const handleLoadedMetadata = () => {
+    const onLoaded = () => {
       setDuration(video.duration)
       if (initialProgress > 0 && initialProgress < video.duration) {
         video.currentTime = initialProgress
       }
     }
-
-    const handleTimeUpdate = () => {
+    const onTimeUpdate = () => {
       setCurrentTime(video.currentTime)
-      
-      // Check for completion
-      if (!hasCompleted && video.currentTime / video.duration >= COMPLETION_THRESHOLD) {
+      if (!hasCompleted && video.duration > 0 && video.currentTime / video.duration >= COMPLETION_THRESHOLD) {
         setHasCompleted(true)
         onComplete?.()
       }
     }
+    const onPlay = () => setIsPlaying(true)
+    const onPause = () => setIsPlaying(false)
+    const onWaiting = () => setIsBuffering(true)
+    const onCanPlay = () => setIsBuffering(false)
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
-    const handleWaiting = () => setIsBuffering(true)
-    const handleCanPlay = () => setIsBuffering(false)
-
-    video.addEventListener("loadedmetadata", handleLoadedMetadata)
-    video.addEventListener("timeupdate", handleTimeUpdate)
-    video.addEventListener("play", handlePlay)
-    video.addEventListener("pause", handlePause)
-    video.addEventListener("waiting", handleWaiting)
-    video.addEventListener("canplay", handleCanPlay)
+    video.addEventListener("loadedmetadata", onLoaded)
+    video.addEventListener("timeupdate", onTimeUpdate)
+    video.addEventListener("play", onPlay)
+    video.addEventListener("pause", onPause)
+    video.addEventListener("waiting", onWaiting)
+    video.addEventListener("canplay", onCanPlay)
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata)
-      video.removeEventListener("timeupdate", handleTimeUpdate)
-      video.removeEventListener("play", handlePlay)
-      video.removeEventListener("pause", handlePause)
-      video.removeEventListener("waiting", handleWaiting)
-      video.removeEventListener("canplay", handleCanPlay)
+      video.removeEventListener("loadedmetadata", onLoaded)
+      video.removeEventListener("timeupdate", onTimeUpdate)
+      video.removeEventListener("play", onPlay)
+      video.removeEventListener("pause", onPause)
+      video.removeEventListener("waiting", onWaiting)
+      video.removeEventListener("canplay", onCanPlay)
     }
   }, [initialProgress, hasCompleted, onComplete])
 
-  // Progress tracking interval
   useEffect(() => {
-    if (autoTrackProgress && isPlaying && lessonId) {
+    if (autoTrackProgress && isPlaying) {
       progressInterval.current = setInterval(() => {
         if (videoRef.current) {
           onProgress?.(videoRef.current.currentTime, videoRef.current.duration)
         }
-      }, 10000) // Save progress every 10 seconds
+      }, TRACK_INTERVAL_MS)
     }
-
     return () => {
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current)
-      }
+      if (progressInterval.current) clearInterval(progressInterval.current)
     }
-  }, [autoTrackProgress, isPlaying, lessonId, onProgress])
+  }, [autoTrackProgress, isPlaying, onProgress])
 
-  // Fullscreen change handler
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange)
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    const onFSChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener("fullscreenchange", onFSChange)
+    return () => document.removeEventListener("fullscreenchange", onFSChange)
   }, [])
 
-  // Keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if (!containerRef.current?.contains(document.activeElement)) return
-      
       switch (e.key) {
         case " ":
         case "k":
@@ -169,11 +375,11 @@ export function VideoPlayer({
           break
         case "ArrowUp":
           e.preventDefault()
-          setVolume(Math.min(1, volume + 0.1))
+          handleVolumeChange([Math.min(1, volume + 0.1)])
           break
         case "ArrowDown":
           e.preventDefault()
-          setVolume(Math.max(0, volume - 0.1))
+          handleVolumeChange([Math.max(0, volume - 0.1)])
           break
         case "m":
           e.preventDefault()
@@ -185,83 +391,64 @@ export function VideoPlayer({
           break
       }
     }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [volume]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [volume])
-
-  // Auto-hide controls
-  const hideControlsWithDelay = useCallback(() => {
-    if (controlsTimeout) clearTimeout(controlsTimeout)
-    const timeout = setTimeout(() => {
-      if (isPlaying) setShowControls(false)
-    }, 3000)
-    setControlsTimeout(timeout)
-  }, [controlsTimeout, isPlaying])
-
-  const handleMouseMove = useCallback(() => {
+  const showControlsTemporarily = useCallback(() => {
     setShowControls(true)
-    hideControlsWithDelay()
-  }, [hideControlsWithDelay])
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (videoRef.current && !videoRef.current.paused) setShowControls(false)
+    }, 3000)
+  }, [])
 
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
-      }
-    }
+    const v = videoRef.current
+    if (!v) return
+    v.paused ? v.play() : v.pause()
   }
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted
-      setIsMuted(!isMuted)
-    }
+    const v = videoRef.current
+    if (!v) return
+    v.muted = !isMuted
+    setIsMuted(!isMuted)
   }
 
   const toggleFullscreen = async () => {
     if (!containerRef.current) return
-    
-    if (isFullscreen) {
-      await document.exitFullscreen()
-    } else {
-      await containerRef.current.requestFullscreen()
-    }
+    if (isFullscreen) await document.exitFullscreen()
+    else await containerRef.current.requestFullscreen()
   }
 
   const skip = (seconds: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(
-        0,
-        Math.min(duration, videoRef.current.currentTime + seconds)
-      )
-    }
+    const v = videoRef.current
+    if (!v) return
+    v.currentTime = Math.max(0, Math.min(duration, v.currentTime + seconds))
   }
 
   const handleSeek = (value: number[]) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = value[0]
-      setCurrentTime(value[0])
-    }
+    const v = videoRef.current
+    if (!v) return
+    v.currentTime = value[0]
+    setCurrentTime(value[0])
   }
 
   const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0]
-    setVolume(newVolume)
-    setIsMuted(newVolume === 0)
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume
-      videoRef.current.muted = newVolume === 0
-    }
+    const newVol = value[0]
+    setVolume(newVol)
+    setIsMuted(newVol === 0)
+    const v = videoRef.current
+    if (!v) return
+    v.volume = newVol
+    v.muted = newVol === 0
   }
 
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed)
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed
-    }
+    const v = videoRef.current
+    if (v) v.playbackRate = speed
   }
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
@@ -274,11 +461,10 @@ export function VideoPlayer({
         isFullscreen && "rounded-none",
         className
       )}
-      onMouseMove={handleMouseMove}
+      onMouseMove={showControlsTemporarily}
       onMouseLeave={() => isPlaying && setShowControls(false)}
       tabIndex={0}
     >
-      {/* Video Element */}
       <video
         ref={videoRef}
         src={src}
@@ -288,14 +474,12 @@ export function VideoPlayer({
         playsInline
       />
 
-      {/* Buffering Indicator */}
       {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
         </div>
       )}
 
-      {/* Play/Pause Center Button */}
       {!isPlaying && !isBuffering && (
         <button
           className="absolute inset-0 flex items-center justify-center bg-black/30"
@@ -307,22 +491,19 @@ export function VideoPlayer({
         </button>
       )}
 
-      {/* Completed Badge */}
       {hasCompleted && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-success/90 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-emerald-500/90 text-white px-3 py-1.5 rounded-full text-sm font-medium">
           <CheckCircle2 className="h-4 w-4" />
           Completado
         </div>
       )}
 
-      {/* Controls Overlay */}
       <div
         className={cn(
           "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-16 pb-4 px-4 transition-opacity duration-300",
           showControls || !isPlaying ? "opacity-100" : "opacity-0"
         )}
       >
-        {/* Progress Bar */}
         <div className="mb-4">
           <Slider
             value={[currentTime]}
@@ -333,54 +514,21 @@ export function VideoPlayer({
           />
         </div>
 
-        {/* Controls Row */}
         <div className="flex items-center justify-between">
-          {/* Left Controls */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20"
-              onClick={togglePlay}
-            >
-              {isPlaying ? (
-                <Pause className="h-5 w-5" />
-              ) : (
-                <Play className="h-5 w-5" />
-              )}
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={togglePlay}>
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20"
-              onClick={() => skip(-10)}
-            >
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={() => skip(-10)}>
               <SkipBack className="h-5 w-5" />
             </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20"
-              onClick={() => skip(10)}
-            >
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={() => skip(10)}>
               <SkipForward className="h-5 w-5" />
             </Button>
 
-            {/* Volume Control */}
             <div className="flex items-center gap-2 group/volume">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-white/20"
-                onClick={toggleMute}
-              >
-                {isMuted || volume === 0 ? (
-                  <VolumeX className="h-5 w-5" />
-                ) : (
-                  <Volume2 className="h-5 w-5" />
-                )}
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={toggleMute}>
+                {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
               </Button>
               <div className="w-0 overflow-hidden group-hover/volume:w-24 transition-all duration-200">
                 <Slider
@@ -393,22 +541,15 @@ export function VideoPlayer({
               </div>
             </div>
 
-            {/* Time Display */}
             <span className="text-white text-sm tabular-nums ml-2">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
 
-          {/* Right Controls */}
           <div className="flex items-center gap-2">
-            {/* Playback Speed */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/20 text-sm"
-                >
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 text-sm">
                   {playbackSpeed}x
                 </Button>
               </DropdownMenuTrigger>
@@ -425,44 +566,45 @@ export function VideoPlayer({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Settings */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
-                >
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
                   <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>Calidad: Auto</DropdownMenuItem>
-                <DropdownMenuItem>Subtitulos: Off</DropdownMenuItem>
+                <DropdownMenuItem>Subtítulos: Off</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Fullscreen */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20"
-              onClick={toggleFullscreen}
-            >
-              {isFullscreen ? (
-                <Minimize className="h-5 w-5" />
-              ) : (
-                <Maximize className="h-5 w-5" />
-              )}
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={toggleFullscreen}>
+              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
             </Button>
           </div>
         </div>
 
-        {/* Title */}
         {title && (
           <p className="text-white text-sm mt-2 truncate opacity-75">{title}</p>
         )}
       </div>
     </div>
   )
+}
+
+// ─── Main VideoPlayer (router) ────────────────────────────────────────────────
+
+export function VideoPlayer(props: VideoPlayerProps) {
+  const type = detectVideoType(props.src)
+
+  if (type === "youtube") {
+    return <YouTubePlayer {...props} />
+  }
+
+  if (type === "vimeo") {
+    return <VimeoPlayer src={props.src} className={props.className} />
+  }
+
+  // Native: Cloudflare Stream, MP4, WebM, HLS — mantiene el player completo
+  return <NativePlayer {...props} />
 }
