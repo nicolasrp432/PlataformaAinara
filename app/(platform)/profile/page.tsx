@@ -1,12 +1,13 @@
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { getAuthUser, getUserProfile } from "@/lib/data-access"
+import { getAuthUser, getUserProfile, getQuestData } from "@/lib/data-access"
 import { ProfileForm } from "./profile-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Flame, Star } from "lucide-react"
+import { Flame, Star, Compass, Sword, MessageSquare, Map, BookOpen, Zap, TrendingUp, Crown, Award } from "lucide-react"
 import { getSunSign } from "@/lib/utils/astrology"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Mi Perfil | Ainara",
@@ -21,7 +22,10 @@ export default async function ProfilePage() {
   }
 
   // Deduplicada con layout via React.cache()
-  const profile = await getUserProfile(user.id)
+  const [profile, questData] = await Promise.all([
+    getUserProfile(user.id),
+    getQuestData(user.id),
+  ])
 
   const userData = {
     id: user.id,
@@ -40,6 +44,23 @@ export default async function ProfilePage() {
   const astro = userData.birth_date ? getSunSign(userData.birth_date) : null
   const sunSign = astro?.sign || ""
   const signSymbol = astro?.symbol || ""
+
+  const { lessonsCount, reflectionsCount, enrollmentsCount, streakDays: qStreak, xp: qXp, level: qLevel } = questData
+
+  const ALL_ACHIEVEMENTS = [
+    { id: "awakening",   title: "El Despertar",       icon: Compass,     unlocked: true },
+    { id: "first_lesson",title: "Primera Sangre",     icon: Sword,       unlocked: lessonsCount >= 1 },
+    { id: "first_voice", title: "Voz del Pueblo",     icon: MessageSquare, unlocked: reflectionsCount >= 1 },
+    { id: "explorer",    title: "Explorador",          icon: Map,         unlocked: enrollmentsCount >= 2 },
+    { id: "apprentice",  title: "Aprendiz Dedicado",  icon: BookOpen,    unlocked: lessonsCount >= 5 },
+    { id: "fire_streak", title: "Llama Interna",      icon: Flame,       unlocked: qStreak >= 7 },
+    { id: "collector",   title: "Coleccionista",      icon: Star,        unlocked: qXp >= 1000 },
+    { id: "warrior",     title: "Guerrero del Saber", icon: Zap,         unlocked: lessonsCount >= 10 },
+    { id: "level5",      title: "Ascensión",          icon: TrendingUp,  unlocked: qLevel >= 5 },
+    { id: "legend",      title: "Leyenda",            icon: Crown,       unlocked: qLevel >= 10 },
+  ]
+
+  const unlockedAchievements = ALL_ACHIEVEMENTS.filter((a) => a.unlocked)
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10 relative">
@@ -199,6 +220,50 @@ export default async function ProfilePage() {
               birth_city: userData.birth_city,
             }}
           />
+
+          {/* Insignias obtenidas */}
+          {unlockedAchievements.length > 0 && (
+            <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg font-medium">
+                  <Award className="w-5 h-5 text-primary" /> Insignias Obtenidas
+                  <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/20 text-primary">
+                    {unlockedAchievements.length}/{ALL_ACHIEVEMENTS.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {unlockedAchievements.map((ach) => {
+                    const Icon = ach.icon
+                    return (
+                      <div
+                        key={ach.id}
+                        title={ach.title}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full border bg-primary/5 border-primary/20",
+                          "text-xs font-medium text-foreground transition-all hover:bg-primary/10"
+                        )}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-primary" />
+                        {ach.title}
+                      </div>
+                    )
+                  })}
+                  {ALL_ACHIEVEMENTS.filter((a) => !a.unlocked).map((ach) => (
+                    <div
+                      key={ach.id}
+                      title={`Bloqueado: ${ach.title}`}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground/40 opacity-40"
+                    >
+                      <span className="w-3.5 h-3.5 flex items-center justify-center">🔒</span>
+                      ???
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border-border/50 shadow-sm bg-card/40 backdrop-blur-sm relative overflow-hidden">
             {/* Decorative element */}

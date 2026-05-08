@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,20 +15,35 @@ interface ReflectionFormProps {
     full_name: string
     avatarUrl: string | null
   }
+  onOptimisticReflection?: (reflection: any) => void
 }
 
-export function ReflectionForm({ user }: ReflectionFormProps) {
+export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [content, setContent] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault()
-    if (!content.trim()) return
+    const trimmed = content.trim()
+    if (!trimmed) return
 
     setError(null)
+
+    // Optimistic update immediately
+    onOptimisticReflection?.({
+      id: `temp-${Date.now()}`,
+      content: trimmed,
+      created_at: new Date().toISOString(),
+      likes_count: 0,
+      profiles: { full_name: user.full_name, avatar_url: user.avatarUrl, role: "student" },
+      lessons: null,
+    })
+    setContent("")
+
     const formData = new FormData()
-    formData.append("content", content)
+    formData.append("content", trimmed)
 
     startTransition(async () => {
       try {
@@ -35,10 +51,10 @@ export function ReflectionForm({ user }: ReflectionFormProps) {
         if (result.error) {
           setError(result.error)
         } else {
-          setContent("")
           toast.success("Publicación enviada.")
+          router.refresh()
         }
-      } catch (err) {
+      } catch {
         setError("Ocurrió un error al enviar tu publicación.")
       }
     })
@@ -69,14 +85,14 @@ export function ReflectionForm({ user }: ReflectionFormProps) {
                   Tus reflexiones inspiran a otros aprendices.
                 </p>
                 <div className="w-full sm:w-auto flex justify-end">
-                    <Button 
-                    type="submit" 
-                    disabled={isPending || !content.trim()} 
+                  <Button
+                    type="submit"
+                    disabled={isPending || !content.trim()}
                     className="bg-primary hover:bg-primary/90 rounded-full px-6 font-medium shadow-sm transition-all shadow-primary/20 w-full sm:w-auto"
-                    >
+                  >
                     {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                     Publicar
-                    </Button>
+                  </Button>
                 </div>
               </div>
             </div>

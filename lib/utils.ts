@@ -65,19 +65,13 @@ export function getInitials(name?: string | null): string {
 }
 
 export function calculateLevel(xp: number): number {
-  // XP required per level increases: 100, 250, 450, 700, 1000...
-  // Formula: level = floor(sqrt(xp / 50))
-  return Math.floor(Math.sqrt(xp / 50)) + 1
+  return Math.floor(xp / 500) + 1
 }
 
 export function xpForNextLevel(currentLevel: number): number {
-  // XP needed to reach next level
-  return Math.pow(currentLevel, 2) * 50
+  return currentLevel * 500
 }
 
-export function progressToNextLevel(xp: number, level: number): number {
-  const currentLevelXp = Math.pow(level - 1, 2) * 50
-  const nextLevelXp = Math.pow(level, 2) * 50
-  const progress = ((xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100
-  return Math.min(100, Math.max(0, progress))
+export function progressToNextLevel(xp: number, _level: number): number {
+  return Math.min(100, Math.max(0, Math.round((xp % 500) / 5)))
 }

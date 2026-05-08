@@ -56,6 +56,8 @@ export async function markLessonCompleted(lessonId: string, slug: string) {
   revalidatePath(`/learn/${slug}/${lessonId}`)
   revalidatePath(`/dashboard`)
   revalidatePath(`/formations/${slug}`)
+  revalidatePath("/profile")
+  revalidatePath("/quest")
 
   return { success: true, alreadyCompleted: false, xpEarned: xpAmount, leveledUp: xpResult?.leveledUp ?? false }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { 
@@ -86,9 +86,15 @@ export function LessonViewer({ data }: LessonViewerProps) {
   const [lessonCompleted, setLessonCompleted] = useState(data.lesson.isCompleted)
   const [isSaving, setIsSaving] = useState(false)
   const [commentText, setCommentText] = useState("")
+  const [comments, setComments] = useState(data.comments || [])
   const [isPending, startTransition] = useTransition()
   const progressDebounceRef = useRef<NodeJS.Timeout | null>(null)
-  
+
+  // Sync comments when server provides updated data after router.refresh()
+  useEffect(() => {
+    setComments(data.comments || [])
+  }, [data.comments])
+
   const { lesson, module, formation, curriculum, previousLesson, nextLesson, completedCount, totalCount } = data
   const progressPercent = Math.round((completedCount / totalCount) * 100)
 
@@ -104,16 +110,33 @@ export function LessonViewer({ data }: LessonViewerProps) {
     })
   }
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault()
-    if (!commentText.trim()) return
+    const trimmed = commentText.trim()
+    if (!trimmed) return
+
+    // Optimistic update — comment appears immediately
+    const optimistic = {
+      id: `temp-${Date.now()}`,
+      content: trimmed,
+      created_at: new Date().toISOString(),
+      profiles: null,
+    }
+    setComments((prev) => [...prev, optimistic])
+    setCommentText("")
 
     const formData = new FormData()
-    formData.append("content", commentText)
+    formData.append("content", trimmed)
 
     startTransition(async () => {
-      await addLessonComment(formData, lesson.id, formation.slug)
-      setCommentText("")
+      const result = await addLessonComment(formData, lesson.id, formation.slug)
+      if (result?.error) {
+        toast.error(result.error)
+        setComments((prev) => prev.filter((c) => c.id !== optimistic.id))
+        setCommentText(trimmed)
+        return
+      }
+      router.refresh()
     })
   }
 
@@ -300,7 +323,7 @@ export function LessonViewer({ data }: LessonViewerProps) {
               <TabsList className="bg-muted/50 w-full justify-start p-1 rounded-xl h-auto">
                 <TabsTrigger value="comments" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Comentarios ({data.comments?.length || 0})
+                  Comentarios ({comments.length})
                 </TabsTrigger>
                 <TabsTrigger value="resources" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <Paperclip className="w-4 h-4 mr-2" />
@@ -332,26 +355,29 @@ export function LessonViewer({ data }: LessonViewerProps) {
                 </div>
 
                 <div className="space-y-6 pt-4">
-                  {data.comments && data.comments.length > 0 ? (
-                    data.comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-4">
-                        <Avatar className="w-10 h-10 border border-border">
-                          <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-                          <AvatarFallback className="bg-muted">
-                            {comment.profiles?.full_name?.charAt(0) || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="bg-muted/30 p-4 rounded-2xl rounded-tl-none border border-border/30 flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-semibold text-sm">{comment.profiles?.full_name || "Usuario Anónimo"}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(comment.created_at)}
-                            </span>
+                  {comments.length > 0 ? (
+                    comments.map((comment) => {
+                      const isTemp = comment.id?.startsWith("temp-")
+                      return (
+                        <div key={comment.id} className={`flex gap-4 transition-opacity duration-300 ${isTemp ? "opacity-60" : ""}`}>
+                          <Avatar className="w-10 h-10 border border-border">
+                            <AvatarImage src={comment.profiles?.avatar_url || undefined} />
+                            <AvatarFallback className="bg-muted">
+                              {comment.profiles?.full_name?.charAt(0) || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="bg-muted/30 p-4 rounded-2xl rounded-tl-none border border-border/30 flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-sm">{comment.profiles?.full_name || "Tú"}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {isTemp ? "Enviando..." : formatDate(comment.created_at)}
+                              </span>
+                            </div>
+                            <p className="text-foreground/90 text-sm leading-relaxed whitespace-pre-wrap">{comment.content}</p>
                           </div>
-                          <p className="text-foreground/90 text-sm leading-relaxed whitespace-pre-wrap">{comment.content}</p>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   ) : (
                     <div className="text-center py-10 opacity-50 border border-dashed border-border/50 rounded-xl">
                       <MessageSquare className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />

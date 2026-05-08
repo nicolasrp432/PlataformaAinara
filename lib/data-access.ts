@@ -1,5 +1,6 @@
 import { cache } from "react"
 import { createClient } from "@/lib/supabase/server"
+import { progressToNextLevel } from "@/lib/utils"
 
 // ─── Auth & Profile (deduplicadas por React.cache) ─────────────────────
 
@@ -68,7 +69,7 @@ export const getDashboardData = cache(async (userId: string) => {
       totalXp: profile?.xp ?? 0,
       currentStreak: profile?.streak_days ?? 0,
       level: profile?.level || 1,
-      nextLevelProgress: ((profile?.xp || 0) % 500) / 5,
+      nextLevelProgress: progressToNextLevel(profile?.xp || 0, profile?.level || 1),
     },
     profile,
   }
@@ -548,8 +549,7 @@ export const getLessonPageData = cache(
 export const getQuestData = cache(async (userId: string) => {
   const supabase = await createClient()
 
-  // All 3 queries in parallel instead of sequential
-  const [{ data: profile }, { count: reflexCount }, { count: lessonsCount }] =
+  const [{ data: profile }, { count: reflexCount }, { count: lessonsCount }, { count: enrollmentsCount }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -565,12 +565,19 @@ export const getQuestData = cache(async (userId: string) => {
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("is_completed", true),
+      supabase
+        .from("enrollments")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId),
     ])
 
   return {
     level: profile?.level || 1,
     xp: profile?.xp || 0,
     streakDays: profile?.streak_days || 0,
+    lessonsCount: lessonsCount || 0,
+    reflectionsCount: reflexCount || 0,
+    enrollmentsCount: enrollmentsCount || 0,
     hasReflection: (reflexCount || 0) > 0,
     hasCompletedLesson: (lessonsCount || 0) > 0,
   }
