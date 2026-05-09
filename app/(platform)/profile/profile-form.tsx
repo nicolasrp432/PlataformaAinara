@@ -23,6 +23,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url || "")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -36,6 +37,11 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         if (result.error) {
           setMessage({ type: 'error', text: result.error })
         } else {
+          if (result.newAvatarUrl) {
+            setAvatarUrl(result.newAvatarUrl)
+          }
+          setAvatarFileName(null)
+          if (fileInputRef.current) fileInputRef.current.value = ""
           setMessage({ type: 'success', text: "Perfil actualizado correctamente." })
         }
       } catch (error) {
@@ -86,7 +92,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 <Input
                   id="avatar_url"
                   name="avatar_url"
-                  defaultValue={initialData.avatar_url || ""}
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
                   placeholder="https://ejemplo.com/mifoto.jpg"
                   className="bg-background/50 border-border/50 focus:border-primary/50 flex-1"
                 />

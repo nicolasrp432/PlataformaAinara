@@ -52,6 +52,6 @@ export async function updateProfile(formData: FormData) {
   // Revalidar las rutas para que se refresque el Avatar y Nombre de inmediato.
   revalidatePath("/profile")
   revalidatePath("/dashboard")
-  
-  return { success: true }
+
+  return { success: true, newAvatarUrl: avatarUrl || null }
 }

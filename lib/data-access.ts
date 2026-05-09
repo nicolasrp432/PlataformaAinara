@@ -283,15 +283,52 @@ export const getCategories = cache(async () => {
 
 export const getReflections = cache(async () => {
   const supabase = await createClient()
-  const { data } = await supabase
+
+  const { data: topLevel } = await supabase
     .from("reflections")
-    .select(
-      "*, profiles:user_id(full_name, avatar_url, role), lessons:lesson_id(title)"
-    )
+    .select("id, user_id, lesson_id, content, is_public, likes_count, created_at, parent_id")
     .eq("is_public", true)
+    .is("parent_id", null)
     .order("created_at", { ascending: false })
     .limit(50)
-  return data || []
+
+  if (!topLevel || topLevel.length === 0) return []
+
+  const topLevelIds = topLevel.map((r) => r.id)
+
+  const { data: replies } = await supabase
+    .from("reflections")
+    .select("id, user_id, lesson_id, content, is_public, likes_count, created_at, parent_id")
+    .eq("is_public", true)
+    .in("parent_id", topLevelIds)
+    .order("created_at", { ascending: true })
+
+  const allRows = [...topLevel, ...(replies || [])]
+  const userIds = [...new Set(allRows.map((r) => r.user_id))]
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, role")
+    .in("id", userIds)
+
+  const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+
+  const repliesByParent: Record<string, any[]> = {}
+  for (const reply of replies || []) {
+    if (!repliesByParent[reply.parent_id]) repliesByParent[reply.parent_id] = []
+    repliesByParent[reply.parent_id].push({
+      ...reply,
+      profiles: profileMap[reply.user_id] ?? null,
+      lessons: null,
+    })
+  }
+
+  return topLevel.map((r) => ({
+    ...r,
+    profiles: profileMap[r.user_id] ?? null,
+    lessons: null,
+    replies: repliesByParent[r.id] || [],
+  }))
 })
 
 // ─── Formation Detail (replaces inline getFormation) ───────────────────
@@ -451,7 +488,7 @@ export const getLessonPageData = cache(
     // 2. Parallel: enrollment + progress + comments (3 queries → 1 batch)
     const lessonIds = allLessons.map((l) => l.id)
 
-    const [{ data: enrollment }, { data: userProgress }, { data: comments }] =
+    const [{ data: enrollment }, { data: userProgress }, { data: rawComments }] =
       await Promise.all([
         supabase
           .from("enrollments")
@@ -466,12 +503,27 @@ export const getLessonPageData = cache(
           .in("lesson_id", lessonIds),
         supabase
           .from("reflections")
-          .select(
-            "id, content, created_at, user_id, profiles:user_id(full_name, avatar_url, role)"
-          )
+          .select("id, content, created_at, user_id")
           .eq("lesson_id", lessonId)
           .order("created_at", { ascending: false }),
       ])
+
+    // Fetch comment author profiles separately to avoid FK join dependency
+    const commentUserIds = [...new Set((rawComments || []).map((c) => c.user_id))]
+    const { data: commentProfiles } = commentUserIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", commentUserIds)
+      : { data: [] }
+
+    const commentProfileMap = Object.fromEntries(
+      (commentProfiles || []).map((p) => [p.id, p])
+    )
+    const comments = (rawComments || []).map((c) => ({
+      ...c,
+      profiles: commentProfileMap[c.user_id] ?? null,
+    }))
 
     const isEnrolled = !!enrollment
 

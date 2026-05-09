@@ -13,18 +13,21 @@ export async function awardXP(
   userId: string,
   xpAmount: number
 ): Promise<XPAwardResult | null> {
+  if (!userId || xpAmount <= 0) return null
+
   const supabase = await createClient()
 
-  const { data: profile } = await supabase
+  const { data: profile, error: fetchError } = await supabase
     .from("profiles")
     .select("xp, level, streak_days, last_activity_date")
     .eq("id", userId)
     .single()
 
-  if (!profile) return null
+  if (fetchError || !profile) return null
 
   const previousLevel = profile.level || 1
-  const newXP = (profile.xp || 0) + xpAmount
+  const currentXP = profile.xp ?? 0
+  const newXP = currentXP + xpAmount
   const newLevel = Math.floor(newXP / 500) + 1
   const leveledUp = newLevel > previousLevel
 
@@ -44,7 +47,7 @@ export async function awardXP(
     streakDays = diffDays === 1 ? streakDays + 1 : 1
   }
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("profiles")
     .update({
       xp: newXP,
@@ -53,6 +56,11 @@ export async function awardXP(
       last_activity_date: new Date().toISOString(),
     })
     .eq("id", userId)
+
+  if (updateError) {
+    console.error("[xpService] Failed to update XP for user", userId, updateError.message)
+    return null
+  }
 
   return { newXP, newLevel, streakDays, leveledUp }
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,7 +18,6 @@ interface ReflectionFormProps {
 }
 
 export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormProps) {
-  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [content, setContent] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -50,9 +48,11 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
         const result = await createReflection(formData)
         if (result.error) {
           setError(result.error)
+          // Revert optimistic update on error
+          onOptimisticReflection?.({ __revert: true })
         } else {
           toast.success("Publicación enviada.")
-          router.refresh()
+          // Realtime subscription in TabernaFeed handles the state update
         }
       } catch {
         setError("Ocurrió un error al enviar tu publicación.")

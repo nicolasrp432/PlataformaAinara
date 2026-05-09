@@ -69,10 +69,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing lessonId" }, { status: 400 })
   }
 
-  // Fetch formation_id and duration from the lesson (formation_id is NOT NULL in schema)
+  // Fetch lesson duration for progress calculation
   const { data: lessonData, error: lessonError } = await supabase
     .from("lessons")
-    .select("duration_seconds, modules(formation_id)")
+    .select("duration_seconds")
     .eq("id", lessonId)
     .single()
 
@@ -80,23 +80,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
   }
 
-  const formationId = (lessonData.modules as any)?.formation_id
-  if (!formationId) {
-    return NextResponse.json({ error: "Formation not found for lesson" }, { status: 404 })
-  }
-
   const duration = lessonData.duration_seconds ?? 0
   const watched = typeof watchedSeconds === "number" ? watchedSeconds : 0
   const progressPercent = duration > 0 ? Math.min(100, Math.round((watched / duration) * 100)) : 0
   const now = new Date().toISOString()
 
+  // Canonical column names per migration 004_unify_schema.sql
   const payload: Record<string, unknown> = {
     user_id: user.id,
     lesson_id: lessonId,
-    formation_id: formationId,
-    last_position: watched,
+    watched_seconds: watched,
+    last_position_seconds: watched,
     progress_percent: progressPercent,
     is_completed: !!isCompleted,
+    status: isCompleted ? "completed" : "in_progress",
   }
 
   if (isCompleted) {
@@ -110,6 +107,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) {
+    console.error("[api/progress] upsert error:", error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

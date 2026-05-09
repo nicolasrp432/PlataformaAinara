@@ -16,13 +16,26 @@ export async function createReflection(formData: FormData) {
     return { error: "El contenido no puede estar vacío." }
   }
 
+  // Rate limit: 1 publicación cada 30 segundos por usuario
+  const { count: recentCount } = await supabase
+    .from("reflections")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", new Date(Date.now() - 30000).toISOString())
+
+  if (recentCount && recentCount > 0) {
+    return { error: "Espera unos segundos antes de publicar de nuevo." }
+  }
+
+  const parentId = formData.get("parent_id") as string | null
+
   const { error } = await supabase
     .from("reflections")
     .insert({
       user_id: user.id,
       content: content.trim(),
       is_public: true,
-      // lesson_id could be added here if this was from a specific lesson
+      ...(parentId ? { parent_id: parentId } : {}),
     })
 
   if (error) {
@@ -41,17 +54,10 @@ export async function resonarReflection(reflectionId: string) {
     return { error: "Debes iniciar sesión para resonar." }
   }
 
-  // Read current count then increment (atomic enough for a small platform)
-  const { data: current } = await supabase
-    .from("reflections")
-    .select("likes_count")
-    .eq("id", reflectionId)
-    .single()
-
-  const { error } = await supabase
-    .from("reflections")
-    .update({ likes_count: (current?.likes_count || 0) + 1 })
-    .eq("id", reflectionId)
+  // Use atomic SQL increment via RPC to avoid race conditions
+  const { error } = await supabase.rpc("increment_reflection_likes", {
+    p_reflection_id: reflectionId,
+  })
 
   if (error) return { error: error.message }
   return { success: true }

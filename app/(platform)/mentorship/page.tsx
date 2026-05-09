@@ -46,8 +46,9 @@ export default async function MentorshipPage() {
     .eq("is_active", true)
 
   // Si no hay mentores en la BD, usamos a Ainara por defecto
-  const mentors =
+  const rawMentors =
     dbMentors && dbMentors.length > 0 ? dbMentors : [defaultMentor]
+  const mentors = rawMentors.filter((m) => m.name || m.full_name)
 
   return (
     <div className="space-y-10 max-w-6xl mx-auto pb-16 relative animation-fade-in">
@@ -83,7 +84,7 @@ export default async function MentorshipPage() {
                     className="object-cover"
                   />
                   <AvatarFallback className="text-4xl bg-primary text-primary-foreground font-bold">
-                    {mentor.full_name.charAt(0).toUpperCase()}
+                    {(mentor.name || mentor.full_name || "M").charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="mb-2">
@@ -96,7 +97,7 @@ export default async function MentorshipPage() {
               <div className="space-y-4">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
-                    {mentor.full_name}
+                    {mentor.name || mentor.full_name}
                   </h2>
                   <p className="text-sm font-medium text-primary mt-1 uppercase tracking-wider">
                     {mentor.title || "Mentor Experto"}

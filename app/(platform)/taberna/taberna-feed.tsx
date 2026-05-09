@@ -1,12 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useTransition } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { createReflection } from "./actions"
 import { ReflectionForm } from "./reflection-form"
 import { ResonanceButton } from "./resonance-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { MessageCircle, Share2 } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { MessageCircle, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 function formatTimeAgo(dateStr: string) {
   const date = new Date(dateStr)
@@ -28,16 +33,146 @@ interface TabernaFeedProps {
 }
 
 export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProps) {
-  const [reflections, setReflections] = useState(initialReflections)
-
-  // Sync when server sends updated data after router.refresh()
-  useEffect(() => {
-    setReflections(initialReflections)
-  }, [initialReflections])
+  const [reflections, setReflections] = useState(
+    initialReflections.map((r) => ({ ...r, replies: r.replies || [] }))
+  )
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState("")
+  const [isPendingReply, startReplyTransition] = useTransition()
 
   const handleOptimisticReflection = (reflection: any) => {
-    setReflections((prev) => [reflection, ...prev])
+    if (reflection.__revert) {
+      setReflections((prev) => prev.filter((r) => !r.id?.startsWith("temp-")))
+      return
+    }
+    setReflections((prev) => [{ ...reflection, replies: [] }, ...prev])
   }
+
+  const handleReply = (reflectionId: string, authorName: string) => {
+    setReplyingTo(reflectionId)
+    setReplyText(`@${authorName} `)
+  }
+
+  const handleCancelReply = () => {
+    setReplyingTo(null)
+    setReplyText("")
+  }
+
+  const handleSubmitReply = (e: React.FormEvent, reflectionId: string, authorName: string) => {
+    e.preventDefault()
+    const trimmed = replyText.trim()
+    if (!trimmed) return
+
+    const optimisticReply = {
+      id: `temp-${Date.now()}`,
+      content: trimmed,
+      created_at: new Date().toISOString(),
+      likes_count: 0,
+      parent_id: reflectionId,
+      profiles: { full_name: currentUser.full_name, avatar_url: currentUser.avatarUrl, role: "student" },
+      lessons: null,
+    }
+
+    setReflections((prev) =>
+      prev.map((r) =>
+        r.id === reflectionId
+          ? { ...r, replies: [...(r.replies || []), optimisticReply] }
+          : r
+      )
+    )
+    setReplyingTo(null)
+    setReplyText("")
+
+    const formData = new FormData()
+    formData.append("content", trimmed)
+    formData.append("parent_id", reflectionId)
+
+    startReplyTransition(async () => {
+      const result = await createReflection(formData)
+      if (result.error) {
+        toast.error(result.error)
+        setReflections((prev) =>
+          prev.map((r) =>
+            r.id === reflectionId
+              ? { ...r, replies: (r.replies || []).filter((rep: any) => rep.id !== optimisticReply.id) }
+              : r
+          )
+        )
+      } else {
+        toast.success("Respuesta publicada.")
+      }
+    })
+  }
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel("taberna-reflections")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "reflections",
+          filter: "is_public=eq.true",
+        },
+        async (payload) => {
+          const raw = payload.new as any
+
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, avatar_url, role")
+            .eq("id", raw.user_id)
+            .single()
+
+          const enriched = {
+            id: raw.id,
+            content: raw.content,
+            created_at: raw.created_at,
+            likes_count: raw.likes_count ?? 0,
+            parent_id: raw.parent_id ?? null,
+            profiles: profile ?? null,
+            lessons: null,
+          }
+
+          setReflections((prev) => {
+            if (enriched.parent_id) {
+              return prev.map((r) => {
+                if (r.id !== enriched.parent_id) return r
+                const existing = r.replies || []
+                if (existing.some((rep: any) => rep.id === enriched.id)) return r
+                const tempIdx = existing.findIndex(
+                  (rep: any) => rep.id?.startsWith("temp-") && rep.content === enriched.content
+                )
+                if (tempIdx !== -1) {
+                  const next = [...existing]
+                  next[tempIdx] = enriched
+                  return { ...r, replies: next }
+                }
+                return { ...r, replies: [...existing, enriched] }
+              })
+            }
+
+            if (prev.some((r) => r.id === enriched.id)) return prev
+            const tempIdx = prev.findIndex(
+              (r) => r.id?.startsWith("temp-") && r.content === enriched.content
+            )
+            if (tempIdx !== -1) {
+              const next = [...prev]
+              next[tempIdx] = { ...enriched, replies: [] }
+              return next
+            }
+            return [{ ...enriched, replies: [] }, ...prev]
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   return (
     <>
@@ -66,6 +201,8 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
               const authorAvatar = authorProfile?.avatar_url || ""
               const isAuthorAdmin = authorProfile?.role === "admin"
               const isTemp = reflection.id?.startsWith("temp-")
+              const isReplying = replyingTo === reflection.id
+              const replies: any[] = reflection.replies || []
 
               return (
                 <Card
@@ -104,13 +241,13 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                           </span>
                         </div>
 
-                        {(reflection as any).lessons && (
+                        {reflection.lessons && (
                           <div className="mb-3">
                             <Badge
                               variant="secondary"
                               className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
                             >
-                              Comentado en: {(reflection as any).lessons.title}
+                              Comentado en: {reflection.lessons.title}
                             </Badge>
                           </div>
                         )}
@@ -123,16 +260,111 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                           <div className="flex items-center gap-6 mt-4 pt-3 border-t border-border/30">
                             <ResonanceButton
                               reflectionId={reflection.id}
-                              initialCount={(reflection as any).likes_count || 0}
+                              initialCount={reflection.likes_count || 0}
                             />
-                            <button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
+                            <button
+                              onClick={() =>
+                                isReplying
+                                  ? handleCancelReply()
+                                  : handleReply(reflection.id, authorName)
+                              }
+                              className={`flex items-center gap-2 text-xs font-medium transition-colors ${
+                                isReplying
+                                  ? "text-primary"
+                                  : "text-muted-foreground hover:text-primary"
+                              }`}
+                            >
                               <MessageCircle className="w-4 h-4" />
-                              <span>Debatir</span>
-                            </button>
-                            <button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors ml-auto sm:ml-0">
-                              <Share2 className="w-4 h-4" />
+                              <span>
+                                {isReplying
+                                  ? "Cancelar"
+                                  : replies.length > 0
+                                  ? `Debatir · ${replies.length}`
+                                  : "Debatir"}
+                              </span>
                             </button>
                           </div>
+                        )}
+
+                        {/* Thread replies */}
+                        {replies.length > 0 && (
+                          <div className="mt-5 space-y-4 pl-4 border-l-2 border-border/40">
+                            {replies.map((reply: any) => {
+                              const rp = Array.isArray(reply.profiles) ? reply.profiles[0] : reply.profiles
+                              const rName = rp?.full_name || "Usuario Anónimo"
+                              const rAvatar = rp?.avatar_url || ""
+                              const rTemp = reply.id?.startsWith("temp-")
+
+                              return (
+                                <div
+                                  key={reply.id}
+                                  className={`flex gap-3 ${rTemp ? "opacity-60 animate-pulse" : ""}`}
+                                >
+                                  <Avatar className="h-7 w-7 shrink-0 border border-border/40 mt-0.5">
+                                    <AvatarImage src={rAvatar} className="object-cover" />
+                                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                      {rName.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 text-xs mb-1">
+                                      <span className="font-semibold text-foreground">{rName}</span>
+                                      <span className="text-muted-foreground">
+                                        &bull; {formatTimeAgo(reply.created_at)}
+                                      </span>
+                                    </div>
+                                    <p className="text-foreground/85 text-sm whitespace-pre-wrap leading-relaxed">
+                                      {reply.content}
+                                    </p>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        {/* Reply form */}
+                        {isReplying && (
+                          <form
+                            onSubmit={(e) => handleSubmitReply(e, reflection.id, authorName)}
+                            className="mt-4 space-y-2"
+                          >
+                            <Textarea
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder={`Respondiendo a @${authorName}...`}
+                              className="min-h-[80px] resize-none bg-background/50 text-sm focus-visible:ring-primary/50"
+                              disabled={isPendingReply}
+                              autoFocus
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCancelReply}
+                                disabled={isPendingReply}
+                                className="text-muted-foreground"
+                              >
+                                Cancelar
+                              </Button>
+                              <Button
+                                type="submit"
+                                size="sm"
+                                disabled={isPendingReply || !replyText.trim()}
+                                className="bg-primary hover:bg-primary/90 rounded-full px-5"
+                              >
+                                {isPendingReply ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                    Enviando...
+                                  </>
+                                ) : (
+                                  "Responder"
+                                )}
+                              </Button>
+                            </div>
+                          </form>
                         )}
                       </div>
                     </div>
