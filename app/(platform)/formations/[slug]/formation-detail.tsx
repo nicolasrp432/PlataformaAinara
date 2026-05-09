@@ -100,10 +100,10 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
 
   // Find next lesson to continue
   const findNextLesson = () => {
-    for (const module of formation.modules) {
-      for (const lesson of module.lessons) {
+    for (const moduleItem of formation.modules) {
+      for (const lesson of moduleItem.lessons) {
         if (!formation.completedLessons.includes(lesson.id)) {
-          return { module, lesson }
+          return { module: moduleItem, lesson }
         }
       }
     }
@@ -143,13 +143,6 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
     } finally {
       setIsEnrolling(false)
     }
-  }
-
-  const getFirstLessonUrl = () => {
-    if (formation.modules.length > 0 && formation.modules[0].lessons.length > 0) {
-      return `/learn/${formation.slug}/${formation.modules[0].lessons[0].id}`
-    }
-    return null
   }
 
   return (

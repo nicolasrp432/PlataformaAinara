@@ -72,6 +72,6 @@ export function xpForNextLevel(currentLevel: number): number {
   return currentLevel * 500
 }
 
-export function progressToNextLevel(xp: number, _level: number): number {
+export function progressToNextLevel(xp: number): number {
   return Math.min(100, Math.max(0, Math.round((xp % 500) / 5)))
 }

@@ -1,6 +1,25 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
+type ProgressLessonNode = {
+  id: string
+}
+
+type ProgressModuleNode = {
+  lessons?: ProgressLessonNode[] | null
+}
+
+type ProgressFormation = {
+  modules?: ProgressModuleNode[] | null
+}
+
+type ProgressRequestBody = {
+  lessonId?: string
+  formationId?: string
+  watchedSeconds?: unknown
+  isCompleted?: unknown
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
 
@@ -39,8 +58,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Formation not found" }, { status: 404 })
     }
 
+    const typedFormation = formation as ProgressFormation
     const lessonIds =
-      (formation.modules as any[])?.flatMap((m: any) => m.lessons?.map((l: any) => l.id) ?? []) ?? []
+      typedFormation.modules?.flatMap((m) => m.lessons?.map((l) => l.id) ?? []) ?? []
 
     const { data: progress } = await supabase
       .from("user_progress")
@@ -62,7 +82,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const body = await request.json()
+  const body = (await request.json()) as ProgressRequestBody
   const { lessonId, watchedSeconds, isCompleted } = body
 
   if (!lessonId) {

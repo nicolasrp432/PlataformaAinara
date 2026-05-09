@@ -22,6 +22,13 @@ import {
   CheckCircle2,
 } from "lucide-react"
 
+type RecentActivityItem = {
+  type: "lesson_completed" | string
+  title: string
+  xp: number
+  time: string
+}
+
 export const metadata: Metadata = {
   title: "Dashboard | Ainara",
   description: "Tu centro de control para el aprendizaje y transformacion",
@@ -152,7 +159,7 @@ export default async function DashboardPage() {
           </div>
 
           <div className="space-y-4">
-            {formationsIP.map((formation: any) => (
+            {formationsIP.map((formation) => (
               <Card
                 key={formation.id}
                 className="border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-colors"
@@ -227,7 +234,7 @@ export default async function DashboardPage() {
             <CardContent className="p-4">
               {recentAct.length > 0 ? (
                 <div className="space-y-4">
-                  {recentAct.map((activity: any, index: number) => (
+                  {recentAct.map((activity: RecentActivityItem, index: number) => (
                     <div
                       key={index}
                       className="flex items-start gap-3 pb-4 last:pb-0 last:border-0 border-b border-border/50"

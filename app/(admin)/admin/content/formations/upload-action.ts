@@ -2,6 +2,10 @@
 
 import { uploadPublicAsset } from '@/lib/services/storageService';
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unknown error';
+}
+
 export async function uploadThumbnailAction(formData: FormData) {
   try {
     const file = formData.get('file') as File;
@@ -10,8 +14,8 @@ export async function uploadThumbnailAction(formData: FormData) {
 
     const url = await uploadPublicAsset(file, 'public_assets', 'thumbnails/formations');
     return { success: true, url };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading thumbnail:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

@@ -21,7 +21,7 @@ export async function updateProfile(formData: FormData) {
   const avatarFile = formData.get("avatar_file") as File | null
   if (avatarFile && avatarFile.size > 0) {
     const filename = `${user.id}-${Date.now()}.${avatarFile.name.split(".").pop()}`
-    const { data, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("public_assets")
       .upload(`avatars/${filename}`, avatarFile, { cacheControl: "3600", upsert: true })
 

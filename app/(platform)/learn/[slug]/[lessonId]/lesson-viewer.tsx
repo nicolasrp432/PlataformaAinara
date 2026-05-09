@@ -8,7 +8,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   CheckCircle2, 
-  BookOpen,
   List,
   X,
   Sparkles,
@@ -97,12 +96,6 @@ export function LessonViewer({ data }: LessonViewerProps) {
 
   const { lesson, module, formation, curriculum, previousLesson, nextLesson, completedCount, totalCount } = data
   const progressPercent = Math.round((completedCount / totalCount) * 100)
-
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return "0 min"
-    const minutes = Math.floor(seconds / 60)
-    return `${minutes} min`
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES", {

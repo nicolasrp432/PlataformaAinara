@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2, AlertCircle, CheckCircle2, Mail } from "lucide-react"
+import { Loader2, AlertCircle, Mail } from "lucide-react"
 
 export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = React.useState(false)
@@ -33,7 +33,7 @@ export function ForgotPasswordForm() {
       }
 
       setSuccess(true)
-    } catch (err) {
+    } catch {
       setError("Ha ocurrido un error. Intenta de nuevo.")
     } finally {
       setIsLoading(false)

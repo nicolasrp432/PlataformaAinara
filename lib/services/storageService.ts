@@ -11,7 +11,7 @@ export async function uploadPublicAsset(file: File, bucket = 'public_assets', pa
   const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const fullPath = path ? `${path}/${filename}` : filename;
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(bucket)
     .upload(fullPath, file, {
       cacheControl: '3600',

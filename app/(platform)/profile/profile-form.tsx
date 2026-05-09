@@ -44,7 +44,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           if (fileInputRef.current) fileInputRef.current.value = ""
           setMessage({ type: 'success', text: "Perfil actualizado correctamente." })
         }
-      } catch (error) {
+      } catch {
         setMessage({ type: 'error', text: "Ocurrió un error inesperado al guardar." })
       }
     })

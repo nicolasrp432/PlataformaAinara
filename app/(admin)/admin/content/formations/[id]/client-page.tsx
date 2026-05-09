@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useTransition } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical, MoreVertical, Video, FileText, Clock, Users, Loader2 } from "lucide-react"
@@ -37,14 +37,16 @@ import {
 } from "../actions"
 import { uploadThumbnailAction } from "../upload-action"
 
-interface Formation {
+type DifficultyLevel = "beginner" | "intermediate" | "advanced"
+
+interface FormationFormState {
   id: string
   title: string
   slug: string
   description: string | null
   long_description: string | null
   thumbnail_url: string | null
-  difficulty: string
+  difficulty: DifficultyLevel
   duration_minutes: number
   is_published: boolean
   is_premium: boolean
@@ -78,17 +80,51 @@ interface Lesson {
   xp_reward: number
 }
 
+type FormationEditorInitialData = Partial<FormationFormState> & {
+  modules?: Module[]
+}
+
 const difficultyLevels = [
   { value: "beginner", label: "Principiante" },
   { value: "intermediate", label: "Intermedio" },
   { value: "advanced", label: "Avanzado" },
 ]
 
-export default function FormationEditorClientPage({ isNew, initialData }: { isNew: boolean; initialData: any }) {
+export default function FormationEditorClientPage({ isNew, initialData }: { isNew: boolean; initialData: FormationEditorInitialData | null }) {
   const router = useRouter()
   const supabase = createClient()
 
-  const [formation, setFormation] = useState<any>(initialData || { title: '', description: '', price: 0, status: 'draft', is_published: false, difficulty: 'beginner', sort_order: 0 });
+  const [formation, setFormation] = useState<FormationFormState>(initialData ? {
+    id: initialData.id || "",
+    title: initialData.title || "",
+    slug: initialData.slug || "",
+    description: initialData.description ?? null,
+    long_description: initialData.long_description ?? null,
+    thumbnail_url: initialData.thumbnail_url ?? null,
+    difficulty: initialData.difficulty || "beginner",
+    duration_minutes: initialData.duration_minutes ?? 0,
+    is_published: initialData.is_published ?? false,
+    is_premium: initialData.is_premium ?? false,
+    is_featured: initialData.is_featured ?? false,
+    xp_reward: initialData.xp_reward ?? 0,
+    price: initialData.price ?? 0,
+    sort_order: initialData.sort_order ?? 0,
+  } : {
+    id: "",
+    title: "",
+    slug: "",
+    description: null,
+    long_description: null,
+    thumbnail_url: null,
+    difficulty: "beginner",
+    duration_minutes: 0,
+    is_published: false,
+    is_premium: false,
+    is_featured: false,
+    xp_reward: 0,
+    price: 0,
+    sort_order: 0,
+  })
   const [modules, setModules] = useState<Module[]>(initialData?.modules || [])
   const [loading] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -117,7 +153,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
           description: formation?.description || null,
           long_description: formation?.long_description || null,
           thumbnail_url: formation?.thumbnail_url || null,
-          difficulty: (formation?.difficulty || "beginner") as any,
+          difficulty: (formation.difficulty || "beginner") as DifficultyLevel,
           duration_minutes: formation?.duration_minutes || 0,
           is_published: formation?.is_published || false,
           is_premium: formation?.is_premium || false,
@@ -151,7 +187,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
 
   const handleTitleChange = (title: string) => {
     if (formation) {
-      setFormation((prev: any) => ({
+      setFormation((prev) => ({
         ...prev,
         title,
         slug: isNew ? generateSlug(title) : prev.slug,
@@ -420,7 +456,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                     id="slug"
                     value={formation?.slug || ""}
                     onChange={(e) =>
-                      setFormation((prev: any) => ({ ...prev, slug: e.target.value }))
+                    setFormation((prev) => ({ ...prev, slug: e.target.value }))
                     }
                     placeholder="despertar-consciencia"
                   />
@@ -433,7 +469,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   id="description"
                   value={formation?.description || ""}
                   onChange={(e) =>
-                    setFormation((prev: any) => ({ ...prev, description: e.target.value }))
+                    setFormation((prev) => ({ ...prev, description: e.target.value }))
                   }
                   placeholder="Breve descripcion de la formacion..."
                   rows={3}
@@ -446,7 +482,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   id="long_description"
                   value={formation?.long_description || ""}
                   onChange={(e) =>
-                    setFormation((prev: any) => ({ ...prev, long_description: e.target.value }))
+                    setFormation((prev) => ({ ...prev, long_description: e.target.value }))
                   }
                   placeholder="Descripcion detallada de lo que aprenderan..."
                   rows={5}
@@ -459,7 +495,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   <Select
                     value={formation?.difficulty || "beginner"}
                     onValueChange={(value) =>
-                      setFormation((prev: any) => ({ ...prev, difficulty: value }))
+                      setFormation((prev) => ({ ...prev, difficulty: value as DifficultyLevel }))
                     }
                   >
                     <SelectTrigger>
@@ -482,7 +518,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                     min={0}
                     value={formation?.duration_minutes || 0}
                     onChange={(e) =>
-                      setFormation((prev: any) => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))
+                      setFormation((prev) => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))
                     }
                   />
                 </div>
@@ -494,7 +530,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                     min={0}
                     value={formation?.xp_reward || 0}
                     onChange={(e) =>
-                      setFormation((prev: any) => ({ ...prev, xp_reward: parseInt(e.target.value) || 0 }))
+                      setFormation((prev) => ({ ...prev, xp_reward: parseInt(e.target.value) || 0 }))
                     }
                   />
                 </div>
@@ -522,7 +558,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                         formData.append("file", file)
                         const res = await uploadThumbnailAction(formData)
                         if (res.success && res.url) {
-                          setFormation((prev: any) => ({ ...prev, thumbnail_url: res.url }))
+                            setFormation((prev) => ({ ...prev, thumbnail_url: res.url }))
                         } else {
                           console.error(res.error)
                         }
@@ -532,7 +568,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   <Input
                     value={formation?.thumbnail_url || ""}
                     onChange={(e) =>
-                      setFormation((prev: any) => ({ ...prev, thumbnail_url: e.target.value }))
+                      setFormation((prev) => ({ ...prev, thumbnail_url: e.target.value }))
                     }
                     placeholder="URL de imagen (opcional si subes archivo)"
                   />
@@ -800,7 +836,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                 <Switch
                   checked={formation?.is_premium || false}
                   onCheckedChange={(checked) =>
-                    setFormation((prev: any) => ({ ...prev, is_premium: checked }))
+                    setFormation((prev) => ({ ...prev, is_premium: checked }))
                   }
                 />
               </div>
@@ -815,7 +851,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                 <Switch
                   checked={formation?.is_featured || false}
                   onCheckedChange={(checked) =>
-                    setFormation((prev: any) => ({ ...prev, is_featured: checked }))
+                    setFormation((prev) => ({ ...prev, is_featured: checked }))
                   }
                 />
               </div>
@@ -830,7 +866,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                 <Switch
                   checked={formation?.is_published || false}
                   onCheckedChange={(checked) =>
-                    setFormation((prev: any) => ({ ...prev, is_published: checked }))
+                    setFormation((prev) => ({ ...prev, is_published: checked }))
                   }
                 />
               </div>
@@ -854,7 +890,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   step={0.01}
                   value={formation?.price || 0}
                   onChange={(e) =>
-                    setFormation((prev: any) => ({ ...prev, price: parseFloat(e.target.value) || 0 }))
+                    setFormation((prev) => ({ ...prev, price: parseFloat(e.target.value) || 0 }))
                   }
                   placeholder="0.00"
                 />

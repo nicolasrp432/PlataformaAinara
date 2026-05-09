@@ -13,6 +13,44 @@ import { Button } from "@/components/ui/button"
 import { MessageCircle, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
+type ReflectionAuthor = {
+  full_name: string | null
+  avatar_url: string | null
+  role?: string | null
+}
+
+type ReflectionReply = {
+  id: string
+  content: string
+  created_at: string
+  likes_count: number
+  parent_id: string | null
+  profiles: ReflectionAuthor | ReflectionAuthor[] | null
+  lessons: null
+}
+
+type ReflectionItem = {
+  id: string
+  content: string
+  created_at: string
+  likes_count: number
+  parent_id: string | null
+  profiles: ReflectionAuthor | ReflectionAuthor[] | null
+  lessons: { title: string } | null
+  replies?: ReflectionReply[]
+}
+
+type OptimisticReflectionUpdate = ReflectionItem | { __revert: true }
+
+type ReflectionInsertPayload = {
+  id: string
+  user_id: string
+  content: string
+  created_at: string
+  likes_count: number | null
+  parent_id: string | null
+}
+
 function formatTimeAgo(dateStr: string) {
   const date = new Date(dateStr)
   const now = new Date()
@@ -28,20 +66,20 @@ function formatTimeAgo(dateStr: string) {
 }
 
 interface TabernaFeedProps {
-  initialReflections: any[]
+  initialReflections: ReflectionItem[]
   currentUser: { full_name: string; avatarUrl: string | null }
 }
 
 export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProps) {
-  const [reflections, setReflections] = useState(
+  const [reflections, setReflections] = useState<ReflectionItem[]>(
     initialReflections.map((r) => ({ ...r, replies: r.replies || [] }))
   )
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState("")
   const [isPendingReply, startReplyTransition] = useTransition()
 
-  const handleOptimisticReflection = (reflection: any) => {
-    if (reflection.__revert) {
+  const handleOptimisticReflection = (reflection: OptimisticReflectionUpdate) => {
+    if ("__revert" in reflection) {
       setReflections((prev) => prev.filter((r) => !r.id?.startsWith("temp-")))
       return
     }
@@ -58,7 +96,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     setReplyText("")
   }
 
-  const handleSubmitReply = (e: React.FormEvent, reflectionId: string, authorName: string) => {
+  const handleSubmitReply = (e: React.FormEvent, reflectionId: string) => {
     e.preventDefault()
     const trimmed = replyText.trim()
     if (!trimmed) return
@@ -94,7 +132,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
         setReflections((prev) =>
           prev.map((r) =>
             r.id === reflectionId
-              ? { ...r, replies: (r.replies || []).filter((rep: any) => rep.id !== optimisticReply.id) }
+              ? { ...r, replies: (r.replies || []).filter((rep) => rep.id !== optimisticReply.id) }
               : r
           )
         )
@@ -118,7 +156,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
           filter: "is_public=eq.true",
         },
         async (payload) => {
-          const raw = payload.new as any
+          const raw = payload.new as ReflectionInsertPayload
 
           const { data: profile } = await supabase
             .from("profiles")
@@ -141,9 +179,9 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
               return prev.map((r) => {
                 if (r.id !== enriched.parent_id) return r
                 const existing = r.replies || []
-                if (existing.some((rep: any) => rep.id === enriched.id)) return r
+                if (existing.some((rep) => rep.id === enriched.id)) return r
                 const tempIdx = existing.findIndex(
-                  (rep: any) => rep.id?.startsWith("temp-") && rep.content === enriched.content
+                  (rep) => rep.id?.startsWith("temp-") && rep.content === enriched.content
                 )
                 if (tempIdx !== -1) {
                   const next = [...existing]
@@ -193,7 +231,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
           </div>
         ) : (
           <div className="flex flex-col gap-5">
-            {reflections.map((reflection: any) => {
+            {reflections.map((reflection) => {
               const authorProfile = Array.isArray(reflection.profiles)
                 ? reflection.profiles[0]
                 : reflection.profiles
@@ -202,7 +240,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
               const isAuthorAdmin = authorProfile?.role === "admin"
               const isTemp = reflection.id?.startsWith("temp-")
               const isReplying = replyingTo === reflection.id
-              const replies: any[] = reflection.replies || []
+              const replies: ReflectionReply[] = reflection.replies || []
 
               return (
                 <Card
@@ -289,7 +327,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                         {/* Thread replies */}
                         {replies.length > 0 && (
                           <div className="mt-5 space-y-4 pl-4 border-l-2 border-border/40">
-                            {replies.map((reply: any) => {
+                            {replies.map((reply) => {
                               const rp = Array.isArray(reply.profiles) ? reply.profiles[0] : reply.profiles
                               const rName = rp?.full_name || "Usuario Anónimo"
                               const rAvatar = rp?.avatar_url || ""
@@ -326,7 +364,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                         {/* Reply form */}
                         {isReplying && (
                           <form
-                            onSubmit={(e) => handleSubmitReply(e, reflection.id, authorName)}
+                            onSubmit={(e) => handleSubmitReply(e, reflection.id)}
                             className="mt-4 space-y-2"
                           >
                             <Textarea

@@ -1,10 +1,47 @@
 import { createClient } from '@/lib/supabase/server';
 import { CreateFormationInput, UpdateFormationInput, CreateModuleInput, UpdateModuleInput } from '@/lib/validations/content';
 
+interface CountRow {
+  count?: number | null;
+}
+
+interface FormationCountRow {
+  modules?: CountRow[];
+  lessons?: {
+    lessons?: CountRow[];
+  }[];
+  [key: string]: unknown;
+}
+
+interface ModuleLessonRow {
+  sort_order?: number | null;
+  [key: string]: unknown;
+}
+
+interface ModuleRow {
+  sort_order?: number | null;
+  lessons?: ModuleLessonRow[];
+  [key: string]: unknown;
+}
+
+export interface FormationSummary {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  difficulty: string;
+  duration_minutes: number;
+  is_published: boolean;
+  is_premium: boolean;
+  created_at: string;
+  modules_count: number;
+  lessons_count: number;
+}
+
 /**
  * FORMATIONS
  */
-export async function getFormations() {
+export async function getFormations(): Promise<FormationSummary[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('formations')
@@ -17,11 +54,12 @@ export async function getFormations() {
 
   if (error) throw new Error(error.message);
   
-  return (data || []).map((f: any) => ({
+  return ((data || []) as FormationCountRow[]).map((f) => ({
     ...f,
     modules_count: f.modules?.[0]?.count || 0,
-    lessons_count: f.lessons?.reduce((acc: number, m: any) => acc + (m.lessons?.[0]?.count || 0), 0) || 0
-  }));
+    lessons_count:
+      f.lessons?.reduce((acc: number, m) => acc + (m.lessons?.[0]?.count || 0), 0) || 0,
+  })) as FormationSummary[];
 }
 
 export async function getFormationById(id: string) {
@@ -52,9 +90,9 @@ export async function getFormationById(id: string) {
   if (modulesError) throw new Error(modulesError.message);
   
   // Sort lessons within each module
-  const sortedModules = (modulesData || []).map((m: any) => ({
+  const sortedModules = ((modulesData || []) as ModuleRow[]).map((m) => ({
     ...m,
-    lessons: (m.lessons || []).sort((a: any, b: any) => a.sort_order - b.sort_order)
+    lessons: (m.lessons || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
   }));
   
   return { ...formationData, modules: sortedModules };
@@ -64,7 +102,7 @@ export async function createFormation(input: CreateFormationInput) {
   const supabase = await createClient();
   
   // Si no viene slug, lo generamos del titulo solo para tener un base.
-  let payload = { ...input };
+  const payload = { ...input } as typeof input & { slug?: string };
   if (!payload.slug && payload.title) {
     payload.slug = payload.title
       .toLowerCase()

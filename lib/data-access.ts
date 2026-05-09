@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { cache } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { progressToNextLevel } from "@/lib/utils"
@@ -69,7 +71,7 @@ export const getDashboardData = cache(async (userId: string) => {
       totalXp: profile?.xp ?? 0,
       currentStreak: profile?.streak_days ?? 0,
       level: profile?.level || 1,
-      nextLevelProgress: progressToNextLevel(profile?.xp || 0, profile?.level || 1),
+      nextLevelProgress: progressToNextLevel(profile?.xp || 0),
     },
     profile,
   }
@@ -77,6 +79,16 @@ export const getDashboardData = cache(async (userId: string) => {
 
 export const getFormationsInProgress = cache(async (userId: string) => {
   const supabase = await createClient()
+
+  type FormationInProgress = {
+    id: string
+    title: string
+    slug: string
+    progress: number
+    lessonsCompleted: number
+    totalLessons: number
+    thumbnailUrl: string | null
+  }
 
   const { data: enrollments } = await supabase
     .from("enrollments")
@@ -152,7 +164,7 @@ export const getFormationsInProgress = cache(async (userId: string) => {
         thumbnailUrl: formation.thumbnail_url,
       }
     })
-    .filter(Boolean)
+    .filter((formation): formation is FormationInProgress => formation !== null)
 })
 
 export const getRecentActivity = cache(async (userId: string) => {

@@ -9,12 +9,30 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, Send } from "lucide-react"
 import { createReflection } from "./actions"
 
+type ReflectionAuthor = {
+  full_name: string | null
+  avatar_url: string | null
+  role?: string | null
+}
+
+type ReflectionItem = {
+  id: string
+  content: string
+  created_at: string
+  likes_count: number
+  parent_id: string | null
+  profiles: ReflectionAuthor | ReflectionAuthor[] | null
+  lessons: { title: string } | null
+}
+
+type OptimisticReflectionUpdate = ReflectionItem | { __revert: true }
+
 interface ReflectionFormProps {
   user: {
     full_name: string
     avatarUrl: string | null
   }
-  onOptimisticReflection?: (reflection: any) => void
+  onOptimisticReflection?: (reflection: OptimisticReflectionUpdate) => void
 }
 
 export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormProps) {
@@ -35,6 +53,7 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
       content: trimmed,
       created_at: new Date().toISOString(),
       likes_count: 0,
+      parent_id: null,
       profiles: { full_name: user.full_name, avatar_url: user.avatarUrl, role: "student" },
       lessons: null,
     })

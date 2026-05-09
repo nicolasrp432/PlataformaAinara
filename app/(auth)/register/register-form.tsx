@@ -73,7 +73,7 @@ export function RegisterForm() {
         router.push("/dashboard")
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setError("Ha ocurrido un error. Intenta de nuevo.")
     } finally {
       setIsLoading(false)

@@ -33,7 +33,11 @@ import {
 import type { Formation, Module as BaseModule, Lesson as BaseLesson } from "@/types"
 
 type Module = BaseModule
-type Lesson = BaseLesson
+type Lesson = BaseLesson & {
+  is_free?: boolean
+  content_type?: string
+  xp_reward?: number
+}
 
 // Mock data
 const mockFormations = [
@@ -275,7 +279,7 @@ export default function ModulesPage() {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          {module.lessons!.map((lesson, lessonIndex) => (
+                        {module.lessons!.map((lesson: Lesson, lessonIndex) => (
                             <Link
                               key={lesson.id}
                               href={`/admin/content/lessons/${lesson.id}`}
@@ -292,7 +296,7 @@ export default function ModulesPage() {
                                   <p className="font-medium text-sm truncate">
                                     {lesson.title}
                                   </p>
-                                  {(lesson as any).is_free && (
+                                  {lesson.is_free && (
                                     <Badge variant="outline" className="text-xs">
                                       Gratis
                                     </Badge>
@@ -300,17 +304,17 @@ export default function ModulesPage() {
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    {(lesson as any).content_type === "video" ? (
+                                    {lesson.content_type === "video" ? (
                                       <Video className="h-3 w-3" />
                                     ) : (
                                       <FileText className="h-3 w-3" />
                                     )}
-                                    {(lesson as any).content_type === "video" ? "Video" : "Texto"}
+                                    {lesson.content_type === "video" ? "Video" : "Texto"}
                                   </span>
                                   {lesson.duration_seconds > 0 && (
                                     <span>{formatDuration(lesson.duration_seconds)}</span>
                                   )}
-                                  <span>{(lesson as any).xp_reward} XP</span>
+                                  <span>{lesson.xp_reward} XP</span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">

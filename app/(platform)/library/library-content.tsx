@@ -5,7 +5,6 @@ import Link from "next/link"
 import { 
   Search, 
   Clock, 
-  Star, 
   Play,
   BookOpen,
   Sparkles,
@@ -97,6 +96,8 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
     }
     return `${mins}m`
   }
+
+  void categories
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-10 relative">

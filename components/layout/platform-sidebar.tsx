@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +31,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
 
 interface SidebarUser {
@@ -64,7 +62,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isMobileOpen, setIsMobileOpen] = React.useState(false)
 
-  const progress = progressToNextLevel(user.xp, user.level)
+  const progress = progressToNextLevel(user.xp)
 
   return (
     <>

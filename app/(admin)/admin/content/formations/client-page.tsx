@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,6 @@ import {
   Plus,
   Search,
   MoreHorizontal,
-  Pencil,
   Trash2,
   Eye,
   FolderOpen,
@@ -43,20 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteFormationAction } from "./actions"
-
-interface Formation {
-  id: string
-  title: string
-  slug: string
-  description: string | null
-  difficulty: string
-  duration_minutes: number
-  is_published: boolean
-  is_premium: boolean
-  created_at: string
-  modules_count?: number
-  lessons_count?: number
-}
+import type { FormationSummary } from "@/lib/services/formationService"
 
 function getLevelBadge(level: string) {
   switch (level) {
@@ -80,19 +66,13 @@ function formatDuration(minutes: number): string {
   return `${minutes}m`
 }
 
-export default function FormationsClientPage({ initialData }: { initialData: Formation[] }) {
-  const [formations, setFormations] = useState<Formation[]>(initialData)
-  const [loading, setLoading] = useState(false)
+export default function FormationsClientPage({ initialData }: { initialData: FormationSummary[] }) {
+  const [formations, setFormations] = useState<FormationSummary[]>(initialData)
   const [searchQuery, setSearchQuery] = useState("")
   const [levelFilter, setLevelFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-
-  // Sync state if initialData changes (e.g., from server revalidation)
-  useEffect(() => {
-    setFormations(initialData)
-  }, [initialData])
 
   async function handleDelete() {
     if (!deleteId) return
@@ -178,14 +158,14 @@ export default function FormationsClientPage({ initialData }: { initialData: For
       </Card>
 
       {/* Loading State */}
-      {loading && (
+      {false && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
 
       {/* Formations List */}
-      {!loading && filteredFormations.length > 0 && (
+      {filteredFormations.length > 0 && (
         <div className="grid gap-4">
           {filteredFormations.map((formation) => (
             <Card key={formation.id} className="overflow-hidden">
@@ -270,7 +250,7 @@ export default function FormationsClientPage({ initialData }: { initialData: For
       )}
 
       {/* Empty State */}
-      {!loading && filteredFormations.length === 0 && (
+      {filteredFormations.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <BookOpen className="h-12 w-12 text-muted-foreground/50" />

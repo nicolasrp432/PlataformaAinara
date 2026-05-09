@@ -406,7 +406,11 @@ function NativePlayer({
   const togglePlay = () => {
     const v = videoRef.current
     if (!v) return
-    v.paused ? v.play() : v.pause()
+    if (v.paused) {
+      void v.play()
+    } else {
+      v.pause()
+    }
   }
 
   const toggleMute = () => {
@@ -450,8 +454,6 @@ function NativePlayer({
     const v = videoRef.current
     if (v) v.playbackRate = speed
   }
-
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
     <div
