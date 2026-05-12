@@ -502,11 +502,19 @@ function NativePlayer({
 
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-16 pb-4 px-4 transition-opacity duration-300",
+          "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-10 sm:pt-16 pb-3 sm:pb-4 px-3 sm:px-4 transition-opacity duration-300",
           showControls || !isPlaying ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="mb-4">
+        {/* Time display — above slider on mobile so controls row fits */}
+        <div className="flex items-center justify-between mb-1 sm:hidden">
+          <span className="text-white text-xs tabular-nums opacity-80">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
+          {title && <p className="text-white text-xs truncate opacity-75 ml-2 max-w-[55%]">{title}</p>}
+        </div>
+
+        <div className="mb-3 sm:mb-4">
           <Slider
             value={[currentTime]}
             max={duration || 100}
@@ -517,18 +525,20 @@ function NativePlayer({
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={togglePlay}>
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          {/* Left controls */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8 sm:h-10 sm:w-10" onClick={togglePlay}>
+              {isPlaying ? <Pause className="h-4 w-4 sm:h-5 sm:w-5" /> : <Play className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={() => skip(-10)}>
-              <SkipBack className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8 sm:h-10 sm:w-10" onClick={() => skip(-10)}>
+              <SkipBack className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={() => skip(10)}>
-              <SkipForward className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8 sm:h-10 sm:w-10" onClick={() => skip(10)}>
+              <SkipForward className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
 
-            <div className="flex items-center gap-2 group/volume">
+            {/* Volume — hidden on mobile (use hardware volume) */}
+            <div className="hidden sm:flex items-center gap-2 group/volume">
               <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={toggleMute}>
                 {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
               </Button>
@@ -543,15 +553,17 @@ function NativePlayer({
               </div>
             </div>
 
-            <span className="text-white text-sm tabular-nums ml-2">
+            {/* Time — visible only on sm+ (shown above slider on mobile) */}
+            <span className="hidden sm:inline text-white text-sm tabular-nums ml-1">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right controls */}
+          <div className="flex items-center gap-1 sm:gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 text-sm">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9">
                   {playbackSpeed}x
                 </Button>
               </DropdownMenuTrigger>
@@ -568,9 +580,10 @@ function NativePlayer({
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Settings — hidden on mobile to save horizontal space */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+                <Button variant="ghost" size="icon" className="hidden sm:inline-flex text-white hover:bg-white/20">
                   <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -580,14 +593,15 @@ function NativePlayer({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={toggleFullscreen}>
-              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8 sm:h-10 sm:w-10" onClick={toggleFullscreen}>
+              {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
           </div>
         </div>
 
+        {/* Title — desktop only (shown inline with time on mobile) */}
         {title && (
-          <p className="text-white text-sm mt-2 truncate opacity-75">{title}</p>
+          <p className="hidden sm:block text-white text-sm mt-2 truncate opacity-75">{title}</p>
         )}
       </div>
     </div>

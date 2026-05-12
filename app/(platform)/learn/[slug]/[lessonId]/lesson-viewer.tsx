@@ -180,26 +180,26 @@ export function LessonViewer({ data }: LessonViewerProps) {
     <div className="min-h-screen bg-background">
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
-        <div className="flex items-center justify-between h-14 px-4 pl-14 md:pl-4">
-          <div className="flex items-center gap-4">
-            <Link href={`/formations/${formation.slug}`}>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver
+        <div className="flex items-center justify-between h-14 px-4 pl-14 md:pl-4 gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <Link href={`/formations/${formation.slug}`} className="shrink-0">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2 sm:px-3">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1.5">Volver</span>
               </Button>
             </Link>
-            <Separator orientation="vertical" className="h-6 bg-border/50" />
-            <div>
-              <p className="text-sm font-medium truncate max-w-[300px] text-foreground">
+            <Separator orientation="vertical" className="h-6 bg-border/50 shrink-0 hidden sm:block" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate max-w-[130px] sm:max-w-[220px] md:max-w-[300px] text-foreground">
                 {formation.title}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground hidden sm:block truncate max-w-[220px] md:max-w-[300px]">
                 {module.title}
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
+
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <div className="hidden md:flex items-center gap-2">
               <Progress value={progressPercent} className="w-32 h-2" />
               <span className="text-sm text-muted-foreground">
@@ -210,10 +210,10 @@ export function LessonViewer({ data }: LessonViewerProps) {
               variant="outline"
               size="sm"
               onClick={() => setShowSidebar(!showSidebar)}
-              className="border-border/50"
+              className="border-border/50 px-2 sm:px-3"
             >
-              <List className="h-4 w-4 mr-2" />
-              Contenido
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1.5">Contenido</span>
             </Button>
           </div>
         </div>
@@ -222,10 +222,10 @@ export function LessonViewer({ data }: LessonViewerProps) {
       <div className="flex">
         {/* Main Content */}
         <main className="flex-1 min-w-0">
-          {/* Video Player Area */}
-          <div className="bg-gradient-to-b from-charcoal to-charcoal-light">
-            <div className="max-w-5xl mx-auto">
-              <div className="aspect-video flex items-center justify-center">
+          {/* Video Player Area — negative margins escape the platform container's px-6 on mobile */}
+          <div className="bg-black -mx-6 md:mx-0 overflow-hidden">
+            <div className="w-full max-w-5xl mx-auto">
+              <div className="aspect-video w-full">
                 {lesson.videoUrl ? (
                   <VideoPlayer
                     src={lesson.videoUrl}
@@ -237,12 +237,14 @@ export function LessonViewer({ data }: LessonViewerProps) {
                     className="w-full h-full"
                   />
                 ) : (
-                  <div className="text-center text-white/60">
-                    <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
-                      <Play className="h-12 w-12" />
+                  <div className="w-full h-full flex items-center justify-center text-white/60">
+                    <div className="text-center">
+                      <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
+                        <Play className="h-12 w-12" />
+                      </div>
+                      <p className="text-lg">Video no disponible</p>
+                      <p className="text-sm mt-2">El contenido de video se agregara pronto</p>
                     </div>
-                    <p className="text-lg">Video no disponible</p>
-                    <p className="text-sm mt-2">El contenido de video se agregara pronto</p>
                   </div>
                 )}
               </div>
@@ -252,10 +254,10 @@ export function LessonViewer({ data }: LessonViewerProps) {
           {/* Lesson Content */}
           <div className="max-w-4xl mx-auto px-4 py-8">
             {/* Lesson Header */}
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="border-border/50 text-muted-foreground">
+            <div className="flex items-start justify-between gap-3 mb-6">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <Badge variant="outline" className="border-border/50 text-muted-foreground text-xs">
                     Modulo {module.order}: {module.title}
                   </Badge>
                   {lessonCompleted && (
@@ -265,9 +267,9 @@ export function LessonViewer({ data }: LessonViewerProps) {
                     </Badge>
                   )}
                 </div>
-                <h1 className="text-2xl font-medium text-foreground">{lesson.title}</h1>
+                <h1 className="text-xl sm:text-2xl font-medium text-foreground">{lesson.title}</h1>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
                 <Sparkles className="h-4 w-4 text-primary" />
                 <span>+{lesson.xpReward} XP</span>
               </div>
@@ -277,19 +279,19 @@ export function LessonViewer({ data }: LessonViewerProps) {
             {!lessonCompleted && (
               <Card className="mb-6 border-primary/20 bg-primary/5">
                 <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-medium text-foreground">Marcar como completada</p>
                       <p className="text-sm text-muted-foreground">
-                        {lesson.videoUrl 
+                        {lesson.videoUrl
                           ? "O ve el video hasta el 90% para completar automaticamente"
                           : "Marca esta leccion como completada para continuar"}
                       </p>
                     </div>
-                    <Button 
+                    <Button
                       onClick={handleMarkComplete}
                       disabled={isSaving}
-                      className="bg-primary hover:bg-primary/90"
+                      className="bg-primary hover:bg-primary/90 self-start sm:self-auto shrink-0"
                     >
                       {isSaving ? "Guardando..." : "Completar"}
                       <CheckCircle2 className="h-4 w-4 ml-2" />

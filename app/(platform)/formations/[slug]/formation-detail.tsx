@@ -159,13 +159,14 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
       </Button>
 
       {/* Hero Section */}
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Left column — on mobile this renders second (order-2) so CTA appears first */}
+        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
           {/* Title & Meta */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={cn(
                   "text-xs font-medium",
                   difficultyColors[formation.difficulty || "beginner"]
@@ -179,16 +180,16 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                 </Badge>
               )}
             </div>
-            <h1 className="text-3xl font-light tracking-tight text-foreground mb-4">
+            <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-foreground mb-4">
               {formation.title}
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
               {formation.description || "Una formacion transformadora para tu desarrollo personal."}
             </p>
           </div>
 
           {/* Stats */}
-          <div className="flex flex-wrap items-center gap-6 text-sm">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="h-5 w-5 text-primary/60" />
               <span>{formatDuration((formation.duration_minutes || 0) * 60)}</span>
@@ -207,7 +208,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
           {isEnrolledOptimistic && (
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-2">
                   <span className="font-medium text-foreground">Tu progreso</span>
                   <span className="text-sm text-muted-foreground">
                     {completedCount} de {totalLessons} lecciones completadas
@@ -217,8 +218,8 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                 {nextLesson && (
                   <Link href={`/learn/${formation.slug}/${nextLesson.lesson.id}`}>
                     <Button className="w-full bg-primary hover:bg-primary/90">
-                      <Play className="h-4 w-4 mr-2" />
-                      Continuar: {nextLesson.lesson.title}
+                      <Play className="h-4 w-4 mr-2 shrink-0" />
+                      <span className="truncate">Continuar: {nextLesson.lesson.title}</span>
                     </Button>
                   </Link>
                 )}
@@ -235,8 +236,8 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
           )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
+        {/* Sidebar — order-1 so it renders above content on mobile */}
+        <div className="space-y-6 order-1 lg:order-2">
           {/* CTA Card */}
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
             <CardContent className="pt-6 space-y-4">
@@ -362,23 +363,25 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                   >
                     <CardHeader className="py-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {expandedModules.includes(module.id) ? (
-                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                          )}
-                          <div>
-                            <CardTitle className="text-base flex items-center gap-2 text-foreground">
-                              <span className="text-muted-foreground font-normal">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="shrink-0">
+                            {expandedModules.includes(module.id) ? (
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-foreground flex-wrap">
+                              <span className="text-muted-foreground font-normal whitespace-nowrap">
                                 Modulo {moduleIndex + 1}:
                               </span>
-                              {module.title}
+                              <span className="truncate">{module.title}</span>
                               {isModuleComplete && (
-                                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500 shrink-0" />
                               )}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                               {module.lessons.length} lecciones
                               {isEnrolledOptimistic && (
                                 <span className="ml-2">
