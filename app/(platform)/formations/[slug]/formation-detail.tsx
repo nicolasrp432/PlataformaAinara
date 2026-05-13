@@ -148,96 +148,22 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
   return (
     <div className="space-y-8">
       {/* Back Button */}
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        onClick={() => router.back()}
-        className="text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Volver a la biblioteca
-      </Button>
+      <Link href="/library">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver a la biblioteca
+        </Button>
+      </Link>
 
-      {/* Hero Section */}
+      {/* Hero Section — sidebar is first in DOM so it appears first on mobile naturally */}
       <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* Left column — on mobile this renders second (order-2) so CTA appears first */}
-        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-          {/* Title & Meta */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-xs font-medium",
-                  difficultyColors[formation.difficulty || "beginner"]
-                )}
-              >
-                {difficultyLabels[formation.difficulty || "beginner"]}
-              </Badge>
-              {formation.is_premium && (
-                <Badge className="bg-primary/90 text-primary-foreground border-0">
-                  Premium
-                </Badge>
-              )}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-foreground mb-4">
-              {formation.title}
-            </h1>
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-              {formation.description || "Una formacion transformadora para tu desarrollo personal."}
-            </p>
-          </div>
 
-          {/* Stats */}
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="h-5 w-5 text-primary/60" />
-              <span>{formatDuration((formation.duration_minutes || 0) * 60)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <BookOpen className="h-5 w-5 text-primary/60" />
-              <span>{totalLessons} lecciones</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Sparkles className="h-5 w-5 text-primary/60" />
-              <span>+{formation.xp_reward || 500} XP</span>
-            </div>
-          </div>
-
-          {/* Progress (if enrolled) */}
-          {isEnrolledOptimistic && (
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-              <CardContent className="pt-6">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-2">
-                  <span className="font-medium text-foreground">Tu progreso</span>
-                  <span className="text-sm text-muted-foreground">
-                    {completedCount} de {totalLessons} lecciones completadas
-                  </span>
-                </div>
-                <Progress value={formation.progress} className="h-2 mb-4" />
-                {nextLesson && (
-                  <Link href={`/learn/${formation.slug}/${nextLesson.lesson.id}`}>
-                    <Button className="w-full bg-primary hover:bg-primary/90">
-                      <Play className="h-4 w-4 mr-2 shrink-0" />
-                      <span className="truncate">Continuar: {nextLesson.lesson.title}</span>
-                    </Button>
-                  </Link>
-                )}
-                {!nextLesson && formation.progress === 100 && (
-                  <div className="text-center py-2">
-                    <Badge className="bg-emerald-500 text-white border-0">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Formacion completada
-                    </Badge>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar — order-1 so it renders above content on mobile */}
-        <div className="space-y-6 order-1 lg:order-2">
+        {/* Sidebar — primero en DOM → primero en mobile; col-start-3 en desktop */}
+        <div className="lg:col-start-3 lg:row-start-1 space-y-6 min-w-0">
           {/* CTA Card */}
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
             <CardContent className="pt-6 space-y-4">
@@ -333,6 +259,84 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Left column — segundo en DOM → col 1-2 en desktop vía col-start-1 */}
+        <div className="lg:col-span-2 lg:col-start-1 lg:row-start-1 space-y-6 min-w-0">
+          {/* Title & Meta */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs font-medium",
+                  difficultyColors[formation.difficulty || "beginner"]
+                )}
+              >
+                {difficultyLabels[formation.difficulty || "beginner"]}
+              </Badge>
+              {formation.is_premium && (
+                <Badge className="bg-primary/90 text-primary-foreground border-0">
+                  Premium
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-foreground mb-4">
+              {formation.title}
+            </h1>
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+              {formation.description || "Una formacion transformadora para tu desarrollo personal."}
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="h-5 w-5 text-primary/60" />
+              <span>{formatDuration((formation.duration_minutes || 0) * 60)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <BookOpen className="h-5 w-5 text-primary/60" />
+              <span>{totalLessons} lecciones</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Sparkles className="h-5 w-5 text-primary/60" />
+              <span>+{formation.xp_reward || 500} XP</span>
+            </div>
+          </div>
+
+          {/* Progress (if enrolled) */}
+          {isEnrolledOptimistic && (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-2">
+                  <span className="font-medium text-foreground">Tu progreso</span>
+                  <span className="text-sm text-muted-foreground">
+                    {completedCount} de {totalLessons} lecciones completadas
+                  </span>
+                </div>
+                <Progress value={formation.progress} className="h-2 mb-4" />
+                {nextLesson && (
+                  <Link href={`/learn/${formation.slug}/${nextLesson.lesson.id}`}>
+                    <Button className="w-full overflow-hidden bg-primary hover:bg-primary/90">
+                      <Play className="h-4 w-4 shrink-0" />
+                      <span className="truncate min-w-0 flex-1 text-left">
+                        Continuar: {nextLesson.lesson.title}
+                      </span>
+                    </Button>
+                  </Link>
+                )}
+                {!nextLesson && formation.progress === 100 && (
+                  <div className="text-center py-2">
+                    <Badge className="bg-emerald-500 text-white border-0">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Formacion completada
+                    </Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
