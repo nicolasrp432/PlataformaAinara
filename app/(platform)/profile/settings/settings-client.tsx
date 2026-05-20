@@ -17,19 +17,43 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Loader2, ShieldCheck, Bell, Mail, Trash2 } from "lucide-react"
+import { Loader2, ShieldCheck, Bell, Mail, Trash2, Eye, MessageCircle } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { changePasswordAction, requestAccountDeactivation } from "./actions"
+import { changePasswordAction, requestAccountDeactivation, updatePrivacySettings } from "./actions"
 
 interface SettingsClientProps {
   email: string
+  profileVisibility?: "private" | "community" | "public"
+  allowDirectMessages?: boolean
 }
 
-export function SettingsClient({ email }: SettingsClientProps) {
+export function SettingsClient({
+  email,
+  profileVisibility = "community",
+  allowDirectMessages = true,
+}: SettingsClientProps) {
   const [isChanging, startChange] = useTransition()
   const [isDeactivating, startDeactivate] = useTransition()
+  const [isUpdatingPrivacy, startPrivacy] = useTransition()
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [productUpdates, setProductUpdates] = useState(false)
+  const [visibility, setVisibility] = useState(profileVisibility)
+  const [allowDMs, setAllowDMs] = useState(allowDirectMessages)
+
+  const handlePrivacySave = () => {
+    startPrivacy(async () => {
+      const formData = new FormData()
+      formData.set("profile_visibility", visibility)
+      formData.set("allow_direct_messages", String(allowDMs))
+      const result = await updatePrivacySettings(formData)
+      if (result?.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success("Configuración de privacidad guardada.")
+    })
+  }
 
   const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -58,6 +82,54 @@ export function SettingsClient({ email }: SettingsClientProps) {
 
   return (
     <div className="space-y-6">
+      {/* Privacidad */}
+      <Card className="border-border/50 bg-card/60 backdrop-blur-md">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Eye className="w-5 h-5 text-primary" /> Privacidad
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border border-border/50 p-4 gap-4">
+            <div className="flex items-center gap-3">
+              <Eye className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Visibilidad del perfil</p>
+                <p className="text-xs text-muted-foreground">Quién puede ver tu página pública.</p>
+              </div>
+            </div>
+            <Select value={visibility} onValueChange={(v) => setVisibility(v as typeof visibility)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="public">Público</SelectItem>
+                <SelectItem value="community">Comunidad</SelectItem>
+                <SelectItem value="private">Privado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-border/50 p-4">
+            <div className="flex items-center gap-3">
+              <MessageCircle className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Mensajes directos</p>
+                <p className="text-xs text-muted-foreground">Permite que otros usuarios te escriban.</p>
+              </div>
+            </div>
+            <Switch checked={allowDMs} onCheckedChange={setAllowDMs} />
+          </div>
+
+          <div className="flex justify-end">
+            <Button size="sm" onClick={handlePrivacySave} disabled={isUpdatingPrivacy}>
+              {isUpdatingPrivacy && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />}
+              Guardar privacidad
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Notification preferences (UI only — backend TODO) */}
       <Card className="border-border/50 bg-card/60 backdrop-blur-md">
         <CardHeader>

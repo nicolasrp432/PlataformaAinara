@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { awardXP } from "@/lib/services/xpService"
+import { createNotification } from "@/lib/services/notifications"
 import {
   addCommentSchema,
   addReplySchema,
@@ -120,6 +121,21 @@ export async function addCommentReply(parentId: string, content: string, lessonI
     })
 
   if (error) return { error: error.message }
+
+  // Notificar al autor del comentario padre (silencioso si falla)
+  const { data: parent } = await supabase
+    .from("reflections")
+    .select("user_id")
+    .eq("id", parsed.data.parentId)
+    .single()
+  if (parent && parent.user_id !== user.id) {
+    await createNotification(parent.user_id, "comment_reply", {
+      title: "Nueva respuesta a tu comentario",
+      body: parsed.data.content.slice(0, 100),
+      link: `/learn/${slug}/${lessonId}`,
+      createdBy: user.id,
+    })
+  }
 
   revalidatePath(`/learn/${slug}/${lessonId}`)
   return { success: true }

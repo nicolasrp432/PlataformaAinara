@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FormationsCarousel } from "./formations-carousel"
 import { RegisterModal } from "./register-modal"
+import { SenderoLogo } from "@/components/ui/logo"
 
 interface Formation {
   id: string
@@ -56,8 +57,8 @@ export function LandingPage({ formations }: LandingPageProps) {
           <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-6 py-4">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent transition-transform group-hover:scale-110">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent transition-transform group-hover:scale-110 text-primary-foreground">
+                <SenderoLogo className="h-5 w-5" />
               </div>
               <span className="font-display text-2xl font-light tracking-wide">Sendero</span>
             </Link>

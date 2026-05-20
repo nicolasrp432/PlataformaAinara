@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -130,9 +131,12 @@ function CommentItem({ comment, currentUserId, lessonId, slug, isReply }: Commen
       <div className="flex-1 min-w-0">
         <div className="bg-muted/30 p-3.5 sm:p-4 rounded-2xl rounded-tl-none border border-border/30">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="font-semibold text-sm truncate">
+            <Link
+              href={`/u/${comment.user_id}`}
+              className="font-semibold text-sm truncate hover:text-primary transition-colors"
+            >
               {comment.profiles?.full_name || (isOwn ? "Tú" : "Usuario")}
-            </span>
+            </Link>
             <span className="text-xs text-muted-foreground shrink-0">
               {isTemp ? "Enviando..." : formatRelative(comment.created_at)}
             </span>

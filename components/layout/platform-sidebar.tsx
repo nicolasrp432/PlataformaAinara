@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Sparkles,
   LayoutDashboard,
   BookOpen,
   Compass,
@@ -32,11 +31,12 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
-  Search,
-  Bell,
+  MessageSquare,
+  Bot,
 } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
-import { SearchCommand } from "./search-command"
+import { SenderoLogo } from "@/components/ui/logo"
+import { NotificationsBell } from "@/components/notifications/notifications-bell"
 
 interface SidebarUser {
   id: string
@@ -54,12 +54,14 @@ interface PlatformSidebarProps {
 }
 
 const navigation = [
-  { name: "Dashboard",  href: "/dashboard",  icon: LayoutDashboard },
-  { name: "Biblioteca", href: "/library",     icon: BookOpen },
-  { name: "Quest",      href: "/quest",       icon: Compass },
-  { name: "Taberna",    href: "/taberna",     icon: Beer },
-  { name: "Mentoría",   href: "/mentorship",  icon: Users },
-  { name: "Perfil",     href: "/profile",     icon: User },
+  { name: "Dashboard",  href: "/dashboard",   icon: LayoutDashboard },
+  { name: "Biblioteca", href: "/library",      icon: BookOpen },
+  { name: "Quest",      href: "/quest",        icon: Compass },
+  { name: "Taberna",    href: "/taberna",      icon: Beer },
+  { name: "Mentoría",   href: "/mentorship",   icon: Users },
+  { name: "Mensajes",   href: "/messages",     icon: MessageSquare },
+  { name: "Asistente",  href: "/assistant",    icon: Bot },
+  { name: "Perfil",     href: "/profile",      icon: User },
 ]
 
 const SIDEBAR_COLLAPSED_KEY = "sendero:sidebar:collapsed"
@@ -68,7 +70,6 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isMobileOpen, setIsMobileOpen] = React.useState(false)
-  const [isSearchOpen, setIsSearchOpen] = React.useState(false)
   const [hydrated, setHydrated] = React.useState(false)
 
   // Persist collapsed state
@@ -87,24 +88,10 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
     } catch { /* ignore */ }
   }, [isCollapsed, hydrated])
 
-  // Cmd/Ctrl+K opens global search
-  React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault()
-        setIsSearchOpen((s) => !s)
-      }
-    }
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [])
-
   const progress = progressToNextLevel(user.xp)
 
   return (
     <>
-      <SearchCommand open={isSearchOpen} onOpenChange={setIsSearchOpen} />
-
       {/* Mobile menu toggle */}
       <Button
         variant="ghost"
@@ -145,8 +132,8 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             className="flex items-center gap-2.5 min-w-0"
             onClick={() => setIsMobileOpen(false)}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg gold-gradient shadow-sm">
-              <Sparkles className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg gold-gradient shadow-sm text-white">
+              <SenderoLogo className="h-5 w-5" />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
@@ -169,33 +156,6 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           >
             {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
           </Button>
-        </div>
-
-        {/* ── Search trigger ─────────────────────────────────── */}
-        <div className={cn("border-b border-sidebar-border", isCollapsed ? "py-2 px-2" : "p-3")}>
-          {isCollapsed ? (
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(true)}
-              className="w-full h-9 rounded-lg flex items-center justify-center bg-muted/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-              aria-label="Buscar"
-              title="Buscar (⌘K)"
-            >
-              <Search className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors text-sm text-muted-foreground hover:text-foreground border border-border/40"
-            >
-              <Search className="h-3.5 w-3.5 shrink-0" />
-              <span className="flex-1 text-left">Buscar...</span>
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded border border-border/60 bg-background/60 text-muted-foreground/70">
-                ⌘K
-              </kbd>
-            </button>
-          )}
         </div>
 
         {/* ── User XP stats ─────────────────────────────────── */}
@@ -306,20 +266,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
 
         {/* ── User menu + notif bell ─────────────────────────── */}
         <div className="p-2 pb-3 space-y-1">
-          {!isCollapsed && (
-            <button
-              type="button"
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors text-sm text-sidebar-foreground"
-              title="Notificaciones (próximamente)"
-              disabled
-            >
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              <span className="flex-1 text-left">Notificaciones</span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                Pronto
-              </span>
-            </button>
-          )}
+          <NotificationsBell userId={user.id} isCollapsed={isCollapsed} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -35,6 +35,33 @@ export async function changePasswordAction(formData: FormData) {
   return { success: true }
 }
 
+const privacySchema = z.object({
+  profile_visibility: z.enum(["private", "community", "public"]),
+  allow_direct_messages: z.boolean(),
+})
+
+export async function updatePrivacySettings(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado." }
+
+  const parsed = privacySchema.safeParse({
+    profile_visibility: formData.get("profile_visibility"),
+    allow_direct_messages: formData.get("allow_direct_messages") === "true",
+  })
+  if (!parsed.success) return { error: "Datos inválidos." }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(parsed.data)
+    .eq("id", user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath("/profile/settings")
+  return { success: true }
+}
+
 export async function requestAccountDeactivation() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

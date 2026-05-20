@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getAuthUser } from "@/lib/data-access"
+import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { SettingsClient } from "./settings-client"
@@ -14,6 +15,13 @@ export const metadata: Metadata = {
 export default async function ProfileSettingsPage() {
   const user = await getAuthUser()
   if (!user) redirect("/login")
+
+  const supabase = await createClient()
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("profile_visibility, allow_direct_messages")
+    .eq("id", user.id)
+    .single()
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-10">
@@ -31,7 +39,11 @@ export default async function ProfileSettingsPage() {
         </p>
       </div>
 
-      <SettingsClient email={user.email ?? ""} />
+      <SettingsClient
+        email={user.email ?? ""}
+        profileVisibility={(profile?.profile_visibility as "private" | "community" | "public") ?? "community"}
+        allowDirectMessages={profile?.allow_direct_messages ?? true}
+      />
     </div>
   )
 }

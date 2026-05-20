@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import {
-  Sparkles,
   LayoutDashboard,
   BookOpen,
   Users,
@@ -32,8 +31,10 @@ import {
   FileQuestion,
   Award,
   MessageSquare,
+  Bell,
 } from "lucide-react"
 import { getInitials } from "@/lib/utils"
+import { SenderoLogo } from "@/components/ui/logo"
 
 interface AdminSidebarUser {
   id: string
@@ -61,9 +62,10 @@ const contentNavigation = [
 ]
 
 const systemNavigation = [
-  { name: "Certificados", href: "/admin/certificates", icon: Award },
-  { name: "Comentarios", href: "/admin/comments", icon: MessageSquare },
-  { name: "Configuracion", href: "/admin/settings", icon: Settings },
+  { name: "Certificados",    href: "/admin/certificates",   icon: Award },
+  { name: "Notificaciones",  href: "/admin/notifications",  icon: Bell },
+  { name: "Comentarios",     href: "/admin/comments",       icon: MessageSquare },
+  { name: "Configuracion",   href: "/admin/settings",       icon: Settings },
 ]
 
 export function AdminSidebar({ user }: AdminSidebarProps) {
@@ -109,8 +111,8 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b px-4">
           <Link href="/admin" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <SenderoLogo className="h-5 w-5" />
             </div>
             {!isCollapsed && (
               <div>

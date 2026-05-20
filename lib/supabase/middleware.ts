@@ -48,7 +48,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Define protected routes
-  const protectedRoutes = ["/dashboard", "/library", "/formations", "/learn", "/profile", "/quest", "/taberna", "/mentorship"]
+  const protectedRoutes = ["/dashboard", "/library", "/formations", "/learn", "/profile", "/quest", "/taberna", "/mentorship", "/u", "/messages", "/assistant"]
   const adminRoutes = ["/admin"]
   const authRoutes = ["/login", "/register"]
   // /pending and /billing require auth but NOT approved access_status

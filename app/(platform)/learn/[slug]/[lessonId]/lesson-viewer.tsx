@@ -3,18 +3,19 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
-  ChevronLeft, 
-  ChevronRight, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
   List,
   X,
   Sparkles,
   MessageSquare,
   Play,
   Send,
-  Paperclip
+  Paperclip,
+  Bot,
 } from "lucide-react"
 import { VideoPlayer } from "@/components/video/video-player"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ import { useTransition } from "react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { CommentThread, type ThreadedComment } from "@/components/comments/comment-thread"
+import { ChatPanel } from "@/components/ai/chat-panel"
 
 interface LessonViewerProps {
   data: {
@@ -321,6 +323,10 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                   <Paperclip className="w-4 h-4 mr-2" />
                   Recursos Extras
                 </TabsTrigger>
+                <TabsTrigger value="assistant" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Bot className="w-4 h-4 mr-2" />
+                  Asistente IA
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="comments" className="space-y-6 mt-6 outline-none">
@@ -356,6 +362,12 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                 </div>
               </TabsContent>
               
+              <TabsContent value="assistant" className="mt-6 outline-none">
+                <div className="h-[520px] flex flex-col border border-border/50 rounded-2xl p-4 bg-card/30">
+                  <ChatPanel lessonId={lesson.id} formationId={formation.id} className="flex-1" />
+                </div>
+              </TabsContent>
+
               <TabsContent value="resources" className="mt-6 outline-none">
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center">
                   <Paperclip className="w-10 h-10 mx-auto mb-3 text-primary/50" />
