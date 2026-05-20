@@ -51,6 +51,8 @@ export async function updateSession(request: NextRequest) {
   const protectedRoutes = ["/dashboard", "/library", "/formations", "/learn", "/profile", "/quest", "/taberna", "/mentorship"]
   const adminRoutes = ["/admin"]
   const authRoutes = ["/login", "/register"]
+  // /pending requires auth but NOT approved access_status
+  const pendingAllowedRoutes = ["/pending", "/logout"]
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
@@ -59,6 +61,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith(route)
   )
   const isAuthRoute = authRoutes.some((route) =>
+    pathname.startsWith(route)
+  )
+  const isPendingAllowed = pendingAllowedRoutes.some((route) =>
     pathname.startsWith(route)
   )
 
@@ -70,11 +75,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated users away from auth pages (but not /pending)
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
     return NextResponse.redirect(url)
+  }
+
+  // Allow /pending and /logout without access checks
+  if (isPendingAllowed) {
+    return supabaseResponse
   }
 
   // Check admin access with cached role cookie
