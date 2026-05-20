@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { UsersTable } from "./users-table"
 
 export const metadata: Metadata = {
-  title: "Gestión de Usuarios — Admin Ainara",
+  title: "Gestión de Usuarios — Admin Sendero",
 }
 
 export const dynamic = "force-dynamic"

@@ -114,7 +114,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             </div>
             {!isCollapsed && (
               <div>
-                <span className="font-bold">Ainara</span>
+                <span className="font-bold">Sendero</span>
                 <span className="ml-1 text-xs text-muted-foreground">Admin</span>
               </div>
             )}

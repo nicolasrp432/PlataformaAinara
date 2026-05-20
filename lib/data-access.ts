@@ -515,27 +515,81 @@ export const getLessonPageData = cache(
           .in("lesson_id", lessonIds),
         supabase
           .from("reflections")
-          .select("id, content, created_at, user_id")
+          .select("id, content, created_at, user_id, parent_id")
           .eq("lesson_id", lessonId)
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: true }),
       ])
 
-    // Fetch comment author profiles separately to avoid FK join dependency
+    // Fetch comment author profiles + reactions in parallel
+    const commentIds = (rawComments || []).map((c) => c.id)
     const commentUserIds = [...new Set((rawComments || []).map((c) => c.user_id))]
-    const { data: commentProfiles } = commentUserIds.length > 0
-      ? await supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url")
-          .in("id", commentUserIds)
-      : { data: [] }
+
+    const [{ data: commentProfiles }, { data: rawReactions }] = await Promise.all([
+      commentUserIds.length > 0
+        ? supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url")
+            .in("id", commentUserIds)
+        : Promise.resolve({ data: [] as { id: string; full_name: string | null; avatar_url: string | null }[] }),
+      commentIds.length > 0
+        ? supabase
+            .from("reflection_reactions")
+            .select("reflection_id, user_id, reaction_type")
+            .in("reflection_id", commentIds)
+        : Promise.resolve({ data: [] as { reflection_id: string; user_id: string; reaction_type: string }[] }),
+    ])
 
     const commentProfileMap = Object.fromEntries(
       (commentProfiles || []).map((p) => [p.id, p])
     )
-    const comments = (rawComments || []).map((c) => ({
-      ...c,
+
+    // Agregar reactions por (reflection_id, type) y flag userReacted
+    const reactionsByComment = new Map<string, Record<string, { count: number; userReacted: boolean }>>()
+    for (const r of rawReactions || []) {
+      const bucket = reactionsByComment.get(r.reflection_id) ?? {}
+      const entry = bucket[r.reaction_type] ?? { count: 0, userReacted: false }
+      entry.count += 1
+      if (r.user_id === userId) entry.userReacted = true
+      bucket[r.reaction_type] = entry
+      reactionsByComment.set(r.reflection_id, bucket)
+    }
+
+    // Construir árbol (2 niveles: root → replies). Mantener orden por created_at ascendente.
+    type ThreadedComment = {
+      id: string
+      content: string
+      created_at: string
+      user_id: string
+      parent_id: string | null
+      profiles: { id: string; full_name: string | null; avatar_url: string | null } | null
+      reactions: Record<string, { count: number; userReacted: boolean }>
+      replies: ThreadedComment[]
+    }
+
+    const allComments: ThreadedComment[] = (rawComments || []).map((c) => ({
+      id: c.id,
+      content: c.content,
+      created_at: c.created_at,
+      user_id: c.user_id,
+      parent_id: c.parent_id ?? null,
       profiles: commentProfileMap[c.user_id] ?? null,
+      reactions: reactionsByComment.get(c.id) ?? {},
+      replies: [],
     }))
+
+    const byId = new Map(allComments.map((c) => [c.id, c]))
+    const rootComments: ThreadedComment[] = []
+    for (const c of allComments) {
+      if (c.parent_id && byId.has(c.parent_id)) {
+        byId.get(c.parent_id)!.replies.push(c)
+      } else {
+        rootComments.push(c)
+      }
+    }
+    // Root descendente (más recientes arriba), replies ascendente (orden cronológico).
+    rootComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+    const comments = rootComments
 
     const isEnrolled = !!enrollment
 
@@ -576,12 +630,7 @@ export const getLessonPageData = cache(
         isCompleted: completedLessons.includes(currentLesson.id),
         watchedSeconds: currentProgress?.watched_seconds || 0,
       },
-      comments: (comments || []).map((c: any) => ({
-        id: c.id,
-        content: c.content,
-        created_at: c.created_at,
-        profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
-      })),
+      comments,
       module: {
         id: currentModule.id,
         title: currentModule.title,

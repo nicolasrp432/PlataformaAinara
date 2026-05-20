@@ -3,6 +3,12 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { awardXP } from "@/lib/services/xpService"
+import {
+  addCommentSchema,
+  addReplySchema,
+  toggleReactionSchema,
+  deleteCommentSchema,
+} from "@/lib/validations/comments"
 
 export async function markLessonCompleted(lessonId: string, slug: string) {
   const supabase = await createClient()
@@ -68,17 +74,118 @@ export async function addLessonComment(formData: FormData, lessonId: string, slu
 
   if (!user) return { error: "No autorizado" }
 
-  const content = formData.get("content") as string
-  if (!content || !content.trim()) return { error: "El comentario no puede estar vacío." }
+  const parsed = addCommentSchema.safeParse({
+    content: formData.get("content"),
+    lessonId,
+    slug,
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Comentario inválido." }
+  }
 
   const { error } = await supabase
     .from("reflections")
     .insert({
       user_id: user.id,
-      lesson_id: lessonId,
-      content: content.trim(),
-      is_public: true
+      lesson_id: parsed.data.lessonId,
+      content: parsed.data.content,
+      is_public: true,
     })
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/learn/${slug}/${lessonId}`)
+  return { success: true }
+}
+
+export async function addCommentReply(parentId: string, content: string, lessonId: string, slug: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: "No autorizado" }
+
+  const parsed = addReplySchema.safeParse({ parentId, content, lessonId, slug })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Respuesta inválida." }
+  }
+
+  const { error } = await supabase
+    .from("reflections")
+    .insert({
+      user_id: user.id,
+      lesson_id: parsed.data.lessonId,
+      parent_id: parsed.data.parentId,
+      content: parsed.data.content,
+      is_public: true,
+    })
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/learn/${slug}/${lessonId}`)
+  return { success: true }
+}
+
+export async function toggleReaction(reflectionId: string, type: string, lessonId: string, slug: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: "No autorizado" }
+
+  const parsed = toggleReactionSchema.safeParse({ reflectionId, type, lessonId, slug })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Reacción inválida." }
+  }
+
+  // Check if user already reacted with this type → toggle off
+  const { data: existing } = await supabase
+    .from("reflection_reactions")
+    .select("id")
+    .eq("reflection_id", parsed.data.reflectionId)
+    .eq("user_id", user.id)
+    .eq("reaction_type", parsed.data.type)
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await supabase
+      .from("reflection_reactions")
+      .delete()
+      .eq("id", existing.id)
+    if (error) return { error: error.message }
+    revalidatePath(`/learn/${slug}/${lessonId}`)
+    return { success: true, active: false }
+  }
+
+  const { error } = await supabase
+    .from("reflection_reactions")
+    .insert({
+      reflection_id: parsed.data.reflectionId,
+      user_id: user.id,
+      reaction_type: parsed.data.type,
+    })
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/learn/${slug}/${lessonId}`)
+  return { success: true, active: true }
+}
+
+export async function deleteComment(commentId: string, lessonId: string, slug: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: "No autorizado" }
+
+  const parsed = deleteCommentSchema.safeParse({ commentId, lessonId, slug })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Comando inválido." }
+  }
+
+  // RLS asegura que sólo el dueño puede borrar; doble check explícito
+  const { error } = await supabase
+    .from("reflections")
+    .delete()
+    .eq("id", parsed.data.commentId)
+    .eq("user_id", user.id)
 
   if (error) return { error: error.message }
 

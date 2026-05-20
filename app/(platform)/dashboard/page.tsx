@@ -30,7 +30,7 @@ type RecentActivityItem = {
 }
 
 export const metadata: Metadata = {
-  title: "Dashboard | Ainara",
+  title: "Dashboard | Sendero",
   description: "Tu centro de control para el aprendizaje y transformacion",
 }
 

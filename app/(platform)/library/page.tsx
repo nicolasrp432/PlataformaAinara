@@ -3,7 +3,7 @@ import { getAuthUser, getLibraryFormations, getCategories } from "@/lib/data-acc
 import { LibraryContent } from "./library-content"
 
 export const metadata = {
-  title: "Biblioteca | Ainara",
+  title: "Biblioteca | Sendero",
   description: "Explora nuestras formaciones y comienza tu viaje de transformacion",
 }
 

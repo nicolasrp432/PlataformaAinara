@@ -1,22 +1,38 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { enrollSchema } from "@/lib/validations/enroll"
+import { rateLimit, rateLimitResponse, maybeSweep } from "@/lib/rate-limit"
 
 // POST - Enroll user in a formation
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  
-  const body = await request.json()
-  const { formationId, slug } = body
-  
-  if (!formationId) {
-    return NextResponse.json({ error: "Missing formationId" }, { status: 400 })
+
+  maybeSweep()
+  const rl = rateLimit(request, "enroll", { windowMs: 60_000, max: 20 }, user.id)
+  const rlResp = rateLimitResponse(rl)
+  if (rlResp) return rlResp
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
   }
+
+  const parsed = enrollSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Datos inválidos" },
+      { status: 400 },
+    )
+  }
+  const { formationId, slug } = parsed.data
   
   // Check if formation exists and is published
   const { data: formation, error: formationError } = await supabase

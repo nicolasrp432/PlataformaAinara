@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps) {
     .single()
   
   return {
-    title: lesson ? `${lesson.title} | Ainara` : "Leccion | Ainara",
+    title: lesson ? `${lesson.title} | Sendero` : "Leccion | Sendero",
   }
 }
 
@@ -43,5 +43,5 @@ export default async function LessonViewerPage({ params }: PageProps) {
     redirect(`/formations/${data.formationSlug}`)
   }
 
-  return <LessonViewer data={data} />
+  return <LessonViewer data={data} currentUserId={user.id} />
 }

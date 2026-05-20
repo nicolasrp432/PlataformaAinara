@@ -4,7 +4,7 @@ import { getAuthUser, getUserProfile, getReflections } from "@/lib/data-access"
 import { TabernaFeed } from "./taberna-feed"
 
 export const metadata: Metadata = {
-  title: "La Taberna | Ainara",
+  title: "La Taberna | Sendero",
   description: "Comparte y conecta con otros aprendices en la plataforma.",
 }
 

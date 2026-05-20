@@ -24,11 +24,12 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { addLessonComment, markLessonCompleted } from "./actions"
 import { useTransition } from "react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { CommentThread, type ThreadedComment } from "@/components/comments/comment-thread"
 
 interface LessonViewerProps {
   data: {
@@ -67,19 +68,12 @@ interface LessonViewerProps {
     nextLesson: { id: string; title: string } | null
     completedCount: number
     totalCount: number
-    comments?: Array<{
-      id: string
-      content: string
-      created_at: string
-      profiles: {
-        full_name: string | null
-        avatar_url: string | null
-      } | null
-    }>
+    comments?: ThreadedComment[]
   }
+  currentUserId: string
 }
 
-export function LessonViewer({ data }: LessonViewerProps) {
+export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
   const router = useRouter()
   const [showSidebar, setShowSidebar] = useState(false)
   const [lessonCompleted, setLessonCompleted] = useState(data.lesson.isCompleted)
@@ -97,25 +91,28 @@ export function LessonViewer({ data }: LessonViewerProps) {
   const { lesson, module, formation, curriculum, previousLesson, nextLesson, completedCount, totalCount } = data
   const progressPercent = Math.round((completedCount / totalCount) * 100)
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-ES", {
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
-    })
-  }
+  const totalCommentCount = comments.reduce(
+    (acc, c) => acc + 1 + (c.replies?.length ?? 0),
+    0,
+  )
 
   const handleCommentSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault()
     const trimmed = commentText.trim()
     if (!trimmed) return
 
-    // Optimistic update — comment appears immediately
-    const optimistic = {
+    // Optimistic update — comment appears immediately at top
+    const optimistic: ThreadedComment = {
       id: `temp-${Date.now()}`,
       content: trimmed,
       created_at: new Date().toISOString(),
+      user_id: currentUserId,
+      parent_id: null,
       profiles: null,
+      reactions: {},
+      replies: [],
     }
-    setComments((prev) => [...prev, optimistic])
+    setComments((prev) => [optimistic, ...prev])
     setCommentText("")
 
     const formData = new FormData()
@@ -318,7 +315,7 @@ export function LessonViewer({ data }: LessonViewerProps) {
               <TabsList className="bg-muted/50 w-full justify-start p-1 rounded-xl h-auto">
                 <TabsTrigger value="comments" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Comentarios ({comments.length})
+                  Comentarios ({totalCommentCount})
                 </TabsTrigger>
                 <TabsTrigger value="resources" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <Paperclip className="w-4 h-4 mr-2" />
@@ -349,36 +346,13 @@ export function LessonViewer({ data }: LessonViewerProps) {
                   </form>
                 </div>
 
-                <div className="space-y-6 pt-4">
-                  {comments.length > 0 ? (
-                    comments.map((comment) => {
-                      const isTemp = comment.id?.startsWith("temp-")
-                      return (
-                        <div key={comment.id} className={`flex gap-4 transition-opacity duration-300 ${isTemp ? "opacity-60" : ""}`}>
-                          <Avatar className="w-10 h-10 border border-border">
-                            <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-                            <AvatarFallback className="bg-muted">
-                              {comment.profiles?.full_name?.charAt(0) || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="bg-muted/30 p-4 rounded-2xl rounded-tl-none border border-border/30 flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-semibold text-sm">{comment.profiles?.full_name || "Tú"}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {isTemp ? "Enviando..." : formatDate(comment.created_at)}
-                              </span>
-                            </div>
-                            <p className="text-foreground/90 text-sm leading-relaxed whitespace-pre-wrap">{comment.content}</p>
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="text-center py-10 opacity-50 border border-dashed border-border/50 rounded-xl">
-                      <MessageSquare className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                      <p>Aún no hay reflexiones en esta lección.</p>
-                    </div>
-                  )}
+                <div className="pt-4">
+                  <CommentThread
+                    comments={comments}
+                    currentUserId={currentUserId}
+                    lessonId={lesson.id}
+                    slug={formation.slug}
+                  />
                 </div>
               </TabsContent>
               

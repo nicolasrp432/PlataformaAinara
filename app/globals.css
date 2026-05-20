@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================
-   AINARA PLATFORM — LUXURY GOLD DESIGN SYSTEM
+   SENDERO PLATFORM — LUXURY GOLD DESIGN SYSTEM
    Theme: Premium, Warm Ivory + Rich Gold, Elegant & Transformational
    Font: Inter (sans-serif geometric)
    Source of truth: design-system.md §18 Tokens
@@ -205,36 +205,6 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   border-radius: inherit;
   pointer-events: none;
-}
-
-.dark {
-  /* Dark mode — inverted for potential future use */
-  --background: #1A1A1A;
-  --foreground: #F5F1E8;
-
-  --card: #2B2B2B;
-  --card-foreground: #F5F1E8;
-  --popover: #2B2B2B;
-  --popover-foreground: #F5F1E8;
-
-  --primary: #F6D25C;
-  --primary-foreground: #171717;
-
-  --secondary: #3A3A3A;
-  --secondary-foreground: #EEE8DB;
-
-  --muted: #2B2B2B;
-  --muted-foreground: #A1A1A1;
-
-  --accent: #E8C544;
-  --accent-foreground: #171717;
-
-  --border: #434343;
-  --input: #434343;
-  --ring: #E8C544;
-
-  --destructive: #D96C6C;
-  --destructive-foreground: #FFFFFF;
 }
 
 /* ============================================================

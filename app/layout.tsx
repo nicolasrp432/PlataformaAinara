@@ -27,11 +27,11 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Ainara | Plataforma de Transformación Personal",
-    template: "%s | Ainara",
+    default: "Sendero | El camino de tu transformación",
+    template: "%s | Sendero",
   },
   description:
-    "Plataforma de educación para el desarrollo personal y espiritual. Formaciones, mentoría y comunidad para tu transformación.",
+    "Sendero es la plataforma de educación para tu desarrollo personal y espiritual. Formaciones, mentoría y comunidad para recorrer tu camino interior.",
   keywords: [
     "desarrollo personal",
     "transformación",
@@ -41,19 +41,19 @@ export const metadata: Metadata = {
     "crecimiento personal",
     "coaching",
   ],
-  authors: [{ name: "Ainara" }],
-  creator: "Ainara",
+  authors: [{ name: "Sendero" }],
+  creator: "Sendero",
   openGraph: {
     type: "website",
     locale: "es_ES",
-    siteName: "Ainara",
-    title: "Ainara | Plataforma de Transformación Personal",
+    siteName: "Sendero",
+    title: "Sendero | El camino de tu transformación",
     description:
       "Formaciones y mentoría para tu desarrollo personal y espiritual",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ainara | Plataforma de Transformación Personal",
+    title: "Sendero | El camino de tu transformación",
     description:
       "Formaciones y mentoría para tu desarrollo personal y espiritual",
   },

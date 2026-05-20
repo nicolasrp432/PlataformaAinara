@@ -1,30 +1,47 @@
 import { Metadata } from "next"
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getAuthUser, getUserProfile, getQuestData } from "@/lib/data-access"
 import { ProfileForm } from "./profile-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Flame, Star, Compass, Sword, MessageSquare, Map, BookOpen, Zap, TrendingUp, Crown, Award } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Flame, Star, Compass, Sword, MessageSquare, Map, BookOpen,
+  Zap, TrendingUp, Crown, Award, CalendarDays, Settings, CreditCard,
+  ArrowRight, CheckCircle2, Activity, Clock,
+} from "lucide-react"
 import { getSunSign } from "@/lib/utils/astrology"
 import { cn } from "@/lib/utils"
+import { getUserMentorshipSessions } from "@/lib/services/mentorship"
+import { getProfileActivity } from "@/lib/services/profile"
+import { createClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = {
-  title: "Mi Perfil | Ainara",
+  title: "Mi Perfil | Sendero",
   description: "Gestiona tu información personal y visualiza tu evolución.",
 }
 
 export default async function ProfilePage() {
   const user = await getAuthUser()
+  if (!user) redirect("/login")
 
-  if (!user) {
-    redirect("/login")
-  }
+  const supabase = await createClient()
 
-  // Deduplicada con layout via React.cache()
-  const [profile, questData] = await Promise.all([
+  const [profile, questData, mentorshipSessions, activity, { data: subscription }] = await Promise.all([
     getUserProfile(user.id),
     getQuestData(user.id),
+    getUserMentorshipSessions(user.id),
+    getProfileActivity(user.id),
+    supabase
+      .from("subscriptions")
+      .select("status, current_period_end, cancel_at_period_end, stripe_price_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const userData = {
@@ -62,12 +79,23 @@ export default async function ProfilePage() {
 
   const unlockedAchievements = ALL_ACHIEVEMENTS.filter((a) => a.unlocked)
 
+  const subscriptionStatus = subscription?.status ?? "inactive"
+  const subscriptionLabel: Record<string, { label: string; className: string }> = {
+    active: { label: "Activa", className: "bg-emerald-500/15 text-emerald-700 border-emerald-300/40" },
+    trialing: { label: "En prueba", className: "bg-blue-500/15 text-blue-700 border-blue-300/40" },
+    past_due: { label: "Pago pendiente", className: "bg-amber-500/15 text-amber-700 border-amber-300/40" },
+    canceled: { label: "Cancelada", className: "bg-rose-500/15 text-rose-700 border-rose-300/40" },
+    inactive: { label: "Sin suscripción", className: "bg-muted text-muted-foreground border-border/60" },
+  }
+  const subBadge = subscriptionLabel[subscriptionStatus] ?? subscriptionLabel.inactive
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10 relative">
-      {/* Dynamic Header */}
+      {/* Header */}
       <div className="flex flex-col gap-2 relative z-10">
         <h1 className="text-3xl font-light tracking-tight text-foreground sm:text-4xl">
-          Mi <span className="font-semibold text-primary">Perfil</span>
+          Mi <span className="font-semibold text-primary">Perfil</span>{" "}
+          <span className="text-muted-foreground text-base font-light hidden sm:inline">en Sendero</span>
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base max-w-xl">
           Aquí radica tu esencia como pensador y creador dentro de nuestra
@@ -76,25 +104,19 @@ export default async function ProfilePage() {
       </div>
 
       <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
-        {/* Left Column: Avatar & Main Stats */}
+        {/* Left Column: Avatar & Main Stats (unchanged) */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg shadow-black/5 overflow-hidden group">
-            {/* Beautiful abstract top banner */}
             <div className="h-28 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent w-full relative transition-all duration-500 group-hover:from-primary/40" />
-
             <CardContent className="px-6 py-0 pb-6 relative z-10 text-center">
               <div className="flex justify-center -mt-14 mb-5">
                 <Avatar className="h-28 w-28 border-[6px] border-background shadow-xl transition-transform duration-300 hover:scale-105">
-                  <AvatarImage
-                    src={userData.avatarUrl}
-                    className="object-cover"
-                  />
+                  <AvatarImage src={userData.avatarUrl} className="object-cover" />
                   <AvatarFallback className="text-3xl bg-primary/10 text-primary font-bold">
                     {userData.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </div>
-
               <div className="space-y-1.5 mb-6">
                 <h2 className="text-xl font-bold text-foreground tracking-tight">
                   {userData.full_name}
@@ -103,25 +125,17 @@ export default async function ProfilePage() {
                   {userData.email}
                 </p>
               </div>
-
               <div className="flex justify-center items-center gap-2 mb-2">
-                <Badge
-                  variant="secondary"
-                  className="bg-primary/15 text-primary hover:bg-primary/25 border-none transition-colors px-3 py-1"
-                >
+                <Badge variant="secondary" className="bg-primary/15 text-primary hover:bg-primary/25 border-none transition-colors px-3 py-1">
                   {userData.role === "admin" ? "Fundador" : "Aventurero"}
                 </Badge>
-                <Badge
-                  variant="outline"
-                  className="border-primary/20 text-foreground px-3 py-1 bg-background/50"
-                >
+                <Badge variant="outline" className="border-primary/20 text-foreground px-3 py-1 bg-background/50">
                   Nivel {userData.level}
                 </Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Detailed Stats */}
           <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-medium text-foreground tracking-tight">
@@ -135,19 +149,13 @@ export default async function ProfilePage() {
                     <Flame className="w-5 h-5 fill-primary/20" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Racha
-                    </p>
+                    <p className="text-sm font-semibold text-foreground">Racha</p>
                     <p className="text-xs text-muted-foreground">Constancia</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-xl text-foreground">
-                    {userData.streak}
-                  </span>
-                  <span className="text-xs text-muted-foreground block -mt-1">
-                    Días
-                  </span>
+                  <span className="font-bold text-xl text-foreground">{userData.streak}</span>
+                  <span className="text-xs text-muted-foreground block -mt-1">Días</span>
                 </div>
               </div>
 
@@ -157,142 +165,304 @@ export default async function ProfilePage() {
                     <Star className="w-5 h-5 fill-primary/20" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Experiencia
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Conocimiento
-                    </p>
+                    <p className="text-sm font-semibold text-foreground">Experiencia</p>
+                    <p className="text-xs text-muted-foreground">Conocimiento</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-xl text-foreground">
-                    {userData.xp}
-                  </span>
-                  <span className="text-xs text-primary block -mt-1 font-medium">
-                    XP
-                  </span>
+                  <span className="font-bold text-xl text-foreground">{userData.xp}</span>
+                  <span className="text-xs text-primary block -mt-1 font-medium">XP</span>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          <Button asChild variant="outline" className="w-full justify-start gap-2 border-border/50">
+            <Link href="/profile/settings">
+              <Settings className="w-4 h-4" />
+              Ajustes y seguridad
+            </Link>
+          </Button>
         </div>
 
-        {/* Right Column: Settings */}
+        {/* Right Column: Tabs */}
         <div className="lg:col-span-2 space-y-6">
-          {userData.birth_date && sunSign && (
-            <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md relative overflow-hidden group">
-              <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-700 pointer-events-none" />
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl text-foreground flex items-center gap-2">
-                  <Star className="w-5 h-5 text-primary" /> Diseño Cósmico
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-                    <span className="text-4xl text-primary drop-shadow-sm">
-                      {signSymbol}
-                    </span>
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    <h3 className="text-lg font-bold text-foreground">
-                      Signo Solar {sunSign}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Naciste en <strong>{userData.birth_city}</strong> marcando
-                      tu entrada al sistema con una energía vital única. Este es
-                      el comienzo de tu transformación biológica.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <ProfileForm
-            initialData={{
-              id: userData.id,
-              full_name: userData.full_name,
-              avatar_url: userData.avatarUrl,
-              birth_date: userData.birth_date,
-              birth_time: userData.birth_time,
-              birth_city: userData.birth_city,
-            }}
-          />
-
-          {/* Insignias obtenidas */}
-          {unlockedAchievements.length > 0 && (
-            <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg font-medium">
-                  <Award className="w-5 h-5 text-primary" /> Insignias Obtenidas
-                  <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/20 text-primary">
-                    {unlockedAchievements.length}/{ALL_ACHIEVEMENTS.length}
+          <Tabs defaultValue="info">
+            <TabsList className="bg-muted/50 w-full justify-start p-1 rounded-xl h-auto flex flex-wrap">
+              <TabsTrigger value="info" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                <Award className="w-4 h-4" /> Información
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                <Activity className="w-4 h-4" /> Actividad
+              </TabsTrigger>
+              <TabsTrigger value="mentorship" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                <CalendarDays className="w-4 h-4" /> Mentorías
+                {mentorshipSessions.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+                    {mentorshipSessions.length}
                   </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {unlockedAchievements.map((ach) => {
-                    const Icon = ach.icon
-                    return (
-                      <div
-                        key={ach.id}
-                        title={ach.title}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-full border bg-primary/5 border-primary/20",
-                          "text-xs font-medium text-foreground transition-all hover:bg-primary/10"
-                        )}
-                      >
-                        <Icon className="w-3.5 h-3.5 text-primary" />
-                        {ach.title}
-                      </div>
-                    )
-                  })}
-                  {ALL_ACHIEVEMENTS.filter((a) => !a.unlocked).map((ach) => (
-                    <div
-                      key={ach.id}
-                      title={`Bloqueado: ${ach.title}`}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground/40 opacity-40"
-                    >
-                      <span className="w-3.5 h-3.5 flex items-center justify-center">🔒</span>
-                      ???
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="subscription" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                <CreditCard className="w-4 h-4" /> Suscripción
+              </TabsTrigger>
+            </TabsList>
 
-          <Card className="border-border/50 shadow-sm bg-card/40 backdrop-blur-sm relative overflow-hidden">
-            {/* Decorative element */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10" />
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-medium">
-                Privacidad y Seguridad
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                Tu información personal está protegida. Al formar parte de esta
-                comunidad, tu nombre y avatar serán visibles para otros
-                integrantes cuando interactúes en La Taberna y en foros de
-                discusión.
-              </p>
-              <div className="p-4 bg-muted/50 rounded-lg border border-border/50 text-xs text-muted-foreground flex items-center justify-between">
-                <span>
-                  Gestión de credenciales administrada por Supabase Auth.
-                </span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] uppercase font-bold tracking-widest text-primary/70 border-primary/20 bg-primary/5"
-                >
-                  Asegurado
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+            {/* INFO TAB */}
+            <TabsContent value="info" className="mt-6 space-y-6 outline-none">
+              {userData.birth_date && sunSign && (
+                <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md relative overflow-hidden group">
+                  <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-700 pointer-events-none" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl text-foreground flex items-center gap-2">
+                      <Star className="w-5 h-5 text-primary" /> Diseño Cósmico
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+                        <span className="text-4xl text-primary drop-shadow-sm">{signSymbol}</span>
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        <h3 className="text-lg font-bold text-foreground">Signo Solar {sunSign}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          Naciste en <strong>{userData.birth_city}</strong> marcando tu entrada al sistema con una energía vital única.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <ProfileForm
+                initialData={{
+                  id: userData.id,
+                  full_name: userData.full_name,
+                  avatar_url: userData.avatarUrl,
+                  birth_date: userData.birth_date,
+                  birth_time: userData.birth_time,
+                  birth_city: userData.birth_city,
+                }}
+              />
+
+              {unlockedAchievements.length > 0 && (
+                <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg font-medium">
+                      <Award className="w-5 h-5 text-primary" /> Insignias
+                      <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/20 text-primary">
+                        {unlockedAchievements.length}/{ALL_ACHIEVEMENTS.length}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {unlockedAchievements.map((ach) => {
+                        const Icon = ach.icon
+                        return (
+                          <div
+                            key={ach.id}
+                            title={ach.title}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-full border bg-primary/5 border-primary/20",
+                              "text-xs font-medium text-foreground transition-all hover:bg-primary/10"
+                            )}
+                          >
+                            <Icon className="w-3.5 h-3.5 text-primary" />
+                            {ach.title}
+                          </div>
+                        )
+                      })}
+                      {ALL_ACHIEVEMENTS.filter((a) => !a.unlocked).map((ach) => (
+                        <div
+                          key={ach.id}
+                          title={`Bloqueado: ${ach.title}`}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground/40 opacity-40"
+                        >
+                          <span className="w-3.5 h-3.5 flex items-center justify-center">🔒</span>
+                          ???
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* ACTIVITY TAB */}
+            <TabsContent value="activity" className="mt-6 space-y-6 outline-none">
+              <Card className="border-border/50 bg-card/60 backdrop-blur-md">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" /> Últimas lecciones completadas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {activity.recentLessons.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      Aún no has completado lecciones. ¡Empieza tu primer módulo!
+                    </p>
+                  ) : (
+                    activity.recentLessons.map((l) => (
+                      <Link
+                        key={l.id}
+                        href={`/learn/${l.formation_slug}/${l.id}`}
+                        className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
+                              {l.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {l.formation_title}
+                            </p>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/50 bg-card/60 backdrop-blur-md">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-primary" /> Tus reflexiones recientes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {activity.recentReflections.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      Aún no has publicado reflexiones.
+                    </p>
+                  ) : (
+                    activity.recentReflections.map((r) => (
+                      <div key={r.id} className="p-3 rounded-lg border border-border/30 bg-background/40">
+                        <p className="text-sm text-foreground line-clamp-2">{r.content}</p>
+                        {r.lesson_title && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            En: <span className="text-foreground">{r.lesson_title}</span>
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* MENTORSHIP TAB */}
+            <TabsContent value="mentorship" className="mt-6 space-y-4 outline-none">
+              {mentorshipSessions.length === 0 ? (
+                <Card className="border-dashed border-2 border-border/50 bg-card/30 p-10 text-center">
+                  <CalendarDays className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-foreground font-medium mb-2">No tienes mentorías reservadas</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Reserva una sesión 1:1 para acelerar tu transformación.
+                  </p>
+                  <Button asChild>
+                    <Link href="/mentorship">
+                      Explorar mentoría <ArrowRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </Button>
+                </Card>
+              ) : (
+                mentorshipSessions.map((s) => {
+                  const date = new Date(s.scheduled_at)
+                  const isPast = date.getTime() < Date.now()
+                  const statusColors: Record<string, string> = {
+                    confirmed: "bg-emerald-500/15 text-emerald-700 border-emerald-300/40",
+                    pending: "bg-amber-500/15 text-amber-700 border-amber-300/40",
+                    completed: "bg-blue-500/15 text-blue-700 border-blue-300/40",
+                    cancelled: "bg-rose-500/15 text-rose-700 border-rose-300/40",
+                    no_show: "bg-muted text-muted-foreground border-border/60",
+                  }
+                  const statusLabels: Record<string, string> = {
+                    confirmed: "Confirmada",
+                    pending: "Pago pendiente",
+                    completed: "Completada",
+                    cancelled: "Cancelada",
+                    no_show: "No asistida",
+                  }
+                  return (
+                    <Card key={s.id} className="border-border/50 bg-card/60 backdrop-blur-md">
+                      <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <CalendarDays className="w-4 h-4 text-primary" />
+                            <p className="text-sm font-semibold text-foreground">
+                              {date.toLocaleString("es-ES", { dateStyle: "full", timeStyle: "short" })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {s.duration_minutes} min
+                            </span>
+                            <Badge variant="outline" className={cn("border", statusColors[s.status] ?? statusColors.pending)}>
+                              {statusLabels[s.status] ?? s.status}
+                            </Badge>
+                          </div>
+                          {s.user_notes && (
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                              Notas: {s.user_notes}
+                            </p>
+                          )}
+                        </div>
+                        {s.status === "confirmed" && s.meeting_link && !isPast && (
+                          <Button asChild size="sm">
+                            <a href={s.meeting_link} target="_blank" rel="noreferrer">
+                              Entrar a la sala <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                            </a>
+                          </Button>
+                        )}
+                        {s.status === "confirmed" && !s.meeting_link && (
+                          <span className="text-xs text-muted-foreground italic">
+                            La sala se enviará 24h antes
+                          </span>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })
+              )}
+            </TabsContent>
+
+            {/* SUBSCRIPTION TAB */}
+            <TabsContent value="subscription" className="mt-6 space-y-4 outline-none">
+              <Card className="border-border/50 bg-card/60 backdrop-blur-md">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-primary" /> Tu suscripción
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Estado</span>
+                    <Badge className={cn("border", subBadge.className)}>{subBadge.label}</Badge>
+                  </div>
+                  {subscription?.current_period_end && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {subscription.cancel_at_period_end ? "Cancela el" : "Próxima renovación"}
+                      </span>
+                      <span className="text-sm font-medium text-foreground">
+                        {new Date(subscription.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+                      </span>
+                    </div>
+                  )}
+                  <Button asChild className="w-full">
+                    <Link href="/billing">
+                      Gestionar suscripción <ArrowRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
