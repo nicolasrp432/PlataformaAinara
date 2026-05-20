@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
+import Image from "next/image"
 import { 
   ArrowLeft, 
   Play, 
@@ -170,10 +171,12 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
               {/* Thumbnail */}
               <div className="relative aspect-video bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg overflow-hidden">
                 {formation.thumbnail_url ? (
-                  <img 
-                    src={formation.thumbnail_url} 
+                  <Image
+                    src={formation.thumbnail_url}
                     alt={formation.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 33vw"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">

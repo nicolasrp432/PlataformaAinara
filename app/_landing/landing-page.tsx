@@ -59,7 +59,7 @@ export function LandingPage({ formations }: LandingPageProps) {
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent transition-transform group-hover:scale-110">
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-display text-2xl font-light tracking-wide">Ainara</span>
+              <span className="font-display text-2xl font-light tracking-wide">Sendero</span>
             </Link>
 
             {/* Desktop nav */}
@@ -635,7 +635,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                 </motion.h2>
                 <motion.p variants={fadeUp} className="mb-10 text-muted-foreground leading-relaxed">
                   Únete a cientos de personas que ya han comenzado su proceso de
-                  transformación con Ainara.
+                  transformación con Sendero.
                 </motion.p>
                 <motion.div
                   variants={fadeUp}
@@ -666,7 +666,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
                   <Sparkles className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <span className="font-display text-xl font-light">Ainara</span>
+                <span className="font-display text-xl font-light">Sendero</span>
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Plataforma de educación para la transformación personal y espiritual.

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import { progressPostSchema } from "@/lib/validations/progress"
+import { rateLimit, rateLimitResponse, maybeSweep } from "@/lib/rate-limit"
 
 type ProgressLessonNode = {
   id: string
@@ -11,13 +13,6 @@ type ProgressModuleNode = {
 
 type ProgressFormation = {
   modules?: ProgressModuleNode[] | null
-}
-
-type ProgressRequestBody = {
-  lessonId?: string
-  formationId?: string
-  watchedSeconds?: unknown
-  isCompleted?: unknown
 }
 
 export async function GET(request: NextRequest) {
@@ -82,12 +77,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const body = (await request.json()) as ProgressRequestBody
-  const { lessonId, watchedSeconds, isCompleted } = body
+  maybeSweep()
+  const rl = rateLimit(request, "progress", { windowMs: 60_000, max: 120 }, user.id)
+  const rlResp = rateLimitResponse(rl)
+  if (rlResp) return rlResp
 
-  if (!lessonId) {
-    return NextResponse.json({ error: "Missing lessonId" }, { status: 400 })
+  let raw: unknown
+  try {
+    raw = await request.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
   }
+
+  const parsed = progressPostSchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Datos inválidos" },
+      { status: 400 },
+    )
+  }
+  const { lessonId, watchedSeconds, isCompleted } = parsed.data
 
   // Fetch lesson duration for progress calculation
   const { data: lessonData, error: lessonError } = await supabase

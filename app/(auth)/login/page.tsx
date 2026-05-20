@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Iniciar Sesion",
-  description: "Accede a tu cuenta en Ainara",
+  description: "Accede a tu cuenta en Sendero",
 }
 
 export default function LoginPage() {
@@ -18,7 +18,7 @@ export default function LoginPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-foreground/20">
             <Sparkles className="h-5 w-5" />
           </div>
-          Ainara
+          Sendero
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
@@ -43,7 +43,7 @@ export default function LoginPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                   <Sparkles className="h-6 w-6 text-primary-foreground" />
                 </div>
-                <span className="text-2xl font-bold">Ainara</span>
+                <span className="text-2xl font-bold">Sendero</span>
               </Link>
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">

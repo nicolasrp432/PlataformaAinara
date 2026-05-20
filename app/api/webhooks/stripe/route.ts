@@ -45,7 +45,23 @@ export async function POST(req: NextRequest) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session
       const userId = session.metadata?.supabase_user_id
-      if (!userId || session.mode !== "subscription") break
+      if (!userId) break
+
+      // One-off mentorship booking
+      if (session.mode === "payment" && session.metadata?.mentorship_session_id) {
+        const mentorshipId = session.metadata.mentorship_session_id
+        await supabase
+          .from("mentorship_sessions")
+          .update({
+            status: "confirmed",
+            payment_reference: session.id,
+          })
+          .eq("id", mentorshipId)
+        // TODO: trigger transactional email (Resend/SendGrid) with confirmation
+        break
+      }
+
+      if (session.mode !== "subscription") break
 
       const subscriptionId = session.subscription as string
       const subscription = await stripe.subscriptions.retrieve(subscriptionId)

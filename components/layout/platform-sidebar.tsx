@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -31,8 +32,11 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Search,
+  Bell,
 } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
+import { SearchCommand } from "./search-command"
 
 interface SidebarUser {
   id: string
@@ -58,15 +62,49 @@ const navigation = [
   { name: "Perfil",     href: "/profile",     icon: User },
 ]
 
+const SIDEBAR_COLLAPSED_KEY = "sendero:sidebar:collapsed"
+
 export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isMobileOpen, setIsMobileOpen] = React.useState(false)
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false)
+  const [hydrated, setHydrated] = React.useState(false)
+
+  // Persist collapsed state
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+      if (stored === "1") setIsCollapsed(true)
+    } catch { /* SSR safe */ }
+    setHydrated(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (!hydrated) return
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, isCollapsed ? "1" : "0")
+    } catch { /* ignore */ }
+  }, [isCollapsed, hydrated])
+
+  // Cmd/Ctrl+K opens global search
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        setIsSearchOpen((s) => !s)
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
 
   const progress = progressToNextLevel(user.xp)
 
   return (
     <>
+      <SearchCommand open={isSearchOpen} onOpenChange={setIsSearchOpen} />
+
       {/* Mobile menu toggle */}
       <Button
         variant="ghost"
@@ -75,11 +113,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         aria-label="Toggle menu"
       >
-        {isMobileOpen ? (
-          <X className="h-4 w-4" />
-        ) : (
-          <Menu className="h-4 w-4" />
-        )}
+        {isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </Button>
 
       {/* Mobile overlay */}
@@ -93,19 +127,14 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
       {/* ── SIDEBAR ───────────────────────────────────────────── */}
       <aside
         className={cn(
-          // Layout
           "fixed inset-y-0 left-0 z-50 flex flex-col",
-          // Light sidebar: warm ivory with gold accents
           "bg-sidebar border-r border-sidebar-border",
-          // Shadow: warm gold-tinted depth
           "shadow-sm",
-          // Transition: only transform & width (GPU-composited)
           "transition-all duration-300 ease-out",
           isCollapsed ? "w-16" : "w-64",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-
         {/* ── Logo bar ──────────────────────────────────────── */}
         <div className={cn(
           "flex h-16 items-center border-b border-sidebar-border",
@@ -116,23 +145,21 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             className="flex items-center gap-2.5 min-w-0"
             onClick={() => setIsMobileOpen(false)}
           >
-            {/* Gold icon mark */}
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg gold-gradient shadow-sm">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
                 <span className="text-base font-bold text-foreground tracking-tight leading-none block">
-                  Ainara
+                  Sendero
                 </span>
                 <span className="text-[10px] text-muted-foreground tracking-widest uppercase font-medium leading-none">
-                  Plataforma
+                  Tu camino
                 </span>
               </div>
             )}
           </Link>
 
-          {/* Collapse toggle — desktop only */}
           <Button
             variant="ghost"
             size="icon-sm"
@@ -140,18 +167,40 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             onClick={() => setIsCollapsed(!isCollapsed)}
             aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronLeft className="h-3.5 w-3.5" />
-            )}
+            {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
           </Button>
+        </div>
+
+        {/* ── Search trigger ─────────────────────────────────── */}
+        <div className={cn("border-b border-sidebar-border", isCollapsed ? "py-2 px-2" : "p-3")}>
+          {isCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="w-full h-9 rounded-lg flex items-center justify-center bg-muted/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Buscar"
+              title="Buscar (⌘K)"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors text-sm text-muted-foreground hover:text-foreground border border-border/40"
+            >
+              <Search className="h-3.5 w-3.5 shrink-0" />
+              <span className="flex-1 text-left">Buscar...</span>
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded border border-border/60 bg-background/60 text-muted-foreground/70">
+                ⌘K
+              </kbd>
+            </button>
+          )}
         </div>
 
         {/* ── User XP stats ─────────────────────────────────── */}
         {!isCollapsed && (
           <div className="border-b border-sidebar-border p-4">
-            {/* Streak & XP row */}
             <div className="mb-3 flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary">
@@ -169,7 +218,6 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
               </div>
             </div>
 
-            {/* Level progress */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="label-luxury">Nivel {user.level}</span>
@@ -187,23 +235,12 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           </div>
         )}
 
-        {/* Collapsed: mini XP indicator */}
         {isCollapsed && (
           <div className="border-b border-sidebar-border py-3 flex justify-center">
             <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-secondary border border-border">
               <Star className="h-3.5 w-3.5 text-primary" />
-              {/* Circular progress hint */}
-              <svg
-                className="absolute inset-0 h-8 w-8 -rotate-90"
-                viewBox="0 0 32 32"
-              >
-                <circle
-                  cx="16" cy="16" r="13"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="text-primary/15"
-                />
+              <svg className="absolute inset-0 h-8 w-8 -rotate-90" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary/15" />
                 <circle
                   cx="16" cy="16" r="13"
                   fill="none"
@@ -219,7 +256,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           </div>
         )}
 
-        {/* ── Navigation ────────────────────────────────────── */}
+        {/* ── Navigation with animated active pill ─────────────── */}
         <nav className="flex-1 overflow-y-auto overscroll-contain py-3 px-2">
           <div className="space-y-0.5">
             {navigation.map((item) => {
@@ -233,31 +270,31 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                   href={item.href}
                   onClick={() => setIsMobileOpen(false)}
                   className={cn(
-                    // Base nav item
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5",
+                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5",
                     "text-sm font-medium leading-none",
                     "transition-colors duration-150",
                     isCollapsed && "justify-center px-2",
                     isActive
-                      ? // Active: gold-tinted background
-                        "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-primary/15"
-                      : // Idle: subtle hover
-                        "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                      ? "text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                   )}
                   title={isCollapsed ? item.name : undefined}
                 >
+                  {isActive && (
+                    <motion.span
+                      layoutId="sidebar-active-pill"
+                      className="absolute inset-0 rounded-lg bg-sidebar-accent ring-1 ring-primary/15 -z-0"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
                   <item.icon
                     className={cn(
-                      "h-4.5 w-4.5 shrink-0",
+                      "h-4.5 w-4.5 shrink-0 relative z-10",
                       isActive ? "text-primary" : "text-muted-foreground"
                     )}
                   />
                   {!isCollapsed && (
-                    <span>{item.name}</span>
-                  )}
-                  {/* Active indicator dot */}
-                  {isActive && isCollapsed && (
-                    <span className="absolute right-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="relative z-10">{item.name}</span>
                   )}
                 </Link>
               )
@@ -265,11 +302,25 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           </div>
         </nav>
 
-        {/* ── Divider ───────────────────────────────────────── */}
         <div className="gold-divider mx-4 my-0" />
 
-        {/* ── User menu ─────────────────────────────────────── */}
-        <div className="p-2 pb-3">
+        {/* ── User menu + notif bell ─────────────────────────── */}
+        <div className="p-2 pb-3 space-y-1">
+          {!isCollapsed && (
+            <button
+              type="button"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors text-sm text-sidebar-foreground"
+              title="Notificaciones (próximamente)"
+              disabled
+            >
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              <span className="flex-1 text-left">Notificaciones</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                Pronto
+              </span>
+            </button>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -354,6 +405,12 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {!isCollapsed && (
+            <div className="pt-2 px-3 text-[10px] text-muted-foreground/70 text-center tracking-widest uppercase">
+              Sendero · v0.2
+            </div>
+          )}
         </div>
       </aside>
     </>

@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Aventura | Ainara",
+  title: "Aventura | Sendero",
   description: "Cumple tus misiones, gana experiencia y sube de nivel.",
 }
 
@@ -85,7 +85,7 @@ export default async function QuestPage() {
     {
       id: "awakening",
       title: "El Despertar",
-      description: "Diste tus primeros pasos en Ainara",
+      description: "Diste tus primeros pasos en Sendero",
       icon: Compass,
       xpReward: 0,
       tier: "bronze",

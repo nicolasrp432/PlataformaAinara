@@ -89,7 +89,7 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
               </div>
             )}
             {subscription?.cancel_at_period_end && (
-              <div className="flex items-start gap-2 rounded-xl border border-amber-300/40 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-400">
+              <div className="flex items-start gap-2 rounded-xl border border-amber-300/40 bg-amber-500/10 p-4 text-sm text-amber-800">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>Tu suscripción se cancelará al final del período actual. Puedes reactivarla desde el portal.</span>
               </div>

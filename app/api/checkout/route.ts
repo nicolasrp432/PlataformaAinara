@@ -1,14 +1,20 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripe, STRIPE_PRICE_ID } from "@/lib/stripe"
+import { rateLimit, rateLimitResponse, maybeSweep } from "@/lib/rate-limit"
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  maybeSweep()
+  const rl = rateLimit(req, "checkout", { windowMs: 60_000, max: 6 }, user.id)
+  const rlResp = rateLimitResponse(rl)
+  if (rlResp) return rlResp
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -36,17 +42,22 @@ export async function POST() {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
-    success_url: `${baseUrl}/auth/callback?next=/dashboard&checkout=success`,
-    cancel_url: `${baseUrl}/?checkout=canceled`,
-    metadata: { supabase_user_id: user.id },
-    subscription_data: {
+  // Idempotency key: same user + same minute → same Stripe response.
+  const minuteBucket = Math.floor(Date.now() / 60_000)
+  const session = await stripe.checkout.sessions.create(
+    {
+      customer: customerId,
+      mode: "subscription",
+      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+      success_url: `${baseUrl}/auth/callback?next=/dashboard&checkout=success`,
+      cancel_url: `${baseUrl}/?checkout=canceled`,
       metadata: { supabase_user_id: user.id },
+      subscription_data: {
+        metadata: { supabase_user_id: user.id },
+      },
     },
-  })
+    { idempotencyKey: `subscription-${user.id}-${minuteBucket}` },
+  )
 
   return NextResponse.json({ url: session.url })
 }
