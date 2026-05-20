@@ -45,8 +45,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Already enrolled", enrollment: existing })
   }
   
-  // TODO: Check if user has access to premium content (subscription check)
-  // For now, allow all enrollments
+  // Check that the user has approved access to the platform
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("access_status, role")
+    .eq("id", user.id)
+    .single()
+
+  const accessStatus = profile?.access_status ?? "pending"
+  const role = profile?.role ?? "student"
+  const hasAccess =
+    accessStatus === "approved" || role === "admin" || role === "mentor"
+
+  if (!hasAccess) {
+    return NextResponse.json(
+      { error: "Acceso no autorizado. Tu cuenta está pendiente de aprobación." },
+      { status: 403 }
+    )
+  }
   
   // Create enrollment
   const { data: enrollment, error: enrollError } = await supabase

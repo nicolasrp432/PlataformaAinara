@@ -18,6 +18,16 @@ export default async function PlatformLayout({
   // Fetch profile data (deduplicada via React.cache si una page la pide también)
   const profile = await getUserProfile(user.id)
 
+  // Access control: only approved users (or admins/mentors) can access the platform
+  const accessStatus = profile?.access_status ?? "pending"
+  const role = profile?.role ?? "student"
+  const hasAccess =
+    accessStatus === "approved" || role === "admin" || role === "mentor"
+
+  if (!hasAccess) {
+    redirect("/pending")
+  }
+
   const userData = {
     id: user.id,
     full_name: user.user_metadata?.full_name || profile?.full_name || "Usuario",

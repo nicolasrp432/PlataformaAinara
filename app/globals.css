@@ -90,8 +90,9 @@
   --radius-full: 9999px;
   /* pills, chips, badges */
 
-  /* —— TYPOGRAPHY — Single font: Inter —— */
+  /* —— TYPOGRAPHY — Inter (body) + Cormorant Garamond (display) —— */
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display), "Cormorant Garamond", Georgia, serif;
   --font-mono: ui-monospace, monospace;
 
   /* —— SHADOWS — Warm gold-tinted, soft & premium —— */
@@ -164,6 +165,46 @@
 
   /* Radius shorthand (for components using var(--radius)) */
   --radius: 0.75rem;
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+.font-display {
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+}
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, #F6D25C 0%, #E8A020 60%, #F6D25C 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Floating animation for hero orbs */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(5deg); }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-float-slow { animation: float-slow 9s ease-in-out infinite; }
+.animate-float-delay { animation: float 7s ease-in-out 1.5s infinite; }
+
+/* Grain texture for premium cards */
+.card-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .dark {

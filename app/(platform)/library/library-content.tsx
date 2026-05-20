@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { 
   Search, 
   Clock, 
@@ -201,10 +202,12 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
                 <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/5 overflow-hidden">
                   <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
                   {formation.thumbnailUrl ? (
-                    <img 
-                      src={formation.thumbnailUrl} 
+                    <Image
+                      src={formation.thumbnailUrl}
                       alt={formation.title}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">

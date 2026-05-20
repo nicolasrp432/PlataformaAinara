@@ -8,11 +8,23 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (!error) {
-      // Successful authentication
-      return NextResponse.redirect(`${origin}${next}`)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (!error && data.user) {
+      // Check profile access status before deciding where to redirect
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("access_status, role")
+        .eq("id", data.user.id)
+        .single()
+
+      const accessStatus = profile?.access_status ?? "pending"
+      const role = profile?.role ?? "student"
+      const hasAccess =
+        accessStatus === "approved" || role === "admin" || role === "mentor"
+
+      const destination = hasAccess ? next : "/pending"
+      return NextResponse.redirect(`${origin}${destination}`)
     }
   }
 

@@ -46,7 +46,7 @@ export function RegisterForm() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/pending`,
           data: {
             full_name: name,
             avatar_url: null,
@@ -69,8 +69,8 @@ export function RegisterForm() {
         // Email confirmation required
         setSuccess(true)
       } else if (data.session) {
-        // Auto-confirmed (for development)
-        router.push("/dashboard")
+        // Auto-confirmed (for development): go to pending since access isn't approved yet
+        router.push("/pending")
         router.refresh()
       }
     } catch {
