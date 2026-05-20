@@ -30,6 +30,7 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
 } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
 
@@ -320,6 +321,12 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                 <Link href="/profile/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
                   Configuración
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/billing" className="cursor-pointer">
+                  <CreditCard className="mr-2 h-4 w-4 text-muted-foreground" />
+                  Suscripción
                 </Link>
               </DropdownMenuItem>
 

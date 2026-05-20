@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
+import { Inter, JetBrains_Mono, Cormorant_Garamond } from "next/font/google"
 import { Toaster } from "sonner"
 import "./globals.css"
 
-// Performance: subset + display swap to avoid FOIT
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -11,7 +10,14 @@ const inter = Inter({
   preload: true,
 })
 
-// Monospace only if needed (load lazily)
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
+  preload: true,
+})
+
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
@@ -76,7 +82,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${cormorant.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {children}
         <Toaster richColors position="bottom-right" />

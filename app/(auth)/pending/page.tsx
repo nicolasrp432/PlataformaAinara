@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { getAuthUser, getUserProfile } from "@/lib/data-access"
-import { Clock, Sparkles, LogOut, Mail } from "lucide-react"
+import { Clock, Sparkles, LogOut, Mail, ArrowRight } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Acceso pendiente — Ainara",
@@ -74,6 +74,17 @@ export default async function PendingPage() {
               </p>
 
               <div className="w-full space-y-3">
+                <Button
+                  className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
+                  size="lg"
+                  asChild
+                >
+                  <Link href="/billing">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Activar acceso con suscripción
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
                 <div className="rounded-xl border border-border/50 bg-muted/30 p-4 text-left">
                   <p className="text-xs font-medium text-muted-foreground mb-2">
                     ¿Qué ocurre mientras esperas?

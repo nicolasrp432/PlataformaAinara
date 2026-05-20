@@ -51,8 +51,8 @@ export async function updateSession(request: NextRequest) {
   const protectedRoutes = ["/dashboard", "/library", "/formations", "/learn", "/profile", "/quest", "/taberna", "/mentorship"]
   const adminRoutes = ["/admin"]
   const authRoutes = ["/login", "/register"]
-  // /pending requires auth but NOT approved access_status
-  const pendingAllowedRoutes = ["/pending", "/logout"]
+  // /pending and /billing require auth but NOT approved access_status
+  const pendingAllowedRoutes = ["/pending", "/logout", "/billing"]
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
