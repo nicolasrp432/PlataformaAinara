@@ -172,7 +172,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
     if (result && !result.error && !result.alreadyCompleted) {
       // Optimistic update in global store — XP shows instantly without server roundtrip
       markLessonComplete(lesson.id)
-      addXP(result.xpEarned, result.leveledUp, result.leveledUp ? (data.lesson.xpReward) : 0)
+      addXP(result.xpEarned ?? 0, result.leveledUp ?? false)
 
       toast.success(`¡Lección completada! +${result.xpEarned} XP`, {
         description: result.leveledUp ? "¡Subiste de nivel! 🎉" : undefined,

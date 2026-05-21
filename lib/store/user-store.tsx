@@ -13,7 +13,7 @@ interface UserState {
 
 type Action =
   | { type: "HYDRATE"; payload: Omit<UserState, "completedLessons"> & { completedLessons: string[] } }
-  | { type: "ADD_XP"; xp: number; leveledUp: boolean; newLevel: number }
+  | { type: "ADD_XP"; xp: number; leveledUp: boolean }
   | { type: "MARK_LESSON_COMPLETE"; lessonId: string }
   | { type: "SET_STREAK"; days: number }
 
@@ -32,7 +32,7 @@ function reducer(state: UserState, action: Action): UserState {
       return {
         ...state,
         xp: state.xp + action.xp,
-        level: action.leveledUp ? action.newLevel : state.level,
+        level: action.leveledUp ? state.level + 1 : state.level,
       }
     case "MARK_LESSON_COMPLETE": {
       const next = new Set(state.completedLessons)
@@ -58,7 +58,7 @@ const initialState: UserState = {
 interface UserStoreContext {
   state: UserState
   hydrate: (data: { xp: number; level: number; streakDays: number; completedLessons: string[] }) => void
-  addXP: (xp: number, leveledUp: boolean, newLevel: number) => void
+  addXP: (xp: number, leveledUp: boolean) => void
   markLessonComplete: (lessonId: string) => void
   isLessonCompleted: (lessonId: string) => boolean
 }
@@ -75,8 +75,8 @@ export function UserStoreProvider({ children }: { children: ReactNode }) {
     []
   )
 
-  const addXP = useCallback((xp: number, leveledUp: boolean, newLevel: number) => {
-    dispatch({ type: "ADD_XP", xp, leveledUp, newLevel })
+  const addXP = useCallback((xp: number, leveledUp: boolean) => {
+    dispatch({ type: "ADD_XP", xp, leveledUp })
   }, [])
 
   const markLessonComplete = useCallback((lessonId: string) => {
