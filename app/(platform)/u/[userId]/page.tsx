@@ -151,7 +151,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {completedFormations.map((row) => {
-                const f = row.formations as { id: string; title: string; slug: string } | null
+                const rawF = row.formations
+                const f = (Array.isArray(rawF) ? rawF[0] : rawF) as
+                  | { id: string; title: string; slug: string }
+                  | null
                 if (!f) return null
                 return (
                   <Badge key={row.formation_id as string} variant="outline" className="text-xs">
@@ -175,7 +178,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             {reflections.map((r) => {
-              const lesson = r.lessons as { title: string } | null
+              const rawLesson = r.lessons
+              const lesson = (Array.isArray(rawLesson) ? rawLesson[0] : rawLesson) as
+                | { title: string }
+                | null
               return (
                 <div key={r.id} className="rounded-lg border border-border/40 p-3">
                   <p className="text-sm text-foreground/90 line-clamp-3">{r.content}</p>
@@ -196,7 +202,19 @@ export default async function PublicProfilePage({ params }: PageProps) {
         <CardContent className="pt-5 pb-5">
           <ProfileWall
             profileId={userId}
-            initialComments={wallComments as Parameters<typeof ProfileWall>[0]["initialComments"]}
+            initialComments={wallComments.map((c) => {
+              const rawP = (c as Record<string, unknown>).profiles
+              const profiles = (Array.isArray(rawP) ? rawP[0] : rawP) as
+                | { id: string; full_name: string; avatar_url: string | null }
+                | null
+              return {
+                id: c.id as string,
+                content: c.content as string,
+                created_at: c.created_at as string,
+                author_id: (c as Record<string, unknown>).author_id as string,
+                profiles,
+              }
+            })}
             currentUserId={currentUser?.id ?? null}
           />
         </CardContent>

@@ -7,11 +7,11 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
-export async function startConversationAction(otherUserId: string) {
+export async function startConversationAction(otherUserId: string): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "No autorizado" }
-  if (user.id === otherUserId) return { error: "No puedes enviarte mensajes a ti mismo" }
+  if (!user) { redirect("/login") }
+  if (user.id === otherUserId) return
 
   // Verificar que el destinatario permite mensajes
   const { data: profile } = await supabase
@@ -19,9 +19,7 @@ export async function startConversationAction(otherUserId: string) {
     .select("allow_direct_messages")
     .eq("id", otherUserId)
     .single()
-  if (!profile?.allow_direct_messages) {
-    return { error: "Este usuario no acepta mensajes directos" }
-  }
+  if (!profile?.allow_direct_messages) return
 
   const { conversationId } = await startConversation(user.id, otherUserId)
   redirect(`/messages/${conversationId}`)

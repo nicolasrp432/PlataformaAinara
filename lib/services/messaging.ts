@@ -126,14 +126,22 @@ export async function listConversations(userId: string) {
         .neq("sender_id", userId)
         .gt("created_at", row.last_read_at ?? "1970-01-01")
 
-      const other = participants?.[0]?.profiles as { id: string; full_name: string; avatar_url: string | null } | null
+      const rawProfiles = participants?.[0]?.profiles
+      const other = (Array.isArray(rawProfiles) ? rawProfiles[0] : rawProfiles) as
+        | { id: string; full_name: string; avatar_url: string | null }
+        | null
+
+      const rawConv = row.conversations
+      const conv = (Array.isArray(rawConv) ? rawConv[0] : rawConv) as
+        | { last_message_at: string }
+        | null
 
       return {
         conversationId: row.conversation_id,
         otherUser: other,
         lastMessage: lastMsg?.[0] ?? null,
         unreadCount: unread ?? 0,
-        lastMessageAt: (row.conversations as { last_message_at: string } | null)?.last_message_at ?? null,
+        lastMessageAt: conv?.last_message_at ?? null,
       }
     })
   )
@@ -191,7 +199,7 @@ export async function getProfileComments(profileId: string) {
   const { data, error } = await supabase
     .from("profile_comments")
     .select(`
-      id, content, created_at, parent_id,
+      id, content, created_at, parent_id, author_id,
       profiles:author_id (id, full_name, avatar_url)
     `)
     .eq("profile_id", profileId)

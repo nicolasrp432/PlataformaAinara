@@ -26,19 +26,34 @@ export default async function ConversationPage({ params }: PageProps) {
     .neq("user_id", user.id)
     .limit(1)
 
-  const other = participants?.[0]?.profiles as
+  const rawProfiles = participants?.[0]?.profiles
+  const other = (Array.isArray(rawProfiles) ? rawProfiles[0] : rawProfiles) as
     | { id: string; full_name: string; avatar_url: string | null }
     | null
 
   // Marcar como leído al abrir
   await markConversationRead(conversationId, user.id)
 
+  const safeMessages = (messages ?? []).map((m) => {
+    const rawP = (m as Record<string, unknown>).profiles
+    const profiles = (Array.isArray(rawP) ? rawP[0] : rawP) as
+      | { id: string; full_name: string; avatar_url: string | null }
+      | null
+    return {
+      id: m.id as string,
+      sender_id: m.sender_id as string,
+      body: m.body as string,
+      created_at: m.created_at as string,
+      profiles,
+    }
+  })
+
   return (
     <MessagesThread
       conversationId={conversationId}
       currentUserId={user.id}
       otherUser={other}
-      initialMessages={messages as Parameters<typeof MessagesThread>[0]["initialMessages"]}
+      initialMessages={safeMessages}
     />
   )
 }

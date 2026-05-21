@@ -16,11 +16,16 @@ export async function buildSystemPrompt(lessonId?: string, formationId?: string)
       .single()
 
     if (lesson) {
-      const mod = lesson.modules as { title: string; formations: { title: string } | null } | null
+      type ModType = { title: string; formations: { title: string } | { title: string }[] | null } | null
+      const rawMod = lesson.modules
+      const mod = (Array.isArray(rawMod) ? rawMod[0] : rawMod) as ModType
+      const formation = mod?.formations
+        ? Array.isArray(mod.formations) ? mod.formations[0] : mod.formations
+        : null
       context += `\n\nEstás asistiendo al estudiante en la lección: "${lesson.title}".`
       if (lesson.description) context += `\nContenido de la lección: ${lesson.description}`
       if (mod?.title) context += `\nMódulo: ${mod.title}`
-      if (mod?.formations?.title) context += `\nFormación: ${mod.formations.title}`
+      if (formation?.title) context += `\nFormación: ${formation.title}`
     }
   } else if (formationId) {
     const { data: formation } = await supabase
