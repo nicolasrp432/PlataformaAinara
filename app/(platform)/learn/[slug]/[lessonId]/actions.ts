@@ -25,12 +25,12 @@ export async function markLessonCompleted(lessonId: string, slug: string) {
     .single()
 
   if (existingProgress?.is_completed) {
-    return { success: true, alreadyCompleted: true, xpEarned: 0, leveledUp: false }
+    return { success: true, alreadyCompleted: true, xpEarned: 0, leveledUp: false, certificateIssued: false }
   }
 
   const { data: lesson } = await supabase
     .from("lessons")
-    .select("xp_reward")
+    .select("xp_reward, module_id")
     .eq("id", lessonId)
     .single()
 
@@ -60,13 +60,72 @@ export async function markLessonCompleted(lessonId: string, slug: string) {
 
   const xpResult = await awardXP(user.id, xpAmount)
 
+  // Check if all lessons in the formation are now completed → issue certificate
+  let certificateIssued = false
+  if (lesson?.module_id) {
+    const { data: formation } = await supabase
+      .from("modules")
+      .select("formation_id")
+      .eq("id", lesson.module_id)
+      .single()
+
+    if (formation?.formation_id) {
+      // Count total published lessons vs completed by user
+      const [{ count: totalLessons }, { count: completedLessons }] = await Promise.all([
+        supabase
+          .from("lessons")
+          .select("id", { count: "exact", head: true })
+          .eq("is_published", true)
+          .in(
+            "module_id",
+            (await supabase.from("modules").select("id").eq("formation_id", formation.formation_id)).data?.map((m) => m.id) ?? []
+          ),
+        supabase
+          .from("user_progress")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("is_completed", true)
+          .in(
+            "lesson_id",
+            (await supabase
+              .from("lessons")
+              .select("id")
+              .eq("is_published", true)
+              .in(
+                "module_id",
+                (await supabase.from("modules").select("id").eq("formation_id", formation.formation_id)).data?.map((m) => m.id) ?? []
+              )
+            ).data?.map((l) => l.id) ?? []
+          ),
+      ])
+
+      if (totalLessons && completedLessons && completedLessons >= totalLessons) {
+        // Issue certificate (ignore duplicate conflict)
+        const { error: certError } = await supabase
+          .from("certificates")
+          .insert({ user_id: user.id, formation_id: formation.formation_id })
+
+        if (!certError) {
+          certificateIssued = true
+          revalidatePath(`/formations/${slug}`)
+        }
+      }
+    }
+  }
+
   revalidatePath(`/learn/${slug}/${lessonId}`)
   revalidatePath(`/dashboard`)
   revalidatePath(`/formations/${slug}`)
   revalidatePath("/profile")
   revalidatePath("/quest")
 
-  return { success: true, alreadyCompleted: false, xpEarned: xpAmount, leveledUp: xpResult?.leveledUp ?? false }
+  return {
+    success: true,
+    alreadyCompleted: false,
+    xpEarned: xpAmount,
+    leveledUp: xpResult?.leveledUp ?? false,
+    certificateIssued,
+  }
 }
 
 export async function addLessonComment(formData: FormData, lessonId: string, slug: string) {

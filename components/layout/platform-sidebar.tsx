@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useUserStore } from "@/lib/store/user-store"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -68,6 +69,10 @@ const SIDEBAR_COLLAPSED_KEY = "sendero:sidebar:collapsed"
 
 export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
   const pathname = usePathname()
+  const { state: storeState } = useUserStore()
+  // Use live store values if available (updated optimistically on lesson completion)
+  const liveXp = storeState.xp > 0 ? storeState.xp : user.xp
+  const liveLevel = storeState.level > 0 ? storeState.level : user.level
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isMobileOpen, setIsMobileOpen] = React.useState(false)
   const [hydrated, setHydrated] = React.useState(false)
@@ -88,7 +93,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
     } catch { /* ignore */ }
   }, [isCollapsed, hydrated])
 
-  const progress = progressToNextLevel(user.xp)
+  const progress = progressToNextLevel(liveXp)
 
   return (
     <>
@@ -173,14 +178,14 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary">
                   <Star className="h-3.5 w-3.5 text-primary" />
                 </div>
-                <span className="text-sm font-semibold text-foreground">{user.xp.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-foreground">{liveXp.toLocaleString()}</span>
                 <span className="text-xs text-muted-foreground">XP</span>
               </div>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="label-luxury">Nivel {user.level}</span>
+                <span className="label-luxury">Nivel {liveLevel}</span>
                 <span className="text-xs text-muted-foreground font-medium">
                   {Math.round(progress)}%
                 </span>

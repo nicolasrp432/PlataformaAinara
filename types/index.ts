@@ -158,6 +158,47 @@ export interface LibraryFormation {
   isCompleted: boolean
 }
 
+// ── Quiz System ───────────────────────────────────────────────
+export interface Quiz {
+  id: string
+  lesson_id: string
+  title: string
+  description: string | null
+  passing_score: number
+  xp_reward: number
+  created_at: string
+  updated_at: string
+  questions?: QuizQuestion[]
+}
+
+export interface QuizQuestion {
+  id: string
+  quiz_id: string
+  question: string
+  type: 'multiple_choice' | 'true_false'
+  explanation: string | null
+  sort_order: number
+  options?: QuizOption[]
+}
+
+export interface QuizOption {
+  id: string
+  question_id: string
+  option_text: string
+  is_correct: boolean
+  sort_order: number
+}
+
+export interface QuizAttempt {
+  id: string
+  user_id: string
+  quiz_id: string
+  score: number
+  passed: boolean
+  answers: Record<string, string> | null  // { question_id: option_id }
+  completed_at: string
+}
+
 // ── API utility types ─────────────────────────────────────────
 export interface ApiResponse<T> {
   success: boolean

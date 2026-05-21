@@ -12,6 +12,8 @@ import {
   Clock,
   Star,
   Play,
+  Pencil,
+  HelpCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -102,6 +104,7 @@ export default function LessonEditorPage() {
           is_published: lesson.is_published,
           content_type: lesson.content_type,
           sort_order: lesson.sort_order,
+          transcript: lesson.transcript ?? null,
         }),
       })
 
@@ -239,13 +242,25 @@ export default function LessonEditorPage() {
                       <SelectItem value="text">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4" />
-                          Texto/Articulo
+                          Texto/Artículo
                         </div>
                       </SelectItem>
                       <SelectItem value="audio">
                         <div className="flex items-center gap-2">
                           <Play className="h-4 w-4" />
                           Audio
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="exercise">
+                        <div className="flex items-center gap-2">
+                          <Pencil className="h-4 w-4" />
+                          Ejercicio Práctico
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="quiz">
+                        <div className="flex items-center gap-2">
+                          <HelpCircle className="h-4 w-4" />
+                          Quiz
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -264,6 +279,27 @@ export default function LessonEditorPage() {
                   />
                 </div>
               </div>
+
+              {/* Exercise instructions — visible only when content_type is exercise */}
+              {lesson.content_type === "exercise" && (
+                <div className="space-y-2 border-t border-border/50 pt-4">
+                  <Label htmlFor="transcript">
+                    <Pencil className="h-4 w-4 inline mr-1" />
+                    Instrucciones del Ejercicio
+                  </Label>
+                  <Textarea
+                    id="transcript"
+                    value={lesson.transcript || ""}
+                    onChange={(e) => setLesson({ ...lesson, transcript: e.target.value })}
+                    placeholder="Describe paso a paso qué debe hacer el alumno en este ejercicio..."
+                    rows={8}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Las instrucciones se mostrarán en la vista del ejercicio. Puedes usar saltos de línea para mejor legibilidad.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,12 +1,13 @@
-import { ComingSoonPage } from "@/components/admin/coming-soon-page"
-import { Settings } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { SettingsClient } from "./settings-client"
 
-export default function SettingsPage() {
-  return (
-    <ComingSoonPage
-      title="Configuración"
-      description="Configuración general de la plataforma, integraciones y variables del sistema. Próximamente."
-      icon={Settings}
-    />
-  )
+export default async function SettingsPage() {
+  const supabase = await createClient()
+
+  const { data: settings } = await supabase
+    .from("platform_settings")
+    .select("key, value, label, description")
+    .order("key")
+
+  return <SettingsClient settings={settings ?? []} />
 }

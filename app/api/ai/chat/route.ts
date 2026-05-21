@@ -10,45 +10,45 @@ import {
 
 export const runtime = "nodejs"
 
-// Ordered by quality. Tried sequentially until one succeeds.
-const FREE_MODELS = [
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "deepseek/deepseek-v3-0324:free",
-  "google/gemma-3-27b-it:free",
-  "mistralai/mistral-7b-instruct:free",
-  "qwen/qwen3-8b:free",
+// Groq free models — tried sequentially until one succeeds.
+// Register free at console.groq.com — 14,400 req/day, 30 req/min.
+const GROQ_MODELS = [
+  "llama-3.3-70b-versatile",
+  "deepseek-r1-distill-llama-70b",
+  "gemma2-9b-it",
+  "llama-3.1-8b-instant",
 ]
 
-async function callOpenRouter(
+async function callGroq(
   apiKey: string,
   model: string,
   messages: Array<{ role: string; content: string }>,
 ): Promise<Response> {
-  return fetch("https://openrouter.ai/api/v1/chat/completions", {
+  return fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://sendero.app",
-      "X-Title": "Sendero",
     },
     body: JSON.stringify({ model, messages, stream: true, max_tokens: 1024, temperature: 0.7 }),
   })
 }
 
-async function getOpenRouterStream(
+async function getGroqStream(
   apiKey: string,
   messages: Array<{ role: string; content: string }>,
 ): Promise<{ res: Response; model: string } | null> {
-  // If user pinned a specific model via env, only try that one
-  const override = process.env.OPENROUTER_MODEL
-  const candidates = override ? [override] : FREE_MODELS
+  // If user pinned a specific model via env, try it first then fall back to the rest
+  const override = process.env.GROQ_MODEL
+  const candidates = override
+    ? [override, ...GROQ_MODELS.filter((m) => m !== override)]
+    : GROQ_MODELS
 
   for (const model of candidates) {
-    const res = await callOpenRouter(apiKey, model, messages)
+    const res = await callGroq(apiKey, model, messages)
     if (res.ok && res.body) return { res, model }
     const errSnippet = await res.text().catch(() => "").then((t) => t.slice(0, 200))
-    console.warn(`[ai/chat] model ${model} → ${res.status}: ${errSnippet}`)
+    console.warn(`[ai/chat] Groq model ${model} → ${res.status}: ${errSnippet}`)
   }
   return null
 }
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Mensaje vacío." }, { status: 400 })
   }
 
-  if (!process.env.OPENROUTER_API_KEY) {
+  if (!process.env.GROQ_API_KEY) {
     return NextResponse.json({ error: "El asistente IA no está configurado aún." }, { status: 503 })
   }
 
@@ -107,14 +107,14 @@ export async function POST(req: NextRequest) {
 
   await saveAiMessage(conversationId, "user", message.trim())
 
-  const result = await getOpenRouterStream(process.env.OPENROUTER_API_KEY!, messages)
+  const result = await getGroqStream(process.env.GROQ_API_KEY!, messages)
   if (!result) {
     return NextResponse.json(
       { error: "Los modelos de IA están temporalmente no disponibles. Inténtalo en unos minutos." },
       { status: 503 },
     )
   }
-  const { res: openRouterRes } = result
+  const { res: groqRes } = result
 
   const encoder = new TextEncoder()
   const decoder = new TextDecoder()
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = openRouterRes.body!.getReader()
+      const reader = groqRes.body!.getReader()
       let buffer = ""
 
       try {

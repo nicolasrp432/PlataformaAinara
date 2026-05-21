@@ -32,6 +32,9 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { CommentThread, type ThreadedComment } from "@/components/comments/comment-thread"
 import { ChatPanel } from "@/components/ai/chat-panel"
+import { ExerciseViewer } from "@/components/exercises/exercise-viewer"
+import { QuizPlayer } from "@/components/exercises/quiz-player"
+import { useUserStore } from "@/lib/store/user-store"
 
 interface LessonViewerProps {
   data: {
@@ -44,6 +47,8 @@ interface LessonViewerProps {
       xpReward: number
       isCompleted: boolean
       watchedSeconds: number
+      contentType: "video" | "text" | "quiz" | "exercise" | "meditation"
+      transcript: string | null
     }
     module: {
       id: string
@@ -77,6 +82,7 @@ interface LessonViewerProps {
 
 export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
   const router = useRouter()
+  const { markLessonComplete, addXP } = useUserStore()
   const [showSidebar, setShowSidebar] = useState(false)
   const [lessonCompleted, setLessonCompleted] = useState(data.lesson.isCompleted)
   const [isSaving, setIsSaving] = useState(false)
@@ -164,9 +170,21 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
     const result = await markLessonCompleted(lesson.id, formation.slug)
     setIsSaving(false)
     if (result && !result.error && !result.alreadyCompleted) {
+      // Optimistic update in global store — XP shows instantly without server roundtrip
+      markLessonComplete(lesson.id)
+      addXP(result.xpEarned, result.leveledUp, result.leveledUp ? (data.lesson.xpReward) : 0)
+
       toast.success(`¡Lección completada! +${result.xpEarned} XP`, {
         description: result.leveledUp ? "¡Subiste de nivel! 🎉" : undefined,
       })
+      if (result.certificateIssued) {
+        setTimeout(() => {
+          toast.success("🎓 ¡Certificado emitido!", {
+            description: "Has completado toda la formación. Revísalo en tu perfil.",
+            duration: 6000,
+          })
+        }, 1500)
+      }
       // Refresca el Server Component del layout para actualizar XP/nivel en el sidebar
       router.refresh()
     }
@@ -221,34 +239,57 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
       <div className="flex">
         {/* Main Content */}
         <main className="flex-1 min-w-0">
-          {/* Video Player Area — negative margins escape the platform container's px-6 on mobile */}
-          <div className="bg-black -mx-6 md:mx-0 overflow-hidden">
-            <div className="w-full max-w-5xl mx-auto">
-              <div className="aspect-video w-full">
-                {lesson.videoUrl ? (
-                  <VideoPlayer
-                    src={lesson.videoUrl}
-                    title={lesson.title}
-                    lessonId={lesson.id}
-                    initialProgress={lesson.watchedSeconds}
-                    onProgress={(currentTime) => saveProgress(Math.floor(currentTime))}
-                    onComplete={() => { if (!lessonCompleted) saveProgress(lesson.durationSeconds || 0, true) }}
-                    className="w-full h-full"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/60">
-                    <div className="text-center">
-                      <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
-                        <Play className="h-12 w-12" />
+          {/* Content Area — renders differently based on content type */}
+          {lesson.contentType === "exercise" ? (
+            <ExerciseViewer
+              lesson={{
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                transcript: lesson.transcript,
+                xpReward: lesson.xpReward,
+                isCompleted: lessonCompleted,
+              }}
+              isCompleted={lessonCompleted}
+              onComplete={handleMarkComplete}
+              isSaving={isSaving}
+            />
+          ) : lesson.contentType === "quiz" ? (
+            <QuizPlayer
+              lessonId={lesson.id}
+              formationSlug={formation.slug}
+              formationId={formation.id}
+            />
+          ) : (
+            /* Video/Audio/Text/Meditation — show video player */
+            <div className="bg-black -mx-6 md:mx-0 overflow-hidden">
+              <div className="w-full max-w-5xl mx-auto">
+                <div className="aspect-video w-full">
+                  {lesson.videoUrl ? (
+                    <VideoPlayer
+                      src={lesson.videoUrl}
+                      title={lesson.title}
+                      lessonId={lesson.id}
+                      initialProgress={lesson.watchedSeconds}
+                      onProgress={(currentTime) => saveProgress(Math.floor(currentTime))}
+                      onComplete={() => { if (!lessonCompleted) saveProgress(lesson.durationSeconds || 0, true) }}
+                      className="w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/60">
+                      <div className="text-center">
+                        <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
+                          <Play className="h-12 w-12" />
+                        </div>
+                        <p className="text-lg">Video no disponible</p>
+                        <p className="text-sm mt-2">El contenido de video se agregara pronto</p>
                       </div>
-                      <p className="text-lg">Video no disponible</p>
-                      <p className="text-sm mt-2">El contenido de video se agregara pronto</p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Lesson Content */}
           <div className="max-w-4xl mx-auto px-4 py-8">
@@ -274,8 +315,8 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               </div>
             </div>
 
-            {/* Mark as Complete Button (if no video or not completed) */}
-            {!lessonCompleted && (
+            {/* Mark as Complete Button — hidden for exercises/quizzes (they have their own complete logic) */}
+            {!lessonCompleted && lesson.contentType !== "exercise" && lesson.contentType !== "quiz" && (
               <Card className="mb-6 border-primary/20 bg-primary/5">
                 <CardContent className="py-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

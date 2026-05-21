@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { PlatformSidebar } from "@/components/layout/platform-sidebar"
 import { getAuthUser, getUserProfile } from "@/lib/data-access"
+import { UserStoreProvider } from "@/lib/store/user-store"
+import { HydrateStore } from "@/lib/store/hydrate-store"
 
 export default async function PlatformLayout({
   children,
@@ -41,13 +43,22 @@ export default async function PlatformLayout({
   const streak = profile?.streak_days || 0
 
   return (
-    <div className="min-h-screen bg-background">
-      <PlatformSidebar user={userData} streak={streak} />
-      <main className="md:pl-64 transition-all duration-300">
-        <div className="container mx-auto p-6 pt-20 md:pt-6">
-          <Suspense>{children}</Suspense>
-        </div>
-      </main>
-    </div>
+    <UserStoreProvider>
+      {/* Hydrate client store with server-fetched user data */}
+      <HydrateStore
+        xp={profile?.xp ?? 0}
+        level={profile?.level ?? 1}
+        streakDays={streak}
+        completedLessons={[]}
+      />
+      <div className="min-h-screen bg-background">
+        <PlatformSidebar user={userData} streak={streak} />
+        <main className="md:pl-64 transition-all duration-300">
+          <div className="container mx-auto p-6 pt-20 md:pt-6">
+            <Suspense>{children}</Suspense>
+          </div>
+        </main>
+      </div>
+    </UserStoreProvider>
   )
 }

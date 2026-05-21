@@ -451,7 +451,7 @@ export const getLessonPageData = cache(
         modules (
           id, title, sort_order,
           lessons (
-            id, title, description, duration_seconds, video_url, is_free, sort_order, xp_reward
+            id, title, description, duration_seconds, video_url, is_free, sort_order, xp_reward, content_type, transcript
           )
         )
       `)
@@ -629,6 +629,8 @@ export const getLessonPageData = cache(
         xpReward: currentLesson.xp_reward ?? 50,
         isCompleted: completedLessons.includes(currentLesson.id),
         watchedSeconds: currentProgress?.watched_seconds || 0,
+        contentType: (currentLesson.content_type ?? "video") as "video" | "text" | "quiz" | "exercise" | "meditation",
+        transcript: currentLesson.transcript as string | null,
       },
       comments,
       module: {
