@@ -3,6 +3,14 @@ import { Award, Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
+type CertificateRow = {
+  id: string
+  certificate_number: string
+  issued_at: string
+  profiles: { full_name: string } | null
+  formations: { title: string } | null
+}
+
 export default async function CertificatesPage() {
   const supabase = await createClient()
 
@@ -50,7 +58,7 @@ export default async function CertificatesPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {new Set((certificates ?? []).map((c) => (c.profiles as any)?.full_name)).size}
+                {new Set(((certificates ?? []) as CertificateRow[]).map((c) => c.profiles?.full_name)).size}
               </p>
               <p className="text-sm text-muted-foreground">Usuarios certificados</p>
             </div>
@@ -76,7 +84,7 @@ export default async function CertificatesPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-border/50">
-              {(certificates as any[]).map((cert) => (
+              {(certificates as CertificateRow[]).map((cert) => (
                 <div key={cert.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 shrink-0">
                     <Award className="h-4 w-4 text-amber-500" />

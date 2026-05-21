@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { QuizAdminClient } from "./quiz-admin-client"
+import { QuizAdminClient, type QuizListItem, type QuizLesson } from "./quiz-admin-client"
 
 export default async function QuizzesPage() {
   const supabase = await createClient()
@@ -31,8 +31,8 @@ export default async function QuizzesPage() {
 
   return (
     <QuizAdminClient
-      quizzes={(quizzes as any[]) ?? []}
-      quizLessons={(quizLessons as any[]) ?? []}
+      quizzes={(quizzes ?? []) as unknown as QuizListItem[]}
+      quizLessons={(quizLessons ?? []) as unknown as QuizLesson[]}
     />
   )
 }

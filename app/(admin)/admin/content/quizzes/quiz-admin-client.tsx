@@ -2,27 +2,27 @@
 
 import { useState } from "react"
 import {
-  Plus, Pencil, Trash2, HelpCircle, ChevronDown, ChevronUp,
-  CheckCircle2, Save, X, GripVertical,
+  Plus, Trash2, HelpCircle, ChevronDown, ChevronUp,
+  Save, X, GripVertical,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 
-interface QuizLesson {
+export interface QuizLesson {
   id: string
   title: string
   content_type: string
   modules: { id: string; title: string; formations: { id: string; title: string } | null } | null
 }
 
-interface QuizListItem {
+export interface QuizListItem {
   id: string
   title: string
   description: string | null
@@ -69,7 +69,6 @@ const emptyQuestion = (order: number): QuizQuestion => ({
 export function QuizAdminClient({ quizzes: initialQuizzes, quizLessons }: QuizAdminClientProps) {
   const [quizzes, setQuizzes] = useState(initialQuizzes)
   const [creating, setCreating] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null)
 
@@ -217,7 +216,7 @@ export function QuizAdminClient({ quizzes: initialQuizzes, quizLessons }: QuizAd
                     )}
                     {quizLessons.map((l) => (
                       <SelectItem key={l.id} value={l.id}>
-                        {l.title} — {(l.modules as any)?.formations?.title ?? ""}
+                        {l.title} — {l.modules?.formations?.title ?? ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -370,7 +369,7 @@ export function QuizAdminClient({ quizzes: initialQuizzes, quizLessons }: QuizAd
       ) : (
         <div className="space-y-3">
           {quizzes.map((quiz) => {
-            const lesson = quiz.lessons as any
+            const lesson = quiz.lessons
             const formation = lesson?.modules?.formations
 
             return (
