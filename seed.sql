@@ -73,9 +73,10 @@ END $$;
 -- 2. Asegurar existencia de las tablas maestras (Profiles)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email TEXT UNIQUE,
   full_name TEXT,
   avatar_url TEXT,
-  role TEXT DEFAULT 'user',
+  role TEXT DEFAULT 'student',
   level INTEGER DEFAULT 1,
   xp INTEGER DEFAULT 0,
   streak_days INTEGER DEFAULT 0,
