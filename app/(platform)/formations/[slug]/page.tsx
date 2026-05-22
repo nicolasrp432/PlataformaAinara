@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { getAuthUser, getFormationBySlug } from "@/lib/data-access"
+import { getAuthUser, getUserProfile, getFormationBySlug } from "@/lib/data-access"
 import { FormationDetail } from "./formation-detail"
 
 interface PageProps {
@@ -32,6 +32,19 @@ export default async function FormationDetailPage({ params }: PageProps) {
 
   // Reutiliza getAuthUser cacheado del layout (0 queries extra)
   const user = await getAuthUser()
+
+  if (!user) redirect("/login")
+
+  // Segunda capa de seguridad: solo suscriptores acceden a formaciones individuales
+  const profile = await getUserProfile(user.id)
+  const hasAccess =
+    profile?.access_status === "approved" ||
+    profile?.role === "admin" ||
+    profile?.role === "mentor"
+
+  if (!hasAccess) {
+    redirect("/billing?reason=subscription")
+  }
 
   // Función centralizada con queries paralelas
   const formation = await getFormationBySlug(slug, user?.id || null)

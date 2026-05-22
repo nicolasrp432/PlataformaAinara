@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
+import { toast } from "sonner"
 import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical, MoreVertical, Video, FileText, Clock, Users, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -141,37 +142,44 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
   const [newLessonTitle, setNewLessonTitle] = useState("")
   const [newLessonDescription, setNewLessonDescription] = useState("")
 
+  function buildPayload() {
+    return {
+      sort_order: formation?.sort_order ?? 0,
+      title: formation?.title || "",
+      slug: formation?.slug || "",
+      description: formation?.description || null,
+      long_description: formation?.long_description || null,
+      thumbnail_url: formation?.thumbnail_url || null,
+      difficulty: (formation?.difficulty || "beginner") as DifficultyLevel,
+      duration_minutes: formation?.duration_minutes || 0,
+      is_published: formation?.is_published || false,
+      is_premium: formation?.is_premium || false,
+      is_featured: formation?.is_featured || false,
+      xp_reward: formation?.xp_reward || 0,
+      price: formation?.price || 0,
+    }
+  }
+
   function handleSave() {
     if (!formation) return
 
     startTransition(async () => {
       try {
-        const payload = {
-          sort_order: formation?.sort_order ?? 0,
-          title: formation?.title || "",
-          slug: formation?.slug || "",
-          description: formation?.description || null,
-          long_description: formation?.long_description || null,
-          thumbnail_url: formation?.thumbnail_url || null,
-          difficulty: (formation.difficulty || "beginner") as DifficultyLevel,
-          duration_minutes: formation?.duration_minutes || 0,
-          is_published: formation?.is_published || false,
-          is_premium: formation?.is_premium || false,
-          is_featured: formation?.is_featured || false,
-          xp_reward: formation?.xp_reward || 0,
-          price: formation?.price || 0,
-        }
+        const payload = buildPayload()
 
         if (isNew) {
           const res = await createFormationAction(payload)
           if (!res.success) throw new Error(res.error)
+          toast.success("Formación creada correctamente")
           router.push(`/admin/content/formations/${res.data.id}`)
         } else {
           const res = await updateFormationAction(formation?.id || "", payload)
           if (!res.success) throw new Error(res.error)
+          toast.success("Formación guardada correctamente")
         }
       } catch (error) {
         console.error("Error saving formation:", error)
+        toast.error("Error al guardar la formación")
       }
     })
   }
@@ -557,11 +565,25 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                         const file = e.target.files[0]
                         const formData = new FormData()
                         formData.append("file", file)
+                        const toastId = toast.loading("Subiendo imagen...")
                         const res = await uploadThumbnailAction(formData)
                         if (res.success && res.url) {
-                            setFormation((prev) => ({ ...prev, thumbnail_url: res.url }))
+                          setFormation((prev) => ({ ...prev, thumbnail_url: res.url }))
+                          toast.dismiss(toastId)
+                          // Auto-guardar thumbnail en DB si la formación ya existe
+                          if (!isNew && formation?.id) {
+                            const saveRes = await updateFormationAction(formation.id, { thumbnail_url: res.url })
+                            if (saveRes.success) {
+                              toast.success("Imagen guardada correctamente")
+                            } else {
+                              toast.error("Imagen subida pero no guardada — haz clic en Guardar")
+                            }
+                          } else {
+                            toast.success("Imagen lista — recuerda guardar la formación")
+                          }
                         } else {
-                          console.error(res.error)
+                          toast.dismiss(toastId)
+                          toast.error(res.error || "Error al subir la imagen")
                         }
                       }
                     }}

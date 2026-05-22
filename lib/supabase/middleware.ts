@@ -4,6 +4,23 @@ import { NextResponse, type NextRequest } from "next/server"
 // ── Routes that NEVER need auth ──────────────────────────────────────
 const PUBLIC_ROUTES = ["/", "/re-conectate", "/evaluacion", "/herramientas"]
 
+// ── Routes that need auth but NO subscription ─────────────────────────
+// Usuarios registrados (sin suscripción) pueden acceder aquí
+const FREE_PROTECTED_ROUTES = ["/dashboard", "/profile", "/pending", "/billing", "/logout"]
+
+// ── Routes that need auth + approved subscription ─────────────────────
+const PREMIUM_ROUTES = [
+  "/library",
+  "/formations",
+  "/learn",
+  "/quest",
+  "/taberna",
+  "/mentorship",
+  "/u",
+  "/messages",
+  "/assistant",
+]
+
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -47,72 +64,83 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Define protected routes
-  const protectedRoutes = ["/dashboard", "/library", "/formations", "/learn", "/profile", "/quest", "/taberna", "/mentorship", "/u", "/messages", "/assistant"]
   const adminRoutes = ["/admin"]
   const authRoutes = ["/login", "/register"]
-  // /pending and /billing require auth but NOT approved access_status
-  const pendingAllowedRoutes = ["/pending", "/logout", "/billing"]
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
-  const isAdminRoute = adminRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
-  const isAuthRoute = authRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
-  const isPendingAllowed = pendingAllowedRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
+  const isFreeRoute = FREE_PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
+  const isPremiumRoute = PREMIUM_ROUTES.some((route) => pathname.startsWith(route))
+  const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route))
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))
+  const isProtectedRoute = isFreeRoute || isPremiumRoute || isAdminRoute
 
   // Redirect unauthenticated users to login
-  if (!user && (isProtectedRoute || isAdminRoute)) {
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     url.searchParams.set("redirect", pathname)
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages (but not /pending)
+  // Redirect authenticated users away from auth pages
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
     return NextResponse.redirect(url)
   }
 
-  // Allow /pending and /logout without access checks
-  if (isPendingAllowed) {
+  // Rutas que no requieren ningún chequeo adicional
+  if (!isPremiumRoute && !isAdminRoute) {
     return supabaseResponse
   }
 
-  // Check admin access with cached role cookie
-  if (user && isAdminRoute) {
+  // ── Check role + access_status via cookie cache (TTL 5 min) ──────────
+  if (user && (isPremiumRoute || isAdminRoute)) {
     const cachedRole = request.cookies.get("x-user-role")?.value
+    const cachedAccess = request.cookies.get("x-user-access")?.value
 
     let role = cachedRole
-    if (!role) {
+    let accessStatus = cachedAccess
+
+    if (!role || !accessStatus) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, access_status")
         .eq("id", user.id)
         .single()
-      role = profile?.role || "student"
 
-      // Cache the role for 5 minutes to avoid repeated DB queries
-      supabaseResponse.cookies.set("x-user-role", role ?? "student", {
+      role = profile?.role || "student"
+      accessStatus = profile?.access_status || "pending"
+
+      const baseCookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 5, // 5 minutes
+        sameSite: "lax" as const,
         path: "/",
-      })
+      }
+      // Rol: cache 5 min (cambios de rol son muy infrecuentes, solo via SQL)
+      supabaseResponse.cookies.set("x-user-role", role, { ...baseCookieOptions, maxAge: 60 * 5 })
+      // Access status: cache 60 seg para que aprobaciones del admin sean efectivas rápido
+      supabaseResponse.cookies.set("x-user-access", accessStatus, { ...baseCookieOptions, maxAge: 60 })
     }
 
-    if (role !== "admin" && role !== "mentor") {
+    const hasFullAccess =
+      accessStatus === "approved" || role === "admin" || role === "mentor"
+
+    // Verificar acceso a rutas de admin
+    if (isAdminRoute) {
+      if (role !== "admin" && role !== "mentor") {
+        const url = request.nextUrl.clone()
+        url.pathname = "/dashboard"
+        return NextResponse.redirect(url)
+      }
+      return supabaseResponse
+    }
+
+    // Verificar acceso a rutas premium
+    if (isPremiumRoute && !hasFullAccess) {
       const url = request.nextUrl.clone()
-      url.pathname = "/dashboard"
+      url.pathname = "/billing"
+      url.searchParams.set("reason", "subscription")
       return NextResponse.redirect(url)
     }
   }

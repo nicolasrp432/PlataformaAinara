@@ -20,6 +20,9 @@ export async function createFormationAction(data: CreateFormationInput) {
     const validated = createFormationSchema.parse(data);
     const result = await formationService.createFormation(validated);
     revalidatePath('/admin/content/formations');
+    revalidatePath('/formations', 'layout');
+    revalidatePath('/library', 'layout');
+    revalidatePath('/', 'layout');
     return { success: true, data: result };
   } catch (error: unknown) {
     console.error('Error creating formation:', error);
@@ -33,6 +36,10 @@ export async function updateFormationAction(id: string, data: UpdateFormationInp
     const result = await formationService.updateFormation(id, validated);
     revalidatePath('/admin/content/formations');
     revalidatePath(`/admin/content/formations/${id}`);
+    // Revalidar rutas públicas para que los usuarios vean los cambios inmediatamente
+    revalidatePath('/formations', 'layout');
+    revalidatePath('/library', 'layout');
+    revalidatePath('/', 'layout');
     return { success: true, data: result };
   } catch (error: unknown) {
     console.error('Error updating formation:', error);

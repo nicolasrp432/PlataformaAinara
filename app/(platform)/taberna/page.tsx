@@ -20,6 +20,16 @@ export default async function TabernaPage() {
     getReflections(),
   ])
 
+  // Segunda capa de seguridad: solo suscriptores acceden a la comunidad
+  const hasAccess =
+    profile?.access_status === "approved" ||
+    profile?.role === "admin" ||
+    profile?.role === "mentor"
+
+  if (!hasAccess) {
+    redirect("/billing?reason=subscription")
+  }
+
   const currentUser = {
     full_name: user.user_metadata?.full_name || profile?.full_name || "Aventurero",
     avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url || null,

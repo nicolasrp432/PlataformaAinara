@@ -20,15 +20,8 @@ export default async function PlatformLayout({
   // Fetch profile data (deduplicada via React.cache si una page la pide también)
   const profile = await getUserProfile(user.id)
 
-  // Access control: only approved users (or admins/mentors) can access the platform
-  const accessStatus = profile?.access_status ?? "pending"
-  const role = profile?.role ?? "student"
-  const hasAccess =
-    accessStatus === "approved" || role === "admin" || role === "mentor"
-
-  if (!hasAccess) {
-    redirect("/pending")
-  }
+  // El middleware ya maneja la protección de rutas por nivel de acceso.
+  // El layout solo se encarga de componer la UI para todos los usuarios autenticados.
 
   const userData = {
     id: user.id,

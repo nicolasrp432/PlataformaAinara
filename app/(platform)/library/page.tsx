@@ -1,5 +1,6 @@
 import { Suspense } from "react"
-import { getAuthUser, getLibraryFormations, getCategories } from "@/lib/data-access"
+import { redirect } from "next/navigation"
+import { getAuthUser, getUserProfile, getLibraryFormations, getCategories } from "@/lib/data-access"
 import { LibraryContent } from "./library-content"
 
 export const metadata = {
@@ -9,6 +10,19 @@ export const metadata = {
 
 export default async function LibraryPage() {
   const user = await getAuthUser()
+
+  if (!user) redirect("/login")
+
+  // Verificación de acceso: segunda capa de seguridad después del middleware
+  const profile = await getUserProfile(user.id)
+  const hasAccess =
+    profile?.access_status === "approved" ||
+    profile?.role === "admin" ||
+    profile?.role === "mentor"
+
+  if (!hasAccess) {
+    redirect("/billing?reason=subscription")
+  }
 
   // 2 queries paralelas, sin N+1
   const [formations, categories] = await Promise.all([

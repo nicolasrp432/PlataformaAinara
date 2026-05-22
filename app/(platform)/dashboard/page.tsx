@@ -3,6 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import {
   getAuthUser,
+  getUserProfile,
   getDashboardData,
   getFormationsInProgress,
   getRecentActivity,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   Clock,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react"
 
 type RecentActivityItem = {
@@ -41,8 +43,9 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // 3 queries paralelas, cada una deduplicada vía React.cache()
-  const [dashboardData, formationsIP, recentAct] = await Promise.all([
+  // Queries paralelas, deduplicadas vía React.cache()
+  const [profile, dashboardData, formationsIP, recentAct] = await Promise.all([
+    getUserProfile(user.id),
     getDashboardData(user.id),
     getFormationsInProgress(user.id),
     getRecentActivity(user.id),
@@ -52,8 +55,34 @@ export default async function DashboardPage() {
   const userName =
     user.user_metadata?.first_name || user.email?.split("@")[0] || "Viajero"
 
+  const accessStatus = profile?.access_status ?? "pending"
+  const role = profile?.role ?? "student"
+  const hasFullAccess = accessStatus === "approved" || role === "admin" || role === "mentor"
+
   return (
     <div className="space-y-8">
+      {/* Banner upsell para usuarios sin suscripción */}
+      {!hasFullAccess && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground text-sm">
+                Activa tu suscripción para desbloquear todo
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Formaciones, comunidad, mentoría y más — acceso completo a la plataforma
+              </p>
+            </div>
+          </div>
+          <Button size="sm" className="shrink-0 bg-primary hover:bg-primary/90" asChild>
+            <Link href="/billing">Activar acceso</Link>
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-light tracking-tight text-foreground">
