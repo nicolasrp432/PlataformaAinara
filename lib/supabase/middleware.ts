@@ -98,8 +98,8 @@ export async function updateSession(request: NextRequest) {
     const cachedRole = request.cookies.get("x-user-role")?.value
     const cachedAccess = request.cookies.get("x-user-access")?.value
 
-    let role = cachedRole
-    let accessStatus = cachedAccess
+    let role: string = cachedRole ?? ""
+    let accessStatus: string = cachedAccess ?? ""
 
     if (!role || !accessStatus) {
       const { data: profile } = await supabase
@@ -108,8 +108,8 @@ export async function updateSession(request: NextRequest) {
         .eq("id", user.id)
         .single()
 
-      role = profile?.role || "student"
-      accessStatus = profile?.access_status || "pending"
+      role = profile?.role ?? "student"
+      accessStatus = profile?.access_status ?? "pending"
 
       const baseCookieOptions = {
         httpOnly: true,
