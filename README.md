@@ -37,6 +37,140 @@ Puesto que el proyecto usa **Supabase Auth** para la autenticación, los registr
 2. Apaga la opción **"Confirm email"** y dale a Guardar.
 3. Ahora cualquier persona que se registre en la página de tu plataforma entrará directamente sin necesidad de validar correos.
 
+## Gestión de Usuarios — SQL de Referencia
+
+### Modelo de acceso
+
+Cada usuario tiene dos campos en la tabla `public.profiles` que determinan qué puede hacer:
+
+| Campo | Valores posibles | Descripción |
+|-------|-----------------|-------------|
+| `role` | `student` · `mentor` · `admin` | Tipo de usuario |
+| `access_status` | `pending` · `approved` · `suspended` | Estado de acceso a contenido premium |
+
+**Regla general:**
+- `access_status = 'pending'` → solo puede acceder al dashboard (ve el banner de upsell)
+- `access_status = 'approved'` → acceso completo a formaciones, comunidad, mentoría
+- `access_status = 'suspended'` → bloqueado, no puede entrar a la plataforma
+- `role = 'admin'` o `role = 'mentor'` → acceso completo siempre, independiente de `access_status`
+
+---
+
+### Consultas de uso frecuente
+
+#### Ver todos los usuarios y su estado
+```sql
+SELECT id, email, full_name, role, access_status, created_at
+FROM public.profiles
+ORDER BY created_at DESC;
+```
+
+#### Buscar un usuario por email
+```sql
+SELECT id, email, full_name, role, access_status
+FROM public.profiles
+WHERE email = 'usuario@email.com';
+```
+
+#### Ver usuarios pendientes de aprobación
+```sql
+SELECT id, email, full_name, created_at
+FROM public.profiles
+WHERE access_status = 'pending' AND role = 'student'
+ORDER BY created_at DESC;
+```
+
+---
+
+### Aprobar acceso (usuario suscrito o autorizado manualmente)
+
+Usar cuando el usuario ha pagado fuera de Stripe o se quiere dar acceso manual:
+
+```sql
+UPDATE public.profiles
+SET access_status = 'approved'
+WHERE email = 'usuario@email.com';
+```
+
+---
+
+### Suspender acceso (canceló suscripción o incumplimiento)
+
+```sql
+UPDATE public.profiles
+SET access_status = 'suspended'
+WHERE email = 'usuario@email.com';
+```
+
+---
+
+### Volver a estado pendiente (acceso en revisión)
+
+```sql
+UPDATE public.profiles
+SET access_status = 'pending'
+WHERE email = 'usuario@email.com';
+```
+
+---
+
+### Promover a admin (SOLO desde base de datos)
+
+Los admins solo se pueden crear desde SQL, nunca desde la UI de la plataforma:
+
+```sql
+UPDATE public.profiles
+SET role = 'admin', access_status = 'approved'
+WHERE email = 'nuevo-admin@email.com';
+```
+
+> Después de ejecutar este SQL, el nuevo admin debe esperar ~5 minutos o cerrar sesión y volver a entrar para que el middleware actualice la cookie de rol.
+
+---
+
+### Promover a mentor
+
+```sql
+UPDATE public.profiles
+SET role = 'mentor', access_status = 'approved'
+WHERE email = 'mentor@email.com';
+```
+
+---
+
+### Degradar mentor/admin a estudiante
+
+```sql
+UPDATE public.profiles
+SET role = 'student'
+WHERE email = 'usuario@email.com';
+```
+
+---
+
+### Flujo automático vía Stripe
+
+Cuando un usuario completa un pago en Stripe, el webhook en `/api/webhooks/stripe` hace automáticamente:
+```sql
+-- checkout.session.completed → aprueba acceso
+UPDATE profiles SET access_status = 'approved' WHERE id = '<user_id>';
+
+-- customer.subscription.deleted → suspende acceso
+UPDATE profiles SET access_status = 'suspended' WHERE id = '<user_id>';
+```
+
+No es necesario hacerlo manualmente si Stripe está activo.
+
+---
+
+### Alternativa: gestión desde el panel admin
+
+Todo lo anterior también se puede hacer desde la interfaz en `/admin/users`:
+- Filtrar por estado (pendiente / aprobado / suspendido)
+- Hacer clic en `⋮` → Aprobar / Suspender / Cambiar rol
+
+---
+
 ## Arquitectura del Sistema
 
 ### Stack Tecnológico
