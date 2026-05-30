@@ -98,15 +98,31 @@ export async function POST(request: NextRequest) {
   }
   const { lessonId, watchedSeconds, isCompleted } = parsed.data
 
-  // Fetch lesson duration for progress calculation
+  // Fetch lesson duration and nested formation_id for enrollment validation
   const { data: lessonData, error: lessonError } = await supabase
     .from("lessons")
-    .select("duration_seconds")
+    .select("duration_seconds, module:modules(formation_id)")
     .eq("id", lessonId)
     .single()
 
   if (lessonError || !lessonData) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
+  }
+
+  // Validate user is enrolled in this formation before allowing progress update
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const formationId = (lessonData.module as any)?.formation_id
+  if (formationId) {
+    const { data: enrollment, error: enrollError } = await supabase
+      .from("enrollments")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("formation_id", formationId)
+      .maybeSingle()
+
+    if (enrollError || !enrollment) {
+      return NextResponse.json({ error: "No estás inscrito en esta formación" }, { status: 403 })
+    }
   }
 
   const duration = lessonData.duration_seconds ?? 0

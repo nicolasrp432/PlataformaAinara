@@ -17,7 +17,6 @@ import {
   Paperclip,
   Bot,
 } from "lucide-react"
-import { VideoPlayer } from "@/components/video/video-player"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -31,10 +30,36 @@ import { useTransition } from "react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { CommentThread, type ThreadedComment } from "@/components/comments/comment-thread"
-import { ChatPanel } from "@/components/ai/chat-panel"
-import { ExerciseViewer } from "@/components/exercises/exercise-viewer"
-import { QuizPlayer } from "@/components/exercises/quiz-player"
 import { useUserStore } from "@/lib/store/user-store"
+import dynamic from "next/dynamic"
+
+const VideoPlayer = dynamic(() => import("@/components/video/video-player").then((mod) => mod.VideoPlayer), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full aspect-video flex items-center justify-center bg-black/85 rounded-2xl border border-white/5">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-xs text-white/40 tracking-wider">Cargando reproductor...</p>
+      </div>
+    </div>
+  ),
+})
+
+const ChatPanel = dynamic(() => import("@/components/ai/chat-panel").then((mod) => mod.ChatPanel), {
+  ssr: false,
+  loading: () => <div className="h-full w-full shimmer rounded-2xl" />,
+})
+
+const ExerciseViewer = dynamic(() => import("@/components/exercises/exercise-viewer").then((mod) => mod.ExerciseViewer), {
+  ssr: false,
+  loading: () => <div className="h-[400px] w-full shimmer rounded-2xl" />,
+})
+
+const QuizPlayer = dynamic(() => import("@/components/exercises/quiz-player").then((mod) => mod.QuizPlayer), {
+  ssr: false,
+  loading: () => <div className="h-[400px] w-full shimmer rounded-2xl" />,
+})
+
 
 interface LessonViewerProps {
   data: {

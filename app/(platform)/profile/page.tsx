@@ -18,6 +18,14 @@ import { cn } from "@/lib/utils"
 import { getUserMentorshipSessions } from "@/lib/services/mentorship"
 import { getProfileActivity } from "@/lib/services/profile"
 import { createClient } from "@/lib/supabase/server"
+import { CertificateCard } from "@/components/certificates/certificate-card"
+
+interface DbUserCertificate {
+  id: string
+  certificate_number: string
+  issued_at: string
+  formations: { title: string } | null
+}
 
 export const metadata: Metadata = {
   title: "Mi Perfil | Sendero",
@@ -30,7 +38,7 @@ export default async function ProfilePage() {
 
   const supabase = await createClient()
 
-  const [profile, questData, mentorshipSessions, activity, { data: subscription }] = await Promise.all([
+  const [profile, questData, mentorshipSessions, activity, { data: subscription }, { data: userCertificates }] = await Promise.all([
     getUserProfile(user.id),
     getQuestData(user.id),
     getUserMentorshipSessions(user.id),
@@ -42,6 +50,14 @@ export default async function ProfilePage() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("certificates")
+      .select(`
+        id, certificate_number, issued_at,
+        formations ( title )
+      `)
+      .eq("user_id", user.id)
+      .order("issued_at", { ascending: false }),
   ])
 
   const userData = {
@@ -286,6 +302,25 @@ export default async function ProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
+              )}
+
+              {userCertificates && userCertificates.length > 0 && (
+                <div className="space-y-4 pt-4">
+                  <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <Award className="w-5 h-5 text-primary" /> Tus Certificados
+                  </h3>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    {(userCertificates as unknown as DbUserCertificate[]).map((cert) => (
+                      <CertificateCard
+                        key={cert.id}
+                        userName={userData.full_name}
+                        formationTitle={cert.formations?.title || "Formación"}
+                        issuedAt={cert.issued_at}
+                        certificateNumber={cert.certificate_number}
+                      />
+                    ))}
+                  </div>
+                </div>
               )}
             </TabsContent>
 
