@@ -570,4 +570,54 @@
   .isolate-layer {
     isolation: isolate;
   }
+
+  /* ---- HIDE SCROLLBAR (mobile horizontal carousels) ---- */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ---- BOTTOM SHEET / SHEET ANIMATIONS ----
+     Tailwind v4 here ships without tailwindcss-animate, so we drive the
+     enter/exit transitions from Radix's data-state with real keyframes. */
+  @keyframes sheet-in-bottom {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  @keyframes sheet-out-bottom {
+    from { transform: translateY(0); }
+    to   { transform: translateY(100%); }
+  }
+  @keyframes sheet-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes sheet-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  .sheet-overlay[data-state="open"] {
+    animation: sheet-fade-in 0.3s ease both;
+  }
+  .sheet-overlay[data-state="closed"] {
+    animation: sheet-fade-out 0.2s ease both;
+  }
+  .sheet-content[data-side="bottom"][data-state="open"] {
+    animation: sheet-in-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  .sheet-content[data-side="bottom"][data-state="closed"] {
+    animation: sheet-out-bottom 0.22s ease-in both;
+  }
+  .sheet-content[data-side="right"][data-state="closed"],
+  .sheet-content[data-side="left"][data-state="closed"] {
+    animation: sheet-fade-out 0.2s ease both;
+  }
+  .sheet-content[data-side="right"][data-state="open"],
+  .sheet-content[data-side="left"][data-state="open"] {
+    animation: sheet-fade-in 0.25s ease both;
+  }
 }

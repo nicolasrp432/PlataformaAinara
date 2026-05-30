@@ -93,9 +93,9 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+      {/* Stats Cards — en mobile se deslizan horizontalmente (scroll-snap) */}
+      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-6 px-6 pb-2 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible">
+        <Card className="min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Racha Actual
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               XP Total
@@ -135,7 +135,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Lecciones
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Formaciones
@@ -259,7 +259,9 @@ export default async function DashboardPage() {
         {/* Recent Activity */}
         <div className="space-y-4">
           <h2 className="text-xl font-medium">Actividad Reciente</h2>
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+          {/* En mobile, Actividad y Acciones Rápidas se deslizan horizontalmente */}
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-6 px-6 pb-2 md:mx-0 md:px-0 md:pb-0 md:flex-col md:overflow-visible">
+          <Card className="min-w-[85%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
             <CardContent className="p-4">
               {recentAct.length > 0 ? (
                 <div className="space-y-4">
@@ -306,7 +308,7 @@ export default async function DashboardPage() {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+          <Card className="min-w-[85%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-medium">
                 Acciones Rapidas
@@ -345,6 +347,7 @@ export default async function DashboardPage() {
               </Button>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
     </div>
