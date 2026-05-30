@@ -14,16 +14,7 @@ import {
   ShieldCheck,
   Heart,
 } from "lucide-react"
-import dynamic from "next/dynamic"
-
-const MentorshipBookingDialog = dynamic(() => import("@/components/mentorship/booking-dialog").then((mod) => mod.MentorshipBookingDialog), {
-  ssr: false,
-  loading: () => (
-    <Button className="w-full mt-2 h-12 text-base bg-primary/20 text-foreground" disabled>
-      Cargando agenda...
-    </Button>
-  ),
-})
+import { MentorshipBookingDialog } from "@/components/mentorship/booking-dialog"
 
 export const metadata: Metadata = {
   title: "Mentoría | Sendero",
