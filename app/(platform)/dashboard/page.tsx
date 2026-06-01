@@ -94,7 +94,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards — en mobile se deslizan horizontalmente (scroll-snap) */}
-      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-6 px-6 pb-2 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible">
+      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
         <Card className="min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -260,7 +260,7 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <h2 className="text-xl font-medium">Actividad Reciente</h2>
           {/* En mobile, Actividad y Acciones Rápidas se deslizan horizontalmente */}
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-6 px-6 pb-2 md:mx-0 md:px-0 md:pb-0 md:flex-col md:overflow-visible">
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:flex-col md:overflow-visible md:pb-0">
           <Card className="min-w-[85%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
             <CardContent className="p-4">
               {recentAct.length > 0 ? (

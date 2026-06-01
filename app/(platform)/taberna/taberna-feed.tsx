@@ -371,7 +371,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
                               placeholder={`Respondiendo a @${authorName}...`}
-                              className="min-h-[80px] resize-none bg-background/50 text-sm focus-visible:ring-primary/50"
+                              className="min-h-[80px] resize-none bg-background/50 focus-visible:ring-primary/50"
                               disabled={isPendingReply}
                               autoFocus
                             />

@@ -7,8 +7,8 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
       <input
         type={type}
         className={cn(
-          // Base
-          "flex h-10 w-full px-3.5 py-2 text-sm",
+          // Base — text-base (16px) en mobile evita el auto-zoom de iOS al enfocar; 14px en desktop
+          "flex h-10 w-full px-3.5 py-2 text-base md:text-sm",
           // Styling: card-white bg at rest, warm border — per design system
           "rounded-xl border border-border bg-card",
           "text-foreground",

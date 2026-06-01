@@ -7,14 +7,21 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CalendarDays, Clock, ArrowRight, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/lib/hooks/use-is-mobile"
 
 interface MentorBookingProps {
   mentor: {
@@ -51,6 +58,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [notes, setNotes] = useState("")
   const [isSubmitting, startTransition] = useTransition()
+  const isMobile = useIsMobile()
 
   // Fetch slots when opening the dialog
   useEffect(() => {
@@ -111,25 +119,21 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
   const mentorName = mentor.name ?? mentor.full_name ?? "Mentor"
   const isEmpty = !loading && slotsByDate.length === 0
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className={triggerClassName ?? "w-full mt-6 bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all duration-300 h-12 text-base shadow-lg"}>
-          <CalendarDays className="w-5 h-5 mr-2" />
-          {triggerLabel ?? "Reservar Sesión"}
-        </Button>
-      </DialogTrigger>
+  const title = `Reservar mentoría con ${mentorName}`
+  const description = "Elige un día y horario disponible. Se confirmará tras el pago."
 
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold">
-            Reservar mentoría con {mentorName}
-          </DialogTitle>
-          <DialogDescription>
-            Elige un día y horario disponible. Se confirmará tras el pago.
-          </DialogDescription>
-        </DialogHeader>
+  const trigger = (
+    <Button
+      onClick={() => setOpen(true)}
+      className={triggerClassName ?? "w-full mt-6 bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all duration-300 h-12 text-base shadow-lg"}
+    >
+      <CalendarDays className="w-5 h-5 mr-2" />
+      {triggerLabel ?? "Reservar Sesión"}
+    </Button>
+  )
 
+  const bookingBody = (
+    <>
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Loader2 className="w-6 h-6 animate-spin" />
@@ -270,7 +274,38 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
             )}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </>
+  )
+
+  if (isMobile) {
+    return (
+      <>
+        {trigger}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="bottom" className="h-[92vh]">
+            <SheetHeader>
+              <SheetTitle className="text-xl font-semibold">{title}</SheetTitle>
+              <SheetDescription>{description}</SheetDescription>
+            </SheetHeader>
+            <div className="overflow-y-auto pb-4">{bookingBody}</div>
+          </SheetContent>
+        </Sheet>
+      </>
+    )
+  }
+
+  return (
+    <>
+      {trigger}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold">{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
+          </DialogHeader>
+          {bookingBody}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

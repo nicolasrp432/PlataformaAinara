@@ -20,6 +20,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import {
   Table,
   TableBody,
   TableCell,
@@ -40,6 +46,7 @@ import {
 } from "lucide-react"
 import { updateUserAccessAction, updateUserRoleAction } from "./actions"
 import { toast } from "sonner"
+import { useIsMobile } from "@/lib/hooks/use-is-mobile"
 
 interface UserRow {
   id: string
@@ -91,6 +98,8 @@ function formatDate(dateStr: string | null) {
 
 function UserActions({ user }: { user: UserRow }) {
   const [isPending, startTransition] = useTransition()
+  const isMobile = useIsMobile()
+  const [open, setOpen] = useState(false)
 
   function handleAccess(status: "pending" | "approved" | "suspended") {
     startTransition(async () => {
@@ -120,17 +129,58 @@ function UserActions({ user }: { user: UserRow }) {
     })
   }
 
+  const triggerButton = (
+    <Button variant="ghost" size="icon" disabled={isPending}>
+      {isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <MoreHorizontal className="h-4 w-4" />
+      )}
+    </Button>
+  )
+
+  // En mobile: bottom sheet con acciones táctiles grandes
+  if (isMobile) {
+    const closeAnd = (fn: () => void) => () => {
+      setOpen(false)
+      fn()
+    }
+    return (
+      <>
+        <span onClick={() => setOpen(true)}>{triggerButton}</span>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="bottom">
+            <SheetHeader>
+              <SheetTitle>{user.full_name || "Usuario"}</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-1">
+              <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Acceso</p>
+              <Button variant="ghost" className="w-full justify-start h-12 text-emerald-700" disabled={user.access_status === "approved"} onClick={closeAnd(() => handleAccess("approved"))}>
+                <CheckCircle2 className="mr-3 h-5 w-5" /> Aprobar acceso
+              </Button>
+              <Button variant="ghost" className="w-full justify-start h-12" disabled={user.access_status === "pending"} onClick={closeAnd(() => handleAccess("pending"))}>
+                <Clock className="mr-3 h-5 w-5" /> Marcar pendiente
+              </Button>
+              <Button variant="ghost" className="w-full justify-start h-12 text-rose-600" disabled={user.access_status === "suspended"} onClick={closeAnd(() => handleAccess("suspended"))}>
+                <XCircle className="mr-3 h-5 w-5" /> Suspender acceso
+              </Button>
+              <p className="px-1 pt-3 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Rol</p>
+              <Button variant="ghost" className="w-full justify-start h-12" disabled={user.role === "student"} onClick={closeAnd(() => handleRole("student"))}>
+                <Users className="mr-3 h-5 w-5" /> Estudiante
+              </Button>
+              <Button variant="ghost" className="w-full justify-start h-12" disabled={user.role === "mentor"} onClick={closeAnd(() => handleRole("mentor"))}>
+                <ShieldAlert className="mr-3 h-5 w-5" /> Mentor
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </>
+    )
+  }
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" disabled={isPending}>
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <MoreHorizontal className="h-4 w-4" />
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>Acceso</DropdownMenuLabel>
         <DropdownMenuItem
