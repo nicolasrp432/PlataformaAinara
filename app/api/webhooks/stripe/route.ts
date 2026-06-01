@@ -41,6 +41,23 @@ export async function POST(req: NextRequest) {
 
   const supabase = getServiceClient()
 
+  // ── Idempotencia: Stripe reintenta/reenvía eventos. Insertamos el event.id;
+  // si ya existe (23505) lo ignoramos. Defensivo: si la tabla aún no existe
+  // (migración 0008 no aplicada, 42P01) procesamos como hasta ahora.
+  try {
+    const { error: dupError } = await supabase
+      .from("stripe_processed_events")
+      .insert({ event_id: event.id })
+    if (dupError) {
+      if (dupError.code === "23505") {
+        return NextResponse.json({ received: true, duplicate: true })
+      }
+      console.warn("[stripe webhook] idempotency skipped:", dupError.message)
+    }
+  } catch (e) {
+    console.warn("[stripe webhook] idempotency error:", e)
+  }
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session

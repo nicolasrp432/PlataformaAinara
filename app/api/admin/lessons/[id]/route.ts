@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
+import { CACHE_TAGS } from "@/lib/cache"
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser()
@@ -65,5 +67,9 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Invalida el catálogo cacheado (conteos/publicación de lecciones)
+  revalidateTag(CACHE_TAGS.formations)
+
   return NextResponse.json({ lesson: data })
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
 import { awardXP } from "@/lib/services/xpService"
 import { createNotification } from "@/lib/services/notifications"
 import {
@@ -60,7 +61,9 @@ export async function markLessonCompleted(lessonId: string, slug: string) {
 
   const xpResult = await awardXP(user.id, xpAmount)
 
-  // Check if all lessons in the formation are now completed → issue certificate
+  // Check if all lessons in the formation are now completed → issue certificate.
+  // Optimizado: antes ejecutaba DOS veces la misma cadena modules→lessons con
+  // awaits anidados dentro de .in(). Ahora: 3 queries lineales sin duplicar.
   let certificateIssued = false
   if (lesson?.module_id) {
     const { data: formation } = await supabase
@@ -70,54 +73,54 @@ export async function markLessonCompleted(lessonId: string, slug: string) {
       .single()
 
     if (formation?.formation_id) {
-      // Count total published lessons vs completed by user
-      const [{ count: totalLessons }, { count: completedLessons }] = await Promise.all([
-        supabase
+      // 1) Módulos de la formación
+      const { data: mods } = await supabase
+        .from("modules")
+        .select("id")
+        .eq("formation_id", formation.formation_id)
+      const moduleIds = (mods ?? []).map((m) => m.id)
+
+      if (moduleIds.length > 0) {
+        // 2) Lecciones publicadas de esos módulos (una sola vez)
+        const { data: less } = await supabase
           .from("lessons")
-          .select("id", { count: "exact", head: true })
+          .select("id")
           .eq("is_published", true)
-          .in(
-            "module_id",
-            (await supabase.from("modules").select("id").eq("formation_id", formation.formation_id)).data?.map((m) => m.id) ?? []
-          ),
-        supabase
-          .from("user_progress")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("is_completed", true)
-          .in(
-            "lesson_id",
-            (await supabase
-              .from("lessons")
-              .select("id")
-              .eq("is_published", true)
-              .in(
-                "module_id",
-                (await supabase.from("modules").select("id").eq("formation_id", formation.formation_id)).data?.map((m) => m.id) ?? []
-              )
-            ).data?.map((l) => l.id) ?? []
-          ),
-      ])
+          .in("module_id", moduleIds)
+        const lessonIds = (less ?? []).map((l) => l.id)
+        const totalLessons = lessonIds.length
 
-      if (totalLessons && completedLessons && completedLessons >= totalLessons) {
-        // Issue certificate (ignore duplicate conflict)
-        const { error: certError } = await supabase
-          .from("certificates")
-          .insert({ user_id: user.id, formation_id: formation.formation_id })
+        if (totalLessons > 0) {
+          // 3) Cuántas de esas completó el usuario
+          const { count: completedLessons } = await supabase
+            .from("user_progress")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("is_completed", true)
+            .in("lesson_id", lessonIds)
 
-        if (!certError) {
-          certificateIssued = true
-          revalidatePath(`/formations/${slug}`)
+          if (completedLessons && completedLessons >= totalLessons) {
+            // Issue certificate (ignore duplicate conflict)
+            const { error: certError } = await supabase
+              .from("certificates")
+              .insert({ user_id: user.id, formation_id: formation.formation_id })
+
+            if (!certError) certificateIssued = true
+          }
         }
       }
     }
   }
 
-  revalidatePath(`/learn/${slug}/${lessonId}`)
-  revalidatePath(`/dashboard`)
-  revalidatePath(`/formations/${slug}`)
-  revalidatePath("/profile")
-  revalidatePath("/quest")
+  // Revalidaciones: efecto secundario que NO afecta el valor devuelto.
+  // Se difieren con after() para no añadir latencia a la respuesta del usuario.
+  after(() => {
+    revalidatePath(`/learn/${slug}/${lessonId}`)
+    revalidatePath(`/dashboard`)
+    revalidatePath(`/formations/${slug}`)
+    revalidatePath("/profile")
+    revalidatePath("/quest")
+  })
 
   return {
     success: true,
@@ -181,20 +184,23 @@ export async function addCommentReply(parentId: string, content: string, lessonI
 
   if (error) return { error: error.message }
 
-  // Notificar al autor del comentario padre (silencioso si falla)
-  const { data: parent } = await supabase
-    .from("reflections")
-    .select("user_id")
-    .eq("id", parsed.data.parentId)
-    .single()
-  if (parent && parent.user_id !== user.id) {
-    await createNotification(parent.user_id, "comment_reply", {
-      title: "Nueva respuesta a tu comentario",
-      body: parsed.data.content.slice(0, 100),
-      link: `/learn/${slug}/${lessonId}`,
-      createdBy: user.id,
-    })
-  }
+  // Notificar al autor del comentario padre en segundo plano (after()): no
+  // bloquea la respuesta y es silencioso si falla.
+  after(async () => {
+    const { data: parent } = await supabase
+      .from("reflections")
+      .select("user_id")
+      .eq("id", parsed.data.parentId)
+      .single()
+    if (parent && parent.user_id !== user.id) {
+      await createNotification(parent.user_id, "comment_reply", {
+        title: "Nueva respuesta a tu comentario",
+        body: parsed.data.content.slice(0, 100),
+        link: `/learn/${slug}/${lessonId}`,
+        createdBy: user.id,
+      })
+    }
+  })
 
   revalidatePath(`/learn/${slug}/${lessonId}`)
   return { success: true }

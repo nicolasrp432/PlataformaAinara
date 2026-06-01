@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { cache } from "react"
+import { unstable_cache } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { cacheServiceClient, CACHE_TAGS } from "@/lib/cache"
 import { progressToNextLevel } from "@/lib/utils"
 
 // ─── Auth & Profile (deduplicadas por React.cache) ─────────────────────
@@ -190,9 +192,15 @@ export const getRecentActivity = cache(async (userId: string) => {
 
 // ─── Library Data ──────────────────────────────────────────────────────
 
-export const getLibraryFormations = cache(
-  async (userId: string | null) => {
-    const supabase = await createClient()
+/**
+ * Base COMPARTIDA del catálogo: formaciones publicadas + ids de sus lecciones.
+ * Idéntica para todos los usuarios → cacheada CROSS-REQUEST con unstable_cache
+ * (service-role, sin cookies). Se procesa 1 sola vez y se reutiliza para todos
+ * hasta que un admin edite contenido (revalidateTag(CACHE_TAGS.formations)).
+ */
+const getPublishedFormationsBase = unstable_cache(
+  async () => {
+    const supabase = cacheServiceClient()
 
     const { data: formations, error } = await supabase
       .from("formations")
@@ -210,18 +218,34 @@ export const getLibraryFormations = cache(
 
     if (error || !formations) return []
 
-    // Si hay usuario, obtener enrollments + progreso en 1 batch
+    // Pre-calcular ids de lecciones por formación (evita recalcular por request)
+    return formations.map((f) => ({
+      ...f,
+      _lessonIds:
+        (f.modules as any[])?.flatMap(
+          (mod: any) => mod.lessons?.map((l: any) => l.id) || []
+        ) || [],
+    }))
+  },
+  ["published-formations-base"],
+  { tags: [CACHE_TAGS.formations] }
+)
+
+export const getLibraryFormations = cache(
+  async (userId: string | null) => {
+    // Contenido compartido (cacheado cross-request)
+    const formations = await getPublishedFormationsBase()
+    if (formations.length === 0) return []
+
+    // Overlay por-usuario (NO cacheado cross-request: cambia por persona y debe
+    // verse al instante). Sigue deduplicado por request vía React.cache.
     let enrollments: any[] = []
     let completedLessonIds: string[] = []
 
     if (userId) {
+      const supabase = await createClient()
       // 2 queries en paralelo en vez de N+1
-      const allLessonIds = formations.flatMap(
-        (f) =>
-          f.modules?.flatMap(
-            (mod: any) => mod.lessons?.map((l: any) => l.id) || []
-          ) || []
-      )
+      const allLessonIds = formations.flatMap((f) => f._lessonIds)
 
       const [enrollmentsRes, progressRes] = await Promise.all([
         supabase
@@ -244,10 +268,7 @@ export const getLibraryFormations = cache(
     }
 
     return formations.map((formation) => {
-      const lessonIds =
-        formation.modules?.flatMap(
-          (mod: any) => mod.lessons?.map((l: any) => l.id) || []
-        ) || []
+      const lessonIds = formation._lessonIds
       const lessonsCount = lessonIds.length
 
       const enrollment = enrollments.find(
@@ -282,14 +303,19 @@ export const getLibraryFormations = cache(
   }
 )
 
-export const getCategories = cache(async () => {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from("categories")
-    .select("*")
-    .order("name", { ascending: true })
-  return data || []
-})
+// Categorías: RLS público (USING true) y casi nunca cambian → cache cross-request.
+export const getCategories = unstable_cache(
+  async () => {
+    const supabase = cacheServiceClient()
+    const { data } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name", { ascending: true })
+    return data || []
+  },
+  ["categories"],
+  { tags: [CACHE_TAGS.categories] }
+)
 
 // ─── Taberna Data ──────────────────────────────────────────────────────
 

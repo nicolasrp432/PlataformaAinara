@@ -102,49 +102,65 @@ export async function listConversations(userId: string) {
     return []
   }
 
-  // Para cada conversación, obtener el otro participante y el último mensaje
-  const results = await Promise.all(
-    (data ?? []).map(async (row) => {
-      const { data: participants } = await supabase
-        .from("conversation_participants")
-        .select("user_id, profiles(id, full_name, avatar_url)")
-        .eq("conversation_id", row.conversation_id)
-        .neq("user_id", userId)
-        .limit(1)
+  const rows = data ?? []
+  if (rows.length === 0) return []
 
-      const { data: lastMsg } = await supabase
-        .from("messages")
-        .select("body, created_at, sender_id")
-        .eq("conversation_id", row.conversation_id)
-        .order("created_at", { ascending: false })
-        .limit(1)
+  const convIds = rows.map((r) => r.conversation_id)
 
-      const { count: unread } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("conversation_id", row.conversation_id)
-        .neq("sender_id", userId)
-        .gt("created_at", row.last_read_at ?? "1970-01-01")
+  // Antes: 3 queries POR conversación (N+1). Ahora: 2 queries en batch para
+  // TODAS las conversaciones, agregando en JS.
+  const [{ data: otherParticipants }, { data: allMessages }] = await Promise.all([
+    supabase
+      .from("conversation_participants")
+      .select("conversation_id, user_id, profiles(id, full_name, avatar_url)")
+      .in("conversation_id", convIds)
+      .neq("user_id", userId),
+    supabase
+      .from("messages")
+      .select("conversation_id, body, created_at, sender_id")
+      .in("conversation_id", convIds)
+      .order("created_at", { ascending: false }),
+  ])
 
-      const rawProfiles = participants?.[0]?.profiles
-      const other = (Array.isArray(rawProfiles) ? rawProfiles[0] : rawProfiles) as
-        | { id: string; full_name: string; avatar_url: string | null }
-        | null
+  // Otro participante por conversación
+  const otherByConv = new Map<string, { id: string; full_name: string; avatar_url: string | null }>()
+  for (const p of otherParticipants ?? []) {
+    if (otherByConv.has(p.conversation_id)) continue
+    const raw = p.profiles
+    const prof = (Array.isArray(raw) ? raw[0] : raw) as
+      | { id: string; full_name: string; avatar_url: string | null }
+      | null
+    if (prof) otherByConv.set(p.conversation_id, prof)
+  }
 
-      const rawConv = row.conversations
-      const conv = (Array.isArray(rawConv) ? rawConv[0] : rawConv) as
-        | { last_message_at: string }
-        | null
+  // Último mensaje (primero en orden desc) y conteo de no leídos por conversación
+  const lastReadByConv = new Map(rows.map((r) => [r.conversation_id, r.last_read_at ?? "1970-01-01"]))
+  const lastMsgByConv = new Map<string, { body: string; created_at: string; sender_id: string }>()
+  const unreadByConv = new Map<string, number>()
+  for (const m of allMessages ?? []) {
+    if (!lastMsgByConv.has(m.conversation_id)) {
+      lastMsgByConv.set(m.conversation_id, { body: m.body, created_at: m.created_at, sender_id: m.sender_id })
+    }
+    const lastRead = lastReadByConv.get(m.conversation_id) ?? "1970-01-01"
+    if (m.sender_id !== userId && m.created_at > lastRead) {
+      unreadByConv.set(m.conversation_id, (unreadByConv.get(m.conversation_id) ?? 0) + 1)
+    }
+  }
 
-      return {
-        conversationId: row.conversation_id,
-        otherUser: other,
-        lastMessage: lastMsg?.[0] ?? null,
-        unreadCount: unread ?? 0,
-        lastMessageAt: conv?.last_message_at ?? null,
-      }
-    })
-  )
+  const results = rows.map((row) => {
+    const rawConv = row.conversations
+    const conv = (Array.isArray(rawConv) ? rawConv[0] : rawConv) as
+      | { last_message_at: string }
+      | null
+
+    return {
+      conversationId: row.conversation_id,
+      otherUser: otherByConv.get(row.conversation_id) ?? null,
+      lastMessage: lastMsgByConv.get(row.conversation_id) ?? null,
+      unreadCount: unreadByConv.get(row.conversation_id) ?? 0,
+      lastMessageAt: conv?.last_message_at ?? null,
+    }
+  })
 
   return results.sort((a, b) =>
     new Date(b.lastMessageAt ?? 0).getTime() - new Date(a.lastMessageAt ?? 0).getTime()

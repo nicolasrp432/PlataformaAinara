@@ -41,9 +41,11 @@ export interface FormationSummary {
 /**
  * FORMATIONS
  */
-export async function getFormations(): Promise<FormationSummary[]> {
+export async function getFormations(
+  opts: { limit?: number; offset?: number } = {}
+): Promise<FormationSummary[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('formations')
     .select(`
       *,
@@ -51,6 +53,14 @@ export async function getFormations(): Promise<FormationSummary[]> {
       lessons:modules(lessons(count))
     `)
     .order('created_at', { ascending: false });
+
+  // Paginación opcional (sin args = comportamiento actual: trae todo).
+  if (typeof opts.limit === 'number') {
+    const from = opts.offset ?? 0;
+    query = query.range(from, from + opts.limit - 1);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
   
