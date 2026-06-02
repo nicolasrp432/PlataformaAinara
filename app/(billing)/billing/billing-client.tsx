@@ -112,7 +112,7 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
             <div className="space-y-2">
               {[
                 "Todas las formaciones completas",
-                "Comunidad privada La Taberna",
+                "Comunidad privada de evolución",
                 "Sesiones de mentoría grupal",
                 "Certificados verificables",
               ].map((item) => (

@@ -15,7 +15,7 @@ export default async function BillingLayout({ children }: { children: React.Reac
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-light">Sendero</span>
+            <span className="font-display text-xl font-light">Μήτρα</span>
           </Link>
         </div>
       </header>

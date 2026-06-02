@@ -7,7 +7,7 @@ interface PageProps {
   params: Promise<{ conversationId: string }>
 }
 
-export const metadata = { title: "Conversación | Sendero" }
+export const metadata = { title: "Conversación | Μήτρα" }
 
 export default async function ConversationPage({ params }: PageProps) {
   const { conversationId } = await params

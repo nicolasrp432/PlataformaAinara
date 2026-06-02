@@ -3,7 +3,7 @@ import { CommentsClient } from "./comments-client"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Moderación de Comentarios — Admin Sendero",
+  title: "Moderación de Comentarios — Admin Μήτρα",
 }
 
 export const dynamic = "force-dynamic"

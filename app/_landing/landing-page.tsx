@@ -60,7 +60,7 @@ export function LandingPage({ formations }: LandingPageProps) {
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent transition-transform group-hover:scale-110 text-primary-foreground">
                 <SenderoLogo className="h-5 w-5" />
               </div>
-              <span className="font-display text-2xl font-light tracking-wide">Sendero</span>
+              <span className="font-display text-2xl font-light tracking-wide">Μήτρα</span>
             </Link>
 
             {/* Desktop nav */}
@@ -417,7 +417,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                   <motion.div variants={stagger} className="space-y-4">
                     {[
                       { icon: BookOpen, title: "Formaciones en video", desc: "Lecciones estructuradas con ejercicios y recursos descargables" },
-                      { icon: Users, title: "Comunidad La Taberna", desc: "Conecta con personas que comparten tu camino de crecimiento" },
+                      { icon: Users, title: "Comunidad Privada", desc: "Conecta con personas que comparten tu camino de crecimiento" },
                       { icon: Heart, title: "Diario de reflexiones", desc: "Espacio personal para documentar tus insights y claridades" },
                       { icon: Trophy, title: "Sistema de progreso", desc: "XP, rachas diarias y logros que celebran tu dedicación" },
                     ].map(({ icon: Icon, title, desc }) => (
@@ -636,7 +636,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                 </motion.h2>
                 <motion.p variants={fadeUp} className="mb-10 text-muted-foreground leading-relaxed">
                   Únete a cientos de personas que ya han comenzado su proceso de
-                  transformación con Sendero.
+                  transformación con Μήτρα.
                 </motion.p>
                 <motion.div
                   variants={fadeUp}
@@ -667,7 +667,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
                   <Sparkles className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <span className="font-display text-xl font-light">Sendero</span>
+                <span className="font-display text-xl font-light">Μήτρα</span>
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Plataforma de educación para la transformación personal y espiritual.

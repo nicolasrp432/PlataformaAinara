@@ -9,7 +9,7 @@ export default function RootLoading() {
           <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping" />
         </div>
         <div className="text-xl font-light text-foreground/80 tracking-widest">
-          SENDERO
+          ΜΉΤΡΑ
         </div>
         <div className="h-1 w-24 overflow-hidden rounded-full bg-secondary">
           <div className="h-full bg-primary animate-[shimmer_1.5s_infinite] w-full" style={{ backgroundImage: "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)", backgroundSize: "200% 100%" }} />

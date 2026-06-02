@@ -17,7 +17,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Panel de Administracion",
-  description: "Dashboard de administracion de la plataforma Sendero",
+  description: "Dashboard de administracion de la plataforma Μήτρα",
 }
 
 async function getAdminStats() {
@@ -129,25 +129,24 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/30 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Panel de Administracion</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">Panel de Administración</h1>
+          <p className="text-muted-foreground text-sm">
             Gestiona el contenido y usuarios de la plataforma
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
+          <Button variant="outline" asChild className="flex-1 sm:flex-initial justify-center">
             <Link href="/admin/content/formations">
-              <Eye className="mr-2 h-4 w-4" />
+              <Eye className="mr-2 h-4 w-4 shrink-0" />
               Ver Contenido
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="flex-1 sm:flex-initial justify-center bg-primary hover:bg-primary/90 text-white">
             <Link href="/admin/content/formations/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva Formacion
+              <Plus className="mr-2 h-4 w-4 shrink-0" />
+              Nueva Formación
             </Link>
           </Button>
         </div>

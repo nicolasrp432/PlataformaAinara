@@ -9,15 +9,14 @@ import { Button } from "@/components/ui/button"
 import {
   Clock,
   Sparkles,
-  MessageSquare,
-  ArrowRight,
   ShieldCheck,
   Heart,
 } from "lucide-react"
 import { MentorshipBookingDialog } from "@/components/mentorship/booking-dialog"
+import { ChatPanel } from "@/components/ai/chat-panel"
 
 export const metadata: Metadata = {
-  title: "Mentoría | Sendero",
+  title: "Mentoría | Μήτρα",
   description: "Conecta 1 a 1 con tu mentor y acelera tu transformación.",
 }
 
@@ -27,7 +26,7 @@ const defaultMentor = {
   full_name: "Ainara",
   title: "Fundadora & Mentora Principal",
   bio: "Guía estratégica para líderes disruptivos. Te ayudo a desbloquear tu máximo potencial, conectar con tu propósito y escalar tu visión con claridad y enfoque láser.",
-  avatar_url: "",
+  avatar_url: "/ainara.jpg",
   specialties: ["Liderazgo", "Mentalidad", "Escalabilidad", "Propósito"],
   session_price: 150,
   session_duration_minutes: 60,
@@ -160,26 +159,23 @@ export default async function MentorshipPage() {
         ))}
       </div>
 
-      {/* AI Companion teaser */}
-      <Card className="border-dashed border-2 border-primary/20 bg-primary/5 backdrop-blur-sm overflow-hidden flex flex-col justify-center items-center text-center p-8 lg:p-12 relative group hover:bg-primary/10 transition-colors duration-500">
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="h-20 w-20 bg-background rounded-2xl flex items-center justify-center shadow-lg border border-border/50 mb-6">
-          <MessageSquare className="w-10 h-10 text-primary" />
+      {/* AI Companion - Active Chat */}
+      <Card className="border border-primary/25 bg-card/60 backdrop-blur-xl shadow-2xl shadow-black/5 p-6 sm:p-8 flex flex-col min-h-[520px] rounded-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="flex items-center gap-3 pb-4 border-b border-border/50 shrink-0">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-foreground">Asistente IA Μήτρα</h3>
+            <p className="text-xs text-muted-foreground">
+              Haz preguntas en tiempo real sobre tus formaciones y la sabiduría de tu mentora.
+            </p>
+          </div>
         </div>
-        <Badge className="bg-primary text-primary-foreground mb-4 font-bold tracking-widest uppercase">
-          Próximamente
-        </Badge>
-        <h3 className="text-2xl font-semibold text-foreground mb-3">
-          Sendero AI Companion
-        </h3>
-        <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-          Estamos entrenando una inteligencia artificial con el conocimiento
-          completo de la plataforma. Pronto podrás chatear directamente y
-          recibir respuestas en tiempo real basadas en la sabiduría de la mentora.
-        </p>
-        <Button variant="link" className="mt-6 text-primary" disabled>
-          Saber más <ArrowRight className="w-4 h-4 ml-1" />
-        </Button>
+        <div className="flex-1 min-h-0 mt-4 flex flex-col">
+          <ChatPanel className="flex-1" />
+        </div>
       </Card>
     </div>
   )

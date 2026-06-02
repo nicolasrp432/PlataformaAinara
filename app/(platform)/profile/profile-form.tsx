@@ -73,8 +73,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 className="bg-background/50 border-border/50 focus:border-primary/50"
                 required 
               />
-              <p className="text-xs text-muted-foreground">
-                Este nombre será visible en La Taberna y tus logros.
+               <p className="text-xs text-muted-foreground">
+                Este nombre será visible en la Comunidad y tus logros.
               </p>
             </div>
             

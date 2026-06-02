@@ -86,7 +86,7 @@ export function CommentsClient({ initialComments }: { initialComments: Comment[]
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Comentarios</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Modera y gestiona los comentarios y reflexiones publicados en las lecciones y La Taberna.
+          Modera y gestiona los comentarios y reflexiones publicados en las lecciones y la Comunidad.
         </p>
       </div>
 
@@ -196,7 +196,7 @@ export function CommentsClient({ initialComments }: { initialComments: Comment[]
                         </>
                       ) : (
                         <Badge variant="outline" className="text-purple-500 border-purple-500/20 bg-purple-500/5 text-[10px]">
-                          La Taberna
+                          Comunidad
                         </Badge>
                       )}
                       <span className="text-muted-foreground/60 ml-auto flex items-center gap-1">

@@ -11,14 +11,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Flame, Star, Compass, Sword, MessageSquare, Map, BookOpen,
   Zap, TrendingUp, Crown, Award, CalendarDays, Settings, CreditCard,
-  ArrowRight, CheckCircle2, Activity, Clock,
+  ArrowRight, CheckCircle2, Activity, Clock, Inbox,
 } from "lucide-react"
 import { getSunSign } from "@/lib/utils/astrology"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { getUserMentorshipSessions } from "@/lib/services/mentorship"
 import { getProfileActivity } from "@/lib/services/profile"
 import { createClient } from "@/lib/supabase/server"
 import { CertificateCard } from "@/components/certificates/certificate-card"
+import { listConversations } from "@/lib/services/messaging"
+
+interface Conversation {
+  conversationId: string
+  otherUser: { id: string; full_name: string; avatar_url: string | null } | null
+  lastMessage: { body: string; created_at: string; sender_id: string } | null
+  unreadCount: number
+  lastMessageAt: string | null
+}
 
 interface DbUserCertificate {
   id: string
@@ -28,8 +37,19 @@ interface DbUserCertificate {
 }
 
 export const metadata: Metadata = {
-  title: "Mi Perfil | Sendero",
+  title: "Mi Perfil | Μήτρα",
   description: "Gestiona tu información personal y visualiza tu evolución.",
+}
+
+function formatRelative(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return "Ahora"
+  if (mins < 60) return `${mins}m`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  return `${days}d`
 }
 
 export default async function ProfilePage() {
@@ -38,7 +58,7 @@ export default async function ProfilePage() {
 
   const supabase = await createClient()
 
-  const [profile, questData, mentorshipSessions, activity, { data: subscription }, { data: userCertificates }] = await Promise.all([
+  const [profile, questData, mentorshipSessions, activity, { data: subscription }, { data: userCertificates }, conversations] = await Promise.all([
     getUserProfile(user.id),
     getQuestData(user.id),
     getUserMentorshipSessions(user.id),
@@ -58,6 +78,7 @@ export default async function ProfilePage() {
       `)
       .eq("user_id", user.id)
       .order("issued_at", { ascending: false }),
+    listConversations(user.id),
   ])
 
   const userData = {
@@ -111,7 +132,7 @@ export default async function ProfilePage() {
       <div className="flex flex-col gap-2 relative z-10">
         <h1 className="text-3xl font-light tracking-tight text-foreground sm:text-4xl">
           Mi <span className="font-semibold text-primary">Perfil</span>{" "}
-          <span className="text-muted-foreground text-base font-light hidden sm:inline">en Sendero</span>
+          <span className="text-muted-foreground text-base font-light hidden sm:inline">en Μήτρα</span>
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base max-w-xl">
           Aquí radica tu esencia como pensador y creador dentro de nuestra
@@ -221,6 +242,14 @@ export default async function ProfilePage() {
               </TabsTrigger>
               <TabsTrigger value="subscription" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
                 <CreditCard className="w-4 h-4" /> Suscripción
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                <MessageSquare className="w-4 h-4" /> Mensajes
+                {conversations.filter((c: Conversation) => c.unreadCount > 0).length > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-4 px-1.5 text-[10px] bg-primary text-primary-foreground font-bold">
+                    {conversations.reduce((acc: number, curr: Conversation) => acc + curr.unreadCount, 0)}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -494,6 +523,71 @@ export default async function ProfilePage() {
                       Gestionar suscripción <ArrowRight className="w-4 h-4 ml-1" />
                     </Link>
                   </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* MESSAGES TAB */}
+            <TabsContent value="messages" className="mt-6 space-y-4 outline-none">
+              <Card className="border-border/50 bg-card/60 backdrop-blur-md">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-primary" /> Tus conversaciones
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  {conversations.length === 0 ? (
+                    <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
+                      <Inbox className="h-10 w-10 opacity-30" />
+                      <p className="text-sm font-medium">No tienes conversaciones todavía.</p>
+                      <p className="text-xs opacity-70">
+                        Visita el perfil público de otro usuario para iniciar un chat.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {conversations.map((conv: Conversation) => (
+                        <Link
+                          key={conv.conversationId}
+                          href={`/messages/${conv.conversationId}`}
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50"
+                        >
+                          <Avatar className="h-10 w-10 shrink-0 ring-1 ring-primary/10">
+                            <AvatarImage src={conv.otherUser?.avatar_url ?? undefined} />
+                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                              {getInitials(conv.otherUser?.full_name ?? "?")}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-sm font-semibold truncate text-foreground hover:text-primary transition-colors">
+                                {conv.otherUser?.full_name ?? "Usuario"}
+                              </span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {conv.unreadCount > 0 && (
+                                  <Badge className="h-5 min-w-5 px-1 text-[10px] font-bold rounded-full bg-primary text-primary-foreground">
+                                    {conv.unreadCount}
+                                  </Badge>
+                                )}
+                                {conv.lastMessageAt && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {formatRelative(conv.lastMessageAt)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {conv.lastMessage && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                {conv.lastMessage.sender_id === userData.id ? "Tú: " : ""}
+                                {conv.lastMessage.body}
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

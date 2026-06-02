@@ -19,8 +19,6 @@ import {
 import {
   LayoutDashboard,
   BookOpen,
-  Compass,
-  Beer,
   Users,
   User,
   Settings,
@@ -34,10 +32,12 @@ import {
   CreditCard,
   MessageSquare,
   Bot,
+  Trophy,
 } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
 import { SenderoLogo } from "@/components/ui/logo"
 import { NotificationsBell } from "@/components/notifications/notifications-bell"
+import { UserSearch } from "@/components/layout/user-search"
 
 interface SidebarUser {
   id: string
@@ -57,10 +57,9 @@ interface PlatformSidebarProps {
 const navigation = [
   { name: "Dashboard",  href: "/dashboard",   icon: LayoutDashboard },
   { name: "Biblioteca", href: "/library",      icon: BookOpen },
-  { name: "Quest",      href: "/quest",        icon: Compass },
-  { name: "Taberna",    href: "/taberna",      icon: Beer },
+  { name: "Logros",     href: "/quest",        icon: Trophy },
+  { name: "Comunidad",  href: "/taberna",      icon: MessageSquare },
   { name: "Mentoría",   href: "/mentorship",   icon: Users },
-  { name: "Mensajes",   href: "/messages",     icon: MessageSquare },
   { name: "Asistente",  href: "/assistant",    icon: Bot },
   { name: "Perfil",     href: "/profile",      icon: User },
 ]
@@ -143,10 +142,10 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             {!isCollapsed && (
               <div className="min-w-0">
                 <span className="text-base font-bold text-foreground tracking-tight leading-none block">
-                  Sendero
+                  Μήτρα
                 </span>
-                <span className="text-[10px] text-muted-foreground tracking-widest uppercase font-medium leading-none">
-                  Tu camino
+                <span className="text-[10px] text-primary tracking-widest uppercase font-medium leading-none">
+                  Desde la raíz
                 </span>
               </div>
             )}
@@ -162,6 +161,13 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
           </Button>
         </div>
+
+        {/* ── Barra de búsqueda premium ──────────────────────── */}
+        {!isCollapsed && (
+          <div className="pt-4 shrink-0">
+            <UserSearch />
+          </div>
+        )}
 
         {/* ── User XP stats ─────────────────────────────────── */}
         {!isCollapsed && (
@@ -360,7 +366,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
 
           {!isCollapsed && (
             <div className="pt-2 px-3 text-[10px] text-muted-foreground/70 text-center tracking-widest uppercase">
-              Sendero · v0.2
+              Μήτρα · v0.2
             </div>
           )}
         </div>

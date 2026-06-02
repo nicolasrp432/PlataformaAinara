@@ -102,17 +102,17 @@ export default function FormationsClientPage({ initialData }: { initialData: For
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/30 pb-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Formaciones</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Gestiona las formaciones de la plataforma
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto justify-center bg-primary hover:bg-primary/90 text-white shrink-0">
           <Link href="/admin/content/formations/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Formacion
+            <Plus className="mr-2 h-4 w-4 shrink-0" />
+            Nueva Formación
           </Link>
         </Button>
       </div>

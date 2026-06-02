@@ -4,7 +4,7 @@ import { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Tu Carta Natal & Transformación",
-  description: "Descubre tu diseño cósmico y tu camino a la transformación en Sendero.",
+  description: "Descubre tu diseño cósmico y tu transformación desde la raíz en Μήτρα.",
 }
 
 export default function UsuarioDashboardPage() {

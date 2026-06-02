@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps) {
   }
   
   return {
-    title: `${formation.title} | Sendero`,
+    title: `${formation.title} | Μήτρα`,
     description: formation.description,
   }
 }

@@ -32,7 +32,7 @@ type RecentActivityItem = {
 }
 
 export const metadata: Metadata = {
-  title: "Dashboard | Sendero",
+  title: "Dashboard | Μήτρα",
   description: "Tu centro de control para el aprendizaje y transformacion",
 }
 
@@ -259,94 +259,149 @@ export default async function DashboardPage() {
         {/* Recent Activity */}
         <div className="space-y-4">
           <h2 className="text-xl font-medium">Actividad Reciente</h2>
-          {/* En mobile, Actividad y Acciones Rápidas se deslizan horizontalmente */}
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:flex-col md:overflow-visible md:pb-0">
-          <Card className="min-w-[85%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardContent className="p-4">
-              {recentAct.length > 0 ? (
-                <div className="space-y-4">
-                  {recentAct.map((activity: RecentActivityItem, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 pb-4 last:pb-0 last:border-0 border-b border-border/50"
-                    >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                        {activity.type === "lesson_completed" ? (
-                          <CheckCircle2 className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Flame className="h-4 w-4 text-primary" />
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-tight text-foreground">
-                          {activity.title}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-primary/10 text-primary border-0"
-                          >
-                            +{activity.xp} XP
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {activity.time}
-                          </span>
+          
+          <div className="flex flex-col gap-6">
+            <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+              <CardContent className="p-5 space-y-6">
+                
+                {/* SVG Activity Chart */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Evolución de XP Semanal</p>
+                    <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">Activo</span>
+                  </div>
+                  <div className="h-[120px] w-full bg-background/40 rounded-xl p-3 border border-border/40 flex flex-col justify-between relative overflow-hidden">
+                    <svg className="w-full h-[70px] mt-2 overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
+                          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
+                        </linearGradient>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="var(--primary)" />
+                          <stop offset="100%" stopColor="#E2B755" />
+                        </linearGradient>
+                      </defs>
+                      
+                      {/* Grid Lines */}
+                      <line x1="0" y1="10" x2="100" y2="10" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/20" strokeDasharray="2,2" />
+                      <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/20" strokeDasharray="2,2" />
+                      <line x1="0" y1="30" x2="100" y2="30" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/20" strokeDasharray="2,2" />
+                      
+                      {/* Area under curve */}
+                      <path d="M 0 35 Q 15 15, 30 25 T 60 10 T 90 28 T 100 35 L 100 40 L 0 40 Z" fill="url(#chartGrad)" />
+                      
+                      {/* Curve line */}
+                      <path d="M 0 35 Q 15 15, 30 25 T 60 10 T 90 28 T 100 35" fill="none" stroke="url(#lineGrad)" strokeWidth="1.5" strokeLinecap="round" />
+                      
+                      {/* Interactive dots */}
+                      <circle cx="30" cy="25" r="1.5" fill="var(--primary)" className="animate-pulse" />
+                      <circle cx="60" cy="10" r="1.5" fill="#E2B755" className="animate-pulse" />
+                      <circle cx="90" cy="28" r="1.5" fill="var(--primary)" className="animate-pulse" />
+                    </svg>
+                    
+                    <div className="flex justify-between text-[9px] text-muted-foreground/80 font-medium px-1">
+                      <span>Lun</span>
+                      <span>Mar</span>
+                      <span>Mié</span>
+                      <span>Jue</span>
+                      <span>Vie</span>
+                      <span>Sáb</span>
+                      <span>Dom</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/40" />
+
+                {/* Recent Activities List */}
+                {recentAct.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentAct.map((activity: RecentActivityItem, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 pb-4 last:pb-0 last:border-0 border-b border-border/50"
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                          {activity.type === "lesson_completed" ? (
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Flame className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1 min-w-0">
+                          <p className="text-sm font-medium leading-tight text-foreground truncate">
+                            {activity.title}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] bg-primary/10 text-primary border-0 font-bold px-2 py-0.5"
+                            >
+                              +{activity.xp} XP
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {activity.time}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">
-                    Aun no tienes actividad reciente. Comienza una leccion para
-                    ver tu progreso aqui.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground">
+                      Aún no tienes actividad reciente. Comienza una lección para
+                      ver tu progreso aquí.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Quick Actions */}
-          <Card className="min-w-[85%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-medium">
-                Acciones Rapidas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30"
-                asChild
-              >
-                <Link href="/library">
-                  <BookOpen className="mr-2 h-4 w-4 text-primary" />
-                  Explorar Formaciones
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30"
-                asChild
-              >
-                <Link href="/taberna">
-                  <Star className="mr-2 h-4 w-4 text-primary" />
-                  Nueva Reflexion
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30"
-                asChild
-              >
-                <Link href="/mentorship">
-                  <Clock className="mr-2 h-4 w-4 text-primary" />
-                  Agendar Mentoria
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+            {/* Quick Actions */}
+            <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium">
+                  Acciones Rápidas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Button
+                    variant="outline"
+                    className="justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30 h-11 text-sm font-medium px-4"
+                    asChild
+                  >
+                    <Link href="/library">
+                      <BookOpen className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+                      Explorar Formaciones
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30 h-11 text-sm font-medium px-4"
+                    asChild
+                  >
+                    <Link href="/taberna">
+                      <Star className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+                      Nueva Reflexión
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30 h-11 text-sm font-medium px-4"
+                    asChild
+                  >
+                    <Link href="/mentorship">
+                      <Clock className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+                      Agendar Mentoría
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

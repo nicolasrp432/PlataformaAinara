@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Analíticas — Admin Sendero",
+  title: "Analíticas — Admin Μήτρα",
 }
 
 export const dynamic = "force-dynamic"

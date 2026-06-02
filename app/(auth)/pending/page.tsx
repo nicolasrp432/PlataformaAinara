@@ -7,7 +7,7 @@ import { getAuthUser, getUserProfile } from "@/lib/data-access"
 import { Clock, Sparkles, LogOut, Mail, ArrowRight } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Acceso pendiente — Sendero",
+  title: "Acceso pendiente — Μήτρα",
 }
 
 export default async function PendingPage() {
@@ -33,7 +33,7 @@ export default async function PendingPage() {
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
           <Sparkles className="h-5 w-5 text-primary-foreground" />
         </div>
-        <span className="text-2xl font-light tracking-wide">Sendero</span>
+        <span className="text-2xl font-light tracking-wide">Μήτρα</span>
       </Link>
 
       <Card className="w-full max-w-md border-border/50 shadow-lg">
@@ -49,7 +49,7 @@ export default async function PendingPage() {
                 un error, por favor contacta con el equipo de soporte.
               </p>
               <Button variant="outline" asChild>
-                <a href="mailto:soporte@sendero.com">
+                <a href="mailto:soporte@mitra.com">
                   <Mail className="mr-2 h-4 w-4" />
                   Contactar soporte
                 </a>

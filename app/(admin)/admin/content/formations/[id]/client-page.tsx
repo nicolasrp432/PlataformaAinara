@@ -338,30 +338,30 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/30 pb-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {isNew ? "Nueva Formacion" : "Editar Formacion"}
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground truncate">
+              {isNew ? "Nueva Formación" : "Editar Formación"}
             </h1>
-            <p className="text-muted-foreground">
-              {isNew ? "Crea una nueva formacion para tus estudiantes" : formation?.title || ""}
+            <p className="text-muted-foreground text-xs truncate">
+              {isNew ? "Crea una nueva formación para tus estudiantes" : formation?.title || ""}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
           {!isNew && (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="flex-1 md:flex-initial justify-center">
               <Link href={`/formations/${formation?.slug || ""}`} target="_blank">
                 <Eye className="h-4 w-4 mr-2" />
                 Vista Previa
               </Link>
             </Button>
           )}
-          <Button onClick={handleSave} disabled={isPending}>
+          <Button onClick={handleSave} disabled={isPending} className="flex-1 md:flex-initial justify-center bg-primary hover:bg-primary/90 text-white">
             {isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -374,55 +374,55 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
 
       {/* Stats Bar */}
       {!isNew && (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-primary/10 shrink-0">
                   <Video className="h-4 w-4 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Lecciones</p>
-                  <p className="text-xl font-semibold">{totalLessons}</p>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Lecciones</p>
+                  <p className="text-xl font-semibold leading-none mt-1">{totalLessons}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-amber-500/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-amber-500/10 shrink-0">
                   <Clock className="h-4 w-4 text-amber-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Duracion</p>
-                  <p className="text-xl font-semibold">{formatDuration(totalDuration)}</p>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Duración</p>
+                  <p className="text-xl font-semibold leading-none mt-1 truncate">{formatDuration(totalDuration)}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-blue-500/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-blue-500/10 shrink-0">
                   <FileText className="h-4 w-4 text-blue-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Modulos</p>
-                  <p className="text-xl font-semibold">{modules?.length || 0}</p>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Módulos</p>
+                  <p className="text-xl font-semibold leading-none mt-1">{modules?.length || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-green-500/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-green-500/10 shrink-0">
                   <Users className="h-4 w-4 text-green-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Estudiantes</p>
-                  <p className="text-xl font-semibold">0</p>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Estudiantes</p>
+                  <p className="text-xl font-semibold leading-none mt-1">0</p>
                 </div>
               </div>
             </CardContent>
