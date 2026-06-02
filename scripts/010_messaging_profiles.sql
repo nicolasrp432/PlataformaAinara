@@ -74,6 +74,19 @@ CREATE POLICY "participants insert conversation"
   ON conversations FOR INSERT
   WITH CHECK (true); -- server action controla quién puede insertar
 
+-- Función auxiliar para evitar la recursión en la política RLS
+CREATE OR REPLACE FUNCTION public.is_conversation_participant(conv_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversation_participants
+    WHERE conversation_id = conv_id AND user_id = user_id
+  );
+$$;
+
 -- conversation_participants
 ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "view own participations" ON conversation_participants;
@@ -81,11 +94,7 @@ CREATE POLICY "view own participations"
   ON conversation_participants FOR SELECT
   USING (
     user_id = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM conversation_participants cp2
-      WHERE cp2.conversation_id = conversation_participants.conversation_id
-        AND cp2.user_id = auth.uid()
-    )
+    OR public.is_conversation_participant(conversation_id, auth.uid())
   );
 
 DROP POLICY IF EXISTS "insert participations" ON conversation_participants;

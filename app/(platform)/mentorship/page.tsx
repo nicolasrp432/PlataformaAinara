@@ -26,7 +26,7 @@ const defaultMentor = {
   full_name: "Ainara",
   title: "Fundadora & Mentora Principal",
   bio: "Guía estratégica para líderes disruptivos. Te ayudo a desbloquear tu máximo potencial, conectar con tu propósito y escalar tu visión con claridad y enfoque láser.",
-  avatar_url: "/ainara.jpg",
+  avatar_url: "/ainara.png",
   specialties: ["Liderazgo", "Mentalidad", "Escalabilidad", "Propósito"],
   session_price: 150,
   session_duration_minutes: 60,
