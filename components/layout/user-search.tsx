@@ -208,7 +208,7 @@ export function UserSearch() {
                               "h-10 w-10 shrink-0 border-2 transition-transform duration-200",
                               isSelected ? "border-primary/50 scale-105" : "border-background"
                             )}>
-                              <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} className="object-cover" />
+                              <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name ?? undefined} className="object-cover" />
                               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                                 {getInitials(user.full_name || "?")}
                               </AvatarFallback>

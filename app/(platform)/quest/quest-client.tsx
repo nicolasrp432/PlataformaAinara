@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Trophy, Award, Lock, CheckCircle2, Star, Flame, Compass,
-  Sword, Target, Map, MessageSquare, Zap, TrendingUp, Crown
+  Sword, Target, Map, MessageSquare, Zap, TrendingUp, Crown, BookOpen
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -47,7 +47,7 @@ const itemVariants = {
     opacity: 1, 
     y: 0,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 260,
       damping: 25,
     }
