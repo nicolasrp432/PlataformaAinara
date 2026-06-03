@@ -40,12 +40,21 @@ export const getUserProfile = cache(async (userId: string) => {
 export const getDashboardData = cache(async (userId: string) => {
   const supabase = await createClient()
 
-  // 4 queries en paralelo en vez de ~8 secuenciales
+  // Calcular el lunes de esta semana a las 00:00:00
+  const today = new Date()
+  const dayOfWeek = today.getDay()
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const mondayOfThisWeek = new Date(today)
+  mondayOfThisWeek.setDate(today.getDate() - daysToSubtract)
+  mondayOfThisWeek.setHours(0, 0, 0, 0)
+
+  // 5 queries en paralelo
   const [
     { data: profile },
     { count: totalEnrollments },
     { count: completedEnrollments },
     { count: lessonsCompleted },
+    { data: currentWeekProgress },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).single(),
     supabase
@@ -62,7 +71,25 @@ export const getDashboardData = cache(async (userId: string) => {
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("is_completed", true),
+    supabase
+      .from("user_progress")
+      .select("completed_at")
+      .eq("user_id", userId)
+      .eq("is_completed", true)
+      .gte("completed_at", mondayOfThisWeek.toISOString()),
   ])
+
+  // Calcular XP por día de la semana: 0=Lunes, ..., 6=Domingo
+  const weeklyXp = [0, 0, 0, 0, 0, 0, 0]
+  if (currentWeekProgress) {
+    currentWeekProgress.forEach((p) => {
+      if (!p.completed_at) return
+      const date = new Date(p.completed_at)
+      const day = date.getDay()
+      const index = day === 0 ? 6 : day - 1
+      weeklyXp[index] += 50
+    })
+  }
 
   return {
     stats: {
@@ -74,6 +101,7 @@ export const getDashboardData = cache(async (userId: string) => {
       currentStreak: profile?.streak_days ?? 0,
       level: profile?.level || 1,
       nextLevelProgress: progressToNextLevel(profile?.xp || 0),
+      weeklyXp,
     },
     profile,
   }

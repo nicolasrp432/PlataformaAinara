@@ -17,6 +17,8 @@ interface NatalChartSectionProps {
   /** Fallback simple cuando aún no hay carta calculada */
   fallbackSign?: string
   fallbackSymbol?: string
+  /** Nombre del usuario para la carta natal */
+  userName?: string
   /** true en el perfil propio (muestra botón calcular/recalcular) */
   editable?: boolean
 }
@@ -26,10 +28,27 @@ export function NatalChartSection({
   birthCity,
   fallbackSign = "",
   fallbackSymbol = "",
+  userName = "Usuario",
   editable = false,
 }: NatalChartSectionProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
+
+  const handleOpenInteractive = () => {
+    if (!chart) return
+    const baseUrl = process.env.NEXT_PUBLIC_CARTA_NATAL_URL || "https://carta-natal-sand.vercel.app/"
+    const params = new URLSearchParams()
+    params.set("name", userName)
+    params.set("birthDate", chart.birth_date || "")
+    params.set("birthTime", chart.birth_time || "")
+    params.set("city", chart.birth_city || "")
+    params.set("country", chart.birth_country || "")
+    if (chart.latitude != null) params.set("latitude", String(chart.latitude))
+    if (chart.longitude != null) params.set("longitude", String(chart.longitude))
+    if (chart.timezone != null) params.set("timezone", chart.timezone)
+    
+    window.open(`${baseUrl}?${params.toString()}`, "_blank")
+  }
 
   const sun = chart?.planets?.find((p) => p.name === "Sol")
   const moon = chart?.planets?.find((p) => p.name === "Luna")
@@ -144,10 +163,17 @@ export function NatalChartSection({
         {/* Acción: calcular / recalcular (solo perfil propio) */}
         {editable && (
           <div className="pt-1">
-            <Button onClick={() => setModalOpen(true)} className="gap-2 w-full sm:w-auto">
-              <Sparkles className="w-4 h-4" />
-              {chart ? "Recalcular mi carta natal" : "Calcular mi carta natal"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {chart && (
+                <Button onClick={handleOpenInteractive} className="gap-2 w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white font-semibold shadow-sm hover:shadow active:scale-[0.98]">
+                  <Sparkles className="w-4 h-4" />
+                  Abrir Carta Interactiva (IA)
+                </Button>
+              )}
+              <Button onClick={() => setModalOpen(true)} variant={chart ? "outline" : "default"} className="gap-2 w-full sm:w-auto">
+                {chart ? "Recalcular mi carta natal" : "Calcular mi carta natal"}
+              </Button>
+            </div>
             {chart?.calculated_at && (
               <p className="text-[11px] text-muted-foreground mt-2">
                 Calculada el{" "}

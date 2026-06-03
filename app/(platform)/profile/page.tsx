@@ -268,6 +268,7 @@ export default async function ProfilePage() {
                 birthTime={userData.birth_time}
                 fallbackSign={sunSign}
                 fallbackSymbol={signSymbol}
+                userName={userData.full_name}
                 editable
               />
 

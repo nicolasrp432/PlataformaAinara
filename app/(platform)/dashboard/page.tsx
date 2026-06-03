@@ -266,52 +266,98 @@ export default async function DashboardPage() {
               <CardContent className="p-5 space-y-6">
                 
                 {/* SVG Activity Chart */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Evolución de XP Semanal</p>
-                    <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">Activo</span>
-                  </div>
-                  <div className="h-[120px] w-full bg-background/40 rounded-xl p-3 border border-border/40 flex flex-col justify-between relative overflow-hidden">
-                    <svg className="w-full h-[70px] mt-2 overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
-                          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
-                        </linearGradient>
-                        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="var(--primary)" />
-                          <stop offset="100%" stopColor="#E2B755" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* Grid Lines */}
-                      <line x1="0" y1="10" x2="100" y2="10" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/20" strokeDasharray="2,2" />
-                      <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/20" strokeDasharray="2,2" />
-                      <line x1="0" y1="30" x2="100" y2="30" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/20" strokeDasharray="2,2" />
-                      
-                      {/* Area under curve */}
-                      <path d="M 0 35 Q 15 15, 30 25 T 60 10 T 90 28 T 100 35 L 100 40 L 0 40 Z" fill="url(#chartGrad)" />
-                      
-                      {/* Curve line */}
-                      <path d="M 0 35 Q 15 15, 30 25 T 60 10 T 90 28 T 100 35" fill="none" stroke="url(#lineGrad)" strokeWidth="1.5" strokeLinecap="round" />
-                      
-                      {/* Interactive dots */}
-                      <circle cx="30" cy="25" r="1.5" fill="var(--primary)" className="animate-pulse" />
-                      <circle cx="60" cy="10" r="1.5" fill="#E2B755" className="animate-pulse" />
-                      <circle cx="90" cy="28" r="1.5" fill="var(--primary)" className="animate-pulse" />
-                    </svg>
-                    
-                    <div className="flex justify-between text-[9px] text-muted-foreground/80 font-medium px-1">
-                      <span>Lun</span>
-                      <span>Mar</span>
-                      <span>Mié</span>
-                      <span>Jue</span>
-                      <span>Vie</span>
-                      <span>Sáb</span>
-                      <span>Dom</span>
+                {(() => {
+                  const weeklyXp = stats.weeklyXp || [0, 0, 0, 0, 0, 0, 0]
+                  const totalWeeklyXp = weeklyXp.reduce((acc: number, curr: number) => acc + curr, 0)
+                  const maxWeeklyXp = Math.max(...weeklyXp, 100)
+                  const points = weeklyXp.map((xp, i) => {
+                    const x = 5 + i * 15
+                    const y = 35 - (xp / maxWeeklyXp) * 30
+                    return { x, y, xp }
+                  })
+                  const linePath = points.reduce((path, p, i) => {
+                    if (i === 0) return `M ${p.x} ${p.y}`
+                    const prev = points[i - 1]
+                    const cpX1 = prev.x + 7.5
+                    const cpY1 = prev.y
+                    const cpX2 = p.x - 7.5
+                    const cpY2 = p.y
+                    return `${path} C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p.x} ${p.y}`
+                  }, "")
+                  const areaPath = `${linePath} L 95 40 L 5 40 Z`
+                  const isXpActive = totalWeeklyXp > 0
+
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Evolución de XP Semanal</p>
+                        {isXpActive ? (
+                          <span className="text-[10px] text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                            +{totalWeeklyXp} XP esta semana
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+                            Sin actividad
+                          </span>
+                        )}
+                      </div>
+                      <div className="h-[120px] w-full bg-background/40 rounded-xl p-3 border border-border/40 flex flex-col justify-between relative overflow-hidden">
+                        <svg className="w-full h-[70px] mt-2 overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+                              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
+                            </linearGradient>
+                            <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="var(--primary)" />
+                              <stop offset="100%" stopColor="#E2B755" />
+                            </linearGradient>
+                          </defs>
+                          
+                          {/* Grid Lines */}
+                          <line x1="0" y1="10" x2="100" y2="10" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/15" strokeDasharray="2,2" />
+                          <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/15" strokeDasharray="2,2" />
+                          <line x1="0" y1="30" x2="100" y2="30" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/15" strokeDasharray="2,2" />
+                          
+                          {isXpActive ? (
+                            <>
+                              {/* Area under curve */}
+                              <path d={areaPath} fill="url(#chartGrad)" />
+                              
+                              {/* Curve line */}
+                              <path d={linePath} fill="none" stroke="url(#lineGrad)" strokeWidth="1.5" strokeLinecap="round" />
+                              
+                              {/* Interactive dots */}
+                              {points.map((p, i) => (
+                                p.xp > 0 && (
+                                  <g key={i}>
+                                    <circle cx={p.x} cy={p.y} r="2" fill="var(--primary)" />
+                                    <circle cx={p.x} cy={p.y} r="4" fill="var(--primary)" className="opacity-20 animate-ping" />
+                                  </g>
+                                )
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              {/* Flat baseline showing empty state */}
+                              <line x1="5" y1="35" x2="95" y2="35" stroke="currentColor" strokeWidth="0.75" className="text-muted-foreground/30" strokeDasharray="3,3" />
+                            </>
+                          )}
+                        </svg>
+                        
+                        <div className="flex justify-between text-[9px] text-muted-foreground/80 font-medium px-1">
+                          <span>Lun</span>
+                          <span>Mar</span>
+                          <span>Mié</span>
+                          <span>Jue</span>
+                          <span>Vie</span>
+                          <span>Sáb</span>
+                          <span>Dom</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  )
+                })()}
 
                 <div className="h-px bg-border/40" />
 
@@ -368,7 +414,7 @@ export default async function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
                   <Button
                     variant="outline"
                     className="justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30 h-11 text-sm font-medium px-4"
