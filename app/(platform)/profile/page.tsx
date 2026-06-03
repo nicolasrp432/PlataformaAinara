@@ -20,6 +20,8 @@ import { getProfileActivity } from "@/lib/services/profile"
 import { createClient } from "@/lib/supabase/server"
 import { CertificateCard } from "@/components/certificates/certificate-card"
 import { listConversations } from "@/lib/services/messaging"
+import { NatalChartSection } from "@/components/profile/NatalChartSection"
+import type { NatalChartRecord } from "@/types"
 
 interface Conversation {
   conversationId: string
@@ -58,7 +60,7 @@ export default async function ProfilePage() {
 
   const supabase = await createClient()
 
-  const [profile, questData, mentorshipSessions, activity, { data: subscription }, { data: userCertificates }, conversations] = await Promise.all([
+  const [profile, questData, mentorshipSessions, activity, { data: subscription }, { data: userCertificates }, conversations, { data: natalChart }] = await Promise.all([
     getUserProfile(user.id),
     getQuestData(user.id),
     getUserMentorshipSessions(user.id),
@@ -79,6 +81,11 @@ export default async function ProfilePage() {
       .eq("user_id", user.id)
       .order("issued_at", { ascending: false }),
     listConversations(user.id),
+    supabase
+      .from("natal_charts")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ])
 
   const userData = {
@@ -255,29 +262,14 @@ export default async function ProfilePage() {
 
             {/* INFO TAB */}
             <TabsContent value="info" className="mt-6 space-y-6 outline-none">
-              {userData.birth_date && sunSign && (
-                <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md relative overflow-hidden group">
-                  <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-700 pointer-events-none" />
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl text-foreground flex items-center gap-2">
-                      <Star className="w-5 h-5 text-primary" /> Diseño Cósmico
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-                        <span className="text-4xl text-primary drop-shadow-sm">{signSymbol}</span>
-                      </div>
-                      <div className="space-y-2 flex-1">
-                        <h3 className="text-lg font-bold text-foreground">Signo Solar {sunSign}</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          Naciste en <strong>{userData.birth_city}</strong> marcando tu entrada al sistema con una energía vital única.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <NatalChartSection
+                chart={(natalChart as NatalChartRecord | null) ?? null}
+                birthCity={userData.birth_city}
+                birthTime={userData.birth_time}
+                fallbackSign={sunSign}
+                fallbackSymbol={signSymbol}
+                editable
+              />
 
               <ProfileForm
                 initialData={{

@@ -16,3 +16,26 @@ export function getSunSign(birthDate: string): { sign: string; symbol: string } 
   if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return { sign: "Piscis", symbol: "♓" }
   return null
 }
+
+const SIGN_SYMBOLS: Record<string, string> = {
+  Aries: "♈", Tauro: "♉", "Géminis": "♊", "Cáncer": "♋",
+  Leo: "♌", Virgo: "♍", Libra: "♎", Escorpio: "♏",
+  Sagitario: "♐", Capricornio: "♑", Acuario: "♒", Piscis: "♓",
+}
+
+export function getSignSymbol(sign: string | null | undefined): string {
+  if (!sign) return "✦"
+  return SIGN_SYMBOLS[sign] ?? "✦"
+}
+
+const SIGN_ELEMENTS: Record<string, string> = {
+  Aries: "Fuego", Leo: "Fuego", Sagitario: "Fuego",
+  Tauro: "Tierra", Virgo: "Tierra", Capricornio: "Tierra",
+  "Géminis": "Aire", Libra: "Aire", Acuario: "Aire",
+  "Cáncer": "Agua", Escorpio: "Agua", Piscis: "Agua",
+}
+
+export function getSignElement(sign: string | null | undefined): string | null {
+  if (!sign) return null
+  return SIGN_ELEMENTS[sign] ?? null
+}

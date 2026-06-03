@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { natalChartDataSchema, toNatalChartRow } from "@/lib/validations/natal-chart"
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
@@ -54,4 +55,50 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/dashboard")
 
   return { success: true, newAvatarUrl: avatarUrl || null }
+}
+
+/**
+ * Guarda (o reemplaza, vía UPSERT) la carta natal calculada en el proyecto
+ * carta-natal y sincroniza los signos derivados (Sol, Luna, Ascendente) en profiles.
+ */
+export async function saveNatalChart(data: unknown) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { error: "No estás autenticado." }
+  }
+
+  const parsed = natalChartDataSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: "Datos de carta natal inválidos." }
+  }
+
+  const { row, derived } = toNatalChartRow(user.id, parsed.data)
+
+  const { data: saved, error } = await supabase
+    .from("natal_charts")
+    .upsert(row, { onConflict: "user_id" })
+    .select("id")
+    .single()
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  // Sincronizar resumen en profiles para acceso rápido
+  await supabase
+    .from("profiles")
+    .update({
+      sun_sign: derived.sun_sign,
+      moon_sign: derived.moon_sign,
+      rising_sign: derived.rising_sign,
+      natal_chart_id: saved?.id ?? null,
+    })
+    .eq("id", user.id)
+
+  revalidatePath("/profile")
+  revalidatePath(`/u/${user.id}`)
+
+  return { success: true }
 }

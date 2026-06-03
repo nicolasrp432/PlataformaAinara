@@ -297,3 +297,86 @@ export interface UpdateProgressRequest {
   last_position_seconds: number
   status?: ProgressStatus
 }
+
+// ── Carta Natal (compatibles con el proyecto carta-natal) ─────
+export type ZodiacSign =
+  | 'Aries' | 'Tauro' | 'Géminis' | 'Cáncer'
+  | 'Leo' | 'Virgo' | 'Libra' | 'Escorpio'
+  | 'Sagitario' | 'Capricornio' | 'Acuario' | 'Piscis'
+
+export interface PlanetPosition {
+  name: string
+  sign: ZodiacSign
+  degree: number
+  minutes: number
+  absoluteDegree: number
+  house: number
+  retrograde: boolean
+}
+
+export interface HouseCusp {
+  houseNumber: number
+  sign: ZodiacSign
+  degree: number
+  absoluteDegree: number
+}
+
+export interface AnglePoint {
+  name: string
+  sign: ZodiacSign
+  degree: number
+  minutes: number
+  absoluteDegree: number
+}
+
+export type AspectType = 'Conjunction' | 'Sextile' | 'Square' | 'Trine' | 'Opposition'
+
+export interface Aspect {
+  planet1: string
+  planet2: string
+  type: AspectType
+  angle: number
+  orb: number
+}
+
+/** Payload recibido desde el proyecto carta-natal vía postMessage */
+export interface NatalChartData {
+  subject: {
+    name: string
+    birthDate: string
+    birthTime: string
+    city: string
+    country: string
+    latitude?: number
+    longitude?: number
+    timezone?: string
+  }
+  planets: PlanetPosition[]
+  houses: HouseCusp[]
+  aspects: Aspect[]
+  ascendant: AnglePoint
+  midheaven: AnglePoint
+  calculatedAt: string
+  chartUrl?: string
+}
+
+/** Fila de la tabla natal_charts en Supabase */
+export interface NatalChartRecord {
+  id: string
+  user_id: string
+  birth_date: string
+  birth_time: string
+  birth_city: string
+  birth_country: string | null
+  latitude: number | null
+  longitude: number | null
+  timezone: string | null
+  planets: PlanetPosition[]
+  houses: HouseCusp[]
+  aspects: Aspect[]
+  ascendant: AnglePoint | null
+  midheaven: AnglePoint | null
+  calculated_at: string
+  created_at: string
+  updated_at: string
+}

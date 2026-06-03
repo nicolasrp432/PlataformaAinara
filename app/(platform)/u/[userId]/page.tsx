@@ -14,6 +14,8 @@ import { ProfileWall } from "./profile-wall"
 import { startConversationAction } from "./actions"
 import { getQuestData } from "@/lib/data-access"
 import { getSunSign } from "@/lib/utils/astrology"
+import { NatalChartSection } from "@/components/profile/NatalChartSection"
+import type { NatalChartRecord } from "@/types"
 
 interface PageProps {
   params: Promise<{ userId: string }>
@@ -68,10 +70,15 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .order("created_at", { ascending: false })
     .limit(5)
 
-  // Comentarios del muro e información de logros (Quest)
-  const [wallComments, questData] = await Promise.all([
+  // Comentarios del muro, logros (Quest) y carta natal
+  const [wallComments, questData, { data: natalChart }] = await Promise.all([
     getProfileComments(userId),
     getQuestData(userId),
+    supabase
+      .from("natal_charts")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle(),
   ])
 
   const astro = profile.birth_date ? getSunSign(profile.birth_date) : null
@@ -170,29 +177,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
       </Card>
 
       {/* ── Diseño Cósmico (Carta Natal) ────────────────────────────────── */}
-      {profile.birth_date && sunSign && (
-        <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md relative overflow-hidden group">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-700 pointer-events-none" />
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-foreground flex items-center gap-2">
-              <Star className="w-4 h-4 text-primary" /> Diseño Cósmico
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-                <span className="text-3xl text-primary drop-shadow-sm">{signSymbol}</span>
-              </div>
-              <div className="space-y-1.5 text-center sm:text-left">
-                <h3 className="text-lg font-bold text-foreground">Signo Solar {sunSign}</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Esencia grabada bajo la influencia de {sunSign}. Nacido/a en <strong>{profile.birth_city || "Lugar Desconocido"}</strong>
-                  {profile.birth_time && <> a las <strong>{profile.birth_time}</strong></>}.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {(natalChart || (profile.birth_date && sunSign)) && (
+        <NatalChartSection
+          chart={(natalChart as NatalChartRecord | null) ?? null}
+          birthCity={profile.birth_city}
+          birthTime={profile.birth_time}
+          fallbackSign={sunSign}
+          fallbackSymbol={signSymbol}
+        />
       )}
 
       {/* ── Logros / Insignias del usuario ───────────────────────────────── */}

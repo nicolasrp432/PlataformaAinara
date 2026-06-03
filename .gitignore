@@ -37,3 +37,6 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# Proyecto carta-natal: repo Git independiente, se despliega por separado en Vercel
+carta-natal/
