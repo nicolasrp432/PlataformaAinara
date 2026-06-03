@@ -24,7 +24,6 @@ interface NatalChartSectionProps {
 export function NatalChartSection({
   chart,
   birthCity,
-  birthTime,
   fallbackSign = "",
   fallbackSymbol = "",
   editable = false,
@@ -130,7 +129,7 @@ export function NatalChartSection({
                             )}
                           </div>
                           <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
-                            {p.degree}° {p.minutes}' — Casa {p.house}
+                            {p.degree}° {p.minutes}&apos; — Casa {p.house}
                           </p>
                         </div>
                       </div>
@@ -189,7 +188,7 @@ function AngleBox({
       <p className="text-sm font-semibold text-foreground">{sign ?? "—"}</p>
       {degree != null && (
         <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
-          {degree}° {minutes ?? 0}'
+          {degree}° {minutes ?? 0}&apos;
         </p>
       )}
     </div>
