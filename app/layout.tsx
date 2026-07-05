@@ -27,11 +27,11 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Μήτρα | Desde la raíz",
-    template: "%s | Μήτρα",
+    default: "Mitra | Desde la raíz",
+    template: "%s | Mitra",
   },
   description:
-    "Μήτρα es la plataforma de educación para tu desarrollo personal y espiritual. Formaciones, mentoría y comunidad para un cambio real desde la matriz originaria.",
+    "Mitra es la plataforma de educación para tu desarrollo personal y espiritual. Formaciones, mentoría y comunidad para un cambio real desde la matriz originaria.",
   keywords: [
     "desarrollo personal",
     "transformación",
@@ -41,19 +41,19 @@ export const metadata: Metadata = {
     "crecimiento personal",
     "coaching",
   ],
-  authors: [{ name: "Μήτρα" }],
-  creator: "Μήτρα",
+  authors: [{ name: "Mitra" }],
+  creator: "Mitra",
   openGraph: {
     type: "website",
     locale: "es_ES",
-    siteName: "Μήτρα",
-    title: "Μήτρα | Desde la raíz",
+    siteName: "Mitra",
+    title: "Mitra | Desde la raíz",
     description:
       "Formaciones y mentoría para tu desarrollo personal y espiritual",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Μήτρα | Desde la raíz",
+    title: "Mitra | Desde la raíz",
     description:
       "Formaciones y mentoría para tu desarrollo personal y espiritual",
   },

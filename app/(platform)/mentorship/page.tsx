@@ -16,7 +16,7 @@ import { MentorshipBookingDialog } from "@/components/mentorship/booking-dialog"
 import { ChatPanel } from "@/components/ai/chat-panel"
 
 export const metadata: Metadata = {
-  title: "Mentoría | Μήτρα",
+  title: "Mentoría",
   description: "Conecta 1 a 1 con tu mentor y acelera tu transformación.",
 }
 
@@ -167,7 +167,7 @@ export default async function MentorshipPage() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-foreground">Asistente IA Μήτρα</h3>
+            <h3 className="text-lg font-bold text-foreground">Asistente IA Mitra</h3>
             <p className="text-xs text-muted-foreground">
               Haz preguntas en tiempo real sobre tus formaciones y la sabiduría de tu mentora.
             </p>

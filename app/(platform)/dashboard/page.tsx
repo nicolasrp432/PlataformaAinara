@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import {
@@ -7,6 +8,7 @@ import {
   getDashboardData,
   getFormationsInProgress,
   getRecentActivity,
+  getDailyReflectionData,
 } from "@/lib/data-access"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +24,7 @@ import {
   Clock,
   CheckCircle2,
   Sparkles,
+  NotebookPen,
 } from "lucide-react"
 
 type RecentActivityItem = {
@@ -32,7 +35,7 @@ type RecentActivityItem = {
 }
 
 export const metadata: Metadata = {
-  title: "Dashboard | Μήτρα",
+  title: "Dashboard",
   description: "Tu centro de control para el aprendizaje y transformacion",
 }
 
@@ -44,11 +47,12 @@ export default async function DashboardPage() {
   }
 
   // Queries paralelas, deduplicadas vía React.cache()
-  const [profile, dashboardData, formationsIP, recentAct] = await Promise.all([
+  const [profile, dashboardData, formationsIP, recentAct, reflexion] = await Promise.all([
     getUserProfile(user.id),
     getDashboardData(user.id),
     getFormationsInProgress(user.id),
     getRecentActivity(user.id),
+    getDailyReflectionData(user.id),
   ])
 
   const { stats } = dashboardData
@@ -195,6 +199,24 @@ export default async function DashboardPage() {
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
+                    <Link
+                      href={`/formations/${formation.slug}`}
+                      className="relative hidden sm:block w-32 aspect-video shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5"
+                    >
+                      {formation.thumbnailUrl ? (
+                        <Image
+                          src={formation.thumbnailUrl}
+                          alt={formation.title}
+                          fill
+                          sizes="128px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <BookOpen className="h-6 w-6 text-primary/60" />
+                        </div>
+                      )}
+                    </Link>
                     <div className="flex-1 space-y-3">
                       <div>
                         <h3 className="font-medium text-foreground">
@@ -259,8 +281,60 @@ export default async function DashboardPage() {
         {/* Recent Activity */}
         <div className="space-y-4">
           <h2 className="text-xl font-medium">Actividad Reciente</h2>
-          
+
           <div className="flex flex-col gap-6">
+            {/* Reflexión de hoy */}
+            <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 h-1 w-full gold-gradient" />
+              <CardContent className="p-5">
+                {reflexion.todayEntry ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                        <NotebookPen className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          Reflexión de hoy completada
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Racha de {reflexion.streak}{" "}
+                          {reflexion.streak === 1 ? "día" : "días"} · vuelve mañana
+                        </p>
+                      </div>
+                    </div>
+                    <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                        <NotebookPen className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          Reflexión de hoy
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Un minuto para volver a ti. ¿Cómo te sientes hoy?
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="w-full bg-primary hover:bg-primary/90"
+                    >
+                      <Link href="/reflexion">
+                        Escribir mi reflexión
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
               <CardContent className="p-5 space-y-6">
@@ -430,9 +504,9 @@ export default async function DashboardPage() {
                     className="justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30 h-11 text-sm font-medium px-4"
                     asChild
                   >
-                    <Link href="/taberna">
-                      <Star className="mr-2.5 h-4 w-4 text-primary shrink-0" />
-                      Nueva Reflexión
+                    <Link href="/reflexion">
+                      <NotebookPen className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+                      Reflexión Diaria
                     </Link>
                   </Button>
                   <Button

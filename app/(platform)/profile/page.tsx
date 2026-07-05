@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Flame, Star, Compass, Sword, MessageSquare, Map, BookOpen,
-  Zap, TrendingUp, Crown, Award, CalendarDays, Settings, CreditCard,
+  Flame, Star, BookOpen, MessageSquare,
+  Award, CalendarDays, Settings, CreditCard,
   ArrowRight, CheckCircle2, Activity, Clock, Inbox,
 } from "lucide-react"
+import { computeAchievements } from "@/lib/achievements"
+import { AchievementPill } from "@/components/achievements/achievement-badge"
 import { getSunSign } from "@/lib/utils/astrology"
 import { cn, getInitials } from "@/lib/utils"
 import { getUserMentorshipSessions } from "@/lib/services/mentorship"
@@ -39,7 +41,7 @@ interface DbUserCertificate {
 }
 
 export const metadata: Metadata = {
-  title: "Mi Perfil | Μήτρα",
+  title: "Mi Perfil",
   description: "Gestiona tu información personal y visualiza tu evolución.",
 }
 
@@ -106,22 +108,8 @@ export default async function ProfilePage() {
   const sunSign = astro?.sign || ""
   const signSymbol = astro?.symbol || ""
 
-  const { lessonsCount, reflectionsCount, enrollmentsCount, streakDays: qStreak, xp: qXp, level: qLevel } = questData
-
-  const ALL_ACHIEVEMENTS = [
-    { id: "awakening",   title: "El Despertar",       icon: Compass,     unlocked: true },
-    { id: "first_lesson",title: "Primera Sangre",     icon: Sword,       unlocked: lessonsCount >= 1 },
-    { id: "first_voice", title: "Voz del Pueblo",     icon: MessageSquare, unlocked: reflectionsCount >= 1 },
-    { id: "explorer",    title: "Explorador",          icon: Map,         unlocked: enrollmentsCount >= 2 },
-    { id: "apprentice",  title: "Aprendiz Dedicado",  icon: BookOpen,    unlocked: lessonsCount >= 5 },
-    { id: "fire_streak", title: "Llama Interna",      icon: Flame,       unlocked: qStreak >= 7 },
-    { id: "collector",   title: "Coleccionista",      icon: Star,        unlocked: qXp >= 1000 },
-    { id: "warrior",     title: "Guerrero del Saber", icon: Zap,         unlocked: lessonsCount >= 10 },
-    { id: "level5",      title: "Ascensión",          icon: TrendingUp,  unlocked: qLevel >= 5 },
-    { id: "legend",      title: "Leyenda",            icon: Crown,       unlocked: qLevel >= 10 },
-  ]
-
-  const unlockedAchievements = ALL_ACHIEVEMENTS.filter((a) => a.unlocked)
+  const allAchievements = computeAchievements(questData)
+  const unlockedAchievements = allAchievements.filter((a) => a.unlocked)
 
   const subscriptionStatus = subscription?.status ?? "inactive"
   const subscriptionLabel: Record<string, { label: string; className: string }> = {
@@ -139,7 +127,7 @@ export default async function ProfilePage() {
       <div className="flex flex-col gap-2 relative z-10">
         <h1 className="text-3xl font-light tracking-tight text-foreground sm:text-4xl">
           Mi <span className="font-semibold text-primary">Perfil</span>{" "}
-          <span className="text-muted-foreground text-base font-light hidden sm:inline">en Μήτρα</span>
+          <span className="text-muted-foreground text-base font-light hidden sm:inline">en Mitra</span>
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base max-w-xl">
           Aquí radica tu esencia como pensador y creador dentro de nuestra
@@ -283,48 +271,23 @@ export default async function ProfilePage() {
                 }}
               />
 
-              {unlockedAchievements.length > 0 && (
-                <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg font-medium">
-                      <Award className="w-5 h-5 text-primary" /> Insignias
-                      <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/20 text-primary">
-                        {unlockedAchievements.length}/{ALL_ACHIEVEMENTS.length}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {unlockedAchievements.map((ach) => {
-                        const Icon = ach.icon
-                        return (
-                          <div
-                            key={ach.id}
-                            title={ach.title}
-                            className={cn(
-                              "flex items-center gap-2 px-3 py-1.5 rounded-full border bg-primary/5 border-primary/20",
-                              "text-xs font-medium text-foreground transition-all hover:bg-primary/10"
-                            )}
-                          >
-                            <Icon className="w-3.5 h-3.5 text-primary" />
-                            {ach.title}
-                          </div>
-                        )
-                      })}
-                      {ALL_ACHIEVEMENTS.filter((a) => !a.unlocked).map((ach) => (
-                        <div
-                          key={ach.id}
-                          title={`Bloqueado: ${ach.title}`}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground/40 opacity-40"
-                        >
-                          <span className="w-3.5 h-3.5 flex items-center justify-center">🔒</span>
-                          ???
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg font-medium">
+                    <Award className="w-5 h-5 text-primary" /> Insignias
+                    <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/20 text-primary">
+                      {unlockedAchievements.length}/{allAchievements.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {allAchievements.map((ach) => (
+                      <AchievementPill key={ach.id} achievement={ach} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
               {userCertificates && userCertificates.length > 0 && (
                 <div className="space-y-4 pt-4">

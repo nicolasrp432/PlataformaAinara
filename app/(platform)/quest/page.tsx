@@ -4,7 +4,7 @@ import { getAuthUser, getQuestData } from "@/lib/data-access"
 import { QuestClient } from "./quest-client"
 
 export const metadata: Metadata = {
-  title: "Logros | Μήτρα",
+  title: "Logros",
   description: "Cumple tus misiones, gana experiencia y desbloquea insignias de tu evolución.",
 }
 

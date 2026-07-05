@@ -4,7 +4,7 @@ import { getAuthUser, getUserProfile, getReflections } from "@/lib/data-access"
 import { TabernaFeed } from "./taberna-feed"
 
 export const metadata: Metadata = {
-  title: "Comunidad | Μήτρα",
+  title: "Comunidad",
   description: "Comparte y conecta con otros aprendices en la plataforma.",
 }
 

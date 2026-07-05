@@ -752,6 +752,44 @@ export const getQuestData = cache(async (userId: string) => {
   }
 })
 
+// ─── Reflexión diaria privada ──────────────────────────────────────────
+
+export type DailyReflectionEntry = {
+  id: string
+  entry_date: string
+  mood: string
+  content: string
+  updated_at: string
+}
+
+export const getDailyReflectionData = cache(async (userId: string) => {
+  const supabase = await createClient()
+  const today = new Date().toISOString().slice(0, 10)
+
+  const { data: entries } = await supabase
+    .from("daily_reflections")
+    .select("id, entry_date, mood, content, updated_at")
+    .eq("user_id", userId)
+    .order("entry_date", { ascending: false })
+    .limit(60)
+
+  const recent = (entries ?? []) as DailyReflectionEntry[]
+  const todayEntry = recent.find((e) => e.entry_date === today) ?? null
+
+  // Racha: días consecutivos con entrada, contando desde hoy (o ayer si
+  // hoy aún no se ha escrito).
+  let streak = 0
+  const dates = new Set(recent.map((e) => e.entry_date))
+  const cursor = new Date()
+  if (!dates.has(today)) cursor.setUTCDate(cursor.getUTCDate() - 1)
+  while (dates.has(cursor.toISOString().slice(0, 10))) {
+    streak++
+    cursor.setUTCDate(cursor.getUTCDate() - 1)
+  }
+
+  return { todayEntry, recent, streak, today }
+})
+
 // ─── Enrollment & Progress Point Queries ───────────────────────────────
 
 export const getEnrollmentStatus = cache(

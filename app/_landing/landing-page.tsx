@@ -60,7 +60,7 @@ export function LandingPage({ formations }: LandingPageProps) {
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent transition-transform group-hover:scale-110 text-primary-foreground">
                 <SenderoLogo className="h-5 w-5" />
               </div>
-              <span className="font-display text-2xl font-light tracking-wide">Μήτρα</span>
+              <span className="font-display text-2xl font-semibold tracking-wide">Mitra</span>
             </Link>
 
             {/* Desktop nav */}
@@ -418,7 +418,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                     {[
                       { icon: BookOpen, title: "Formaciones en video", desc: "Lecciones estructuradas con ejercicios y recursos descargables" },
                       { icon: Users, title: "Comunidad Privada", desc: "Conecta con personas que comparten tu camino de crecimiento" },
-                      { icon: Heart, title: "Diario de reflexiones", desc: "Espacio personal para documentar tus insights y claridades" },
+                      { icon: Heart, title: "Reflexión diaria", desc: "Diario privado con registro emocional para documentar tus insights" },
                       { icon: Trophy, title: "Sistema de progreso", desc: "XP, rachas diarias y logros que celebran tu dedicación" },
                     ].map(({ icon: Icon, title, desc }) => (
                       <motion.div
@@ -548,7 +548,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                     {[
                       "Lecciones de preview gratuitas",
                       "Acceso a la comunidad",
-                      "Diario de reflexiones",
+                      "Reflexión diaria con registro emocional",
                       "Revisión manual por el equipo",
                     ].map((item) => (
                       <li key={item} className="flex items-center gap-3 text-sm">
@@ -636,7 +636,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                 </motion.h2>
                 <motion.p variants={fadeUp} className="mb-10 text-muted-foreground leading-relaxed">
                   Únete a cientos de personas que ya han comenzado su proceso de
-                  transformación con Μήτρα.
+                  transformación con Mitra.
                 </motion.p>
                 <motion.div
                   variants={fadeUp}
@@ -664,10 +664,10 @@ export function LandingPage({ formations }: LandingPageProps) {
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
-                  <Sparkles className="h-4 w-4 text-primary-foreground" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                  <SenderoLogo className="h-5 w-5" />
                 </div>
-                <span className="font-display text-xl font-light">Μήτρα</span>
+                <span className="font-display text-xl font-semibold tracking-wide">Mitra</span>
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Plataforma de educación para la transformación personal y espiritual.

@@ -8,7 +8,7 @@ import { ArrowLeft } from "lucide-react"
 import { SettingsClient } from "./settings-client"
 
 export const metadata: Metadata = {
-  title: "Ajustes | Μήτρα",
+  title: "Ajustes",
   description: "Configura tus preferencias, seguridad y notificaciones.",
 }
 

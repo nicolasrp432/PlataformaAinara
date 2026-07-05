@@ -34,7 +34,7 @@ import {
   Bell,
 } from "lucide-react"
 import { getInitials } from "@/lib/utils"
-import { SenderoLogo } from "@/components/ui/logo"
+import { BrandMark } from "@/components/ui/brand"
 
 interface AdminSidebarUser {
   id: string
@@ -111,13 +111,11 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b px-4">
           <Link href="/admin" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <SenderoLogo className="h-5 w-5" />
-            </div>
+            <BrandMark size="sm" />
             {!isCollapsed && (
               <div>
-                <span className="font-bold">Μήτρα</span>
-                <span className="ml-1 text-xs text-muted-foreground">Admin</span>
+                <span className="font-display text-xl font-semibold tracking-wide">Mitra</span>
+                <span className="ml-1.5 text-xs text-muted-foreground">Admin</span>
               </div>
             )}
           </Link>

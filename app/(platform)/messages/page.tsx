@@ -7,7 +7,7 @@ import Link from "next/link"
 import { MessageSquare, Inbox } from "lucide-react"
 import { getInitials } from "@/lib/utils"
 
-export const metadata = { title: "Mensajes | Μήτρα" }
+export const metadata = { title: "Mensajes" }
 
 function formatRelative(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime()

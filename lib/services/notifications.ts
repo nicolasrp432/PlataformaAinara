@@ -124,7 +124,7 @@ export async function countUnread(userId: string): Promise<number> {
 
 // ── Resolución de audiencias ──────────────────────────────────────────────────
 
-async function resolveAudience(audience: NotificationAudience): Promise<string[]> {
+export async function resolveAudience(audience: NotificationAudience): Promise<string[]> {
   const admin = supabaseAdmin()
 
   if (audience.type === "user_ids") return audience.value

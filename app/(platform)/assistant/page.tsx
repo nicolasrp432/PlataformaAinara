@@ -5,7 +5,7 @@ import { Bot } from "lucide-react"
 import { ChatPanel } from "@/components/ai/chat-panel"
 
 export const metadata: Metadata = {
-  title: "Asistente IA | Μήτρα",
+  title: "Asistente IA",
   description: "Tu guía de aprendizaje inteligente.",
 }
 
@@ -21,7 +21,7 @@ export default async function AssistantPage() {
             <Bot className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold">Asistente Μήτρα</h1>
+            <h1 className="text-xl font-semibold">Asistente Mitra</h1>
             <p className="text-sm text-muted-foreground">
               Haz preguntas sobre tus formaciones y lecciones.
             </p>

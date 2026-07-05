@@ -6,7 +6,7 @@ const PUBLIC_ROUTES = ["/", "/re-conectate", "/evaluacion", "/herramientas"]
 
 // ── Routes that need auth but NO subscription ─────────────────────────
 // Usuarios registrados (sin suscripción) pueden acceder aquí
-const FREE_PROTECTED_ROUTES = ["/dashboard", "/profile", "/pending", "/billing", "/logout"]
+const FREE_PROTECTED_ROUTES = ["/dashboard", "/profile", "/pending", "/billing", "/logout", "/reflexion"]
 
 // ── Routes that need auth + approved subscription ─────────────────────
 const PREMIUM_ROUTES = [

@@ -33,9 +33,10 @@ import {
   MessageSquare,
   Bot,
   Trophy,
+  NotebookPen,
 } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
-import { SenderoLogo } from "@/components/ui/logo"
+import { BrandMark } from "@/components/ui/brand"
 import { NotificationsBell } from "@/components/notifications/notifications-bell"
 import { UserSearch } from "@/components/layout/user-search"
 
@@ -57,6 +58,7 @@ interface PlatformSidebarProps {
 const navigation = [
   { name: "Dashboard",  href: "/dashboard",   icon: LayoutDashboard },
   { name: "Biblioteca", href: "/library",      icon: BookOpen },
+  { name: "Reflexión",  href: "/reflexion",    icon: NotebookPen },
   { name: "Logros",     href: "/quest",        icon: Trophy },
   { name: "Comunidad",  href: "/taberna",      icon: MessageSquare },
   { name: "Mentoría",   href: "/mentorship",   icon: Users },
@@ -136,13 +138,11 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
             className="flex items-center gap-2.5 min-w-0"
             onClick={() => setIsMobileOpen(false)}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg gold-gradient shadow-sm text-white">
-              <SenderoLogo className="h-5 w-5" />
-            </div>
+            <BrandMark size="sm" />
             {!isCollapsed && (
               <div className="min-w-0">
-                <span className="text-base font-bold text-foreground tracking-tight leading-none block">
-                  Μήτρα
+                <span className="font-display text-xl font-semibold tracking-wide text-foreground leading-none block">
+                  Mitra
                 </span>
                 <span className="text-[10px] text-primary tracking-widest uppercase font-medium leading-none">
                   Desde la raíz
@@ -366,7 +366,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
 
           {!isCollapsed && (
             <div className="pt-2 px-3 text-[10px] text-muted-foreground/70 text-center tracking-widest uppercase">
-              Μήτρα · v0.2
+              Mitra · v0.3
             </div>
           )}
         </div>
