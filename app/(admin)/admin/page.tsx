@@ -17,7 +17,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Panel de Administracion",
-  description: "Dashboard de administracion de la plataforma Μήτρα",
+  description: "Dashboard de administracion de la plataforma Mitra",
 }
 
 async function getAdminStats() {

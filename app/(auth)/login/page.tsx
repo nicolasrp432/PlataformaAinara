@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { LoginForm } from "./login-form"
-import { Sparkles } from "lucide-react"
+import { BrandMark, Wordmark } from "@/components/ui/brand"
 
 export const metadata: Metadata = {
   title: "Iniciar Sesión",
-  description: "Accede a tu cuenta en Μήτρα",
+  description: "Accede a tu cuenta en Mitra",
 }
 
 export default function LoginPage() {
@@ -14,11 +14,9 @@ export default function LoginPage() {
       {/* Left side - Branding */}
       <div className="relative hidden h-full flex-col bg-muted p-10 text-foreground lg:flex">
         <div className="absolute inset-0 bg-primary" />
-        <div className="relative z-20 flex items-center gap-2 text-lg font-medium text-primary-foreground">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-foreground/20">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          Μήτρα
+        <div className="relative z-20 flex items-center gap-2.5 text-primary-foreground">
+          <BrandMark size="sm" />
+          <Wordmark size="sm" className="text-primary-foreground" />
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
@@ -39,11 +37,9 @@ export default function LoginPage() {
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
           <div className="flex flex-col space-y-2 text-center">
             <div className="mb-4 flex justify-center lg:hidden">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                  <Sparkles className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <span className="text-2xl font-bold">Μήτρα</span>
+              <Link href="/" className="flex items-center gap-2.5">
+                <BrandMark size="md" />
+                <Wordmark size="md" />
               </Link>
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">

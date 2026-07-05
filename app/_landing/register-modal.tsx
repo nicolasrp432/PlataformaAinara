@@ -126,7 +126,7 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
                   <Sparkles className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">Μήτρα</p>
+                  <p className="font-display text-lg font-semibold tracking-wide leading-none">Mitra</p>
                   <p className="text-xs text-muted-foreground">Comienza tu transformación</p>
                 </div>
               </div>

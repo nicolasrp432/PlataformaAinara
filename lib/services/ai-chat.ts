@@ -5,7 +5,7 @@ export async function buildSystemPrompt(lessonId?: string, formationId?: string)
   const supabase = await createClient()
 
   let context =
-    "Eres un asistente de aprendizaje de Μήτρα, una plataforma de desarrollo personal y crecimiento humano. " +
+    "Eres un asistente de aprendizaje de Mitra, una plataforma de desarrollo personal y crecimiento humano. " +
     "Tu rol es ayudar a los estudiantes a comprender el contenido de sus lecciones, reflexionar sobre sus aprendizajes y resolver dudas de forma empática."
 
   if (lessonId) {

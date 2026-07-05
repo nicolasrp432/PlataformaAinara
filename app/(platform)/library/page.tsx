@@ -4,7 +4,7 @@ import { getAuthUser, getUserProfile, getLibraryFormations, getCategories } from
 import { LibraryContent } from "./library-content"
 
 export const metadata = {
-  title: "Biblioteca | Μήτρα",
+  title: "Biblioteca",
   description: "Explora nuestras formaciones y comienza tu viaje de transformacion",
 }
 

@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Star, Flame, BookOpen, MessageCircle, Lock, Send,
-  Compass, Sword, MessageSquare, Map, Zap, TrendingUp, Crown, Award
+  Star, Flame, BookOpen, MessageCircle, Lock, Send, Award
 } from "lucide-react"
-import { getInitials, cn } from "@/lib/utils"
+import { computeAchievements } from "@/lib/achievements"
+import { AchievementPill } from "@/components/achievements/achievement-badge"
+import { getInitials } from "@/lib/utils"
 import { getProfileComments } from "@/lib/services/messaging"
 import { ProfileWall } from "./profile-wall"
 import { startConversationAction } from "./actions"
@@ -91,22 +92,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
     student: "Estudiante",
   }
 
-  const { lessonsCount, reflectionsCount, enrollmentsCount, streakDays: qStreak, xp: qXp, level: qLevel } = questData
-
-  const ALL_ACHIEVEMENTS = [
-    { id: "awakening",   title: "El Despertar",       icon: Compass,     unlocked: true },
-    { id: "first_lesson",title: "Primera Sangre",     icon: Sword,       unlocked: lessonsCount >= 1 },
-    { id: "first_voice", title: "Voz del Pueblo",     icon: MessageSquare, unlocked: reflectionsCount >= 1 },
-    { id: "explorer",    title: "Explorador",          icon: Map,         unlocked: enrollmentsCount >= 2 },
-    { id: "apprentice",  title: "Aprendiz Dedicado",  icon: BookOpen,    unlocked: lessonsCount >= 5 },
-    { id: "fire_streak", title: "Llama Interna",      icon: Flame,       unlocked: qStreak >= 7 },
-    { id: "collector",   title: "Coleccionista",      icon: Star,        unlocked: qXp >= 1000 },
-    { id: "warrior",     title: "Guerrero del Saber", icon: Zap,         unlocked: lessonsCount >= 10 },
-    { id: "level5",      title: "Ascensión",          icon: TrendingUp,  unlocked: qLevel >= 5 },
-    { id: "legend",      title: "Leyenda de la Matriz", icon: Crown,     unlocked: qLevel >= 10 },
-  ]
-
-  const unlockedAchievements = ALL_ACHIEVEMENTS.filter((a) => a.unlocked)
+  const allAchievements = computeAchievements(questData)
+  const unlockedAchievements = allAchievements.filter((a) => a.unlocked)
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-6 px-4">
@@ -193,37 +180,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <CardTitle className="flex items-center gap-2 text-base font-medium">
             <Award className="w-4 h-4 text-primary" /> Insignias y Logros
             <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/20 text-primary bg-primary/5">
-              {unlockedAchievements.length}/{ALL_ACHIEVEMENTS.length}
+              {unlockedAchievements.length}/{allAchievements.length}
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-            {unlockedAchievements.map((ach) => {
-              const Icon = ach.icon
-              return (
-                <div
-                  key={ach.id}
-                  title={ach.title}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-full border bg-primary/5 border-primary/20",
-                    "text-xs font-medium text-foreground transition-all hover:bg-primary/10"
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5 text-primary" />
-                  {ach.title}
-                </div>
-              )
-            })}
-            {ALL_ACHIEVEMENTS.filter((a) => !a.unlocked).map((ach) => (
-              <div
-                key={ach.id}
-                title={`Bloqueado`}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground/40 opacity-40 animate-pulse"
-              >
-                <span className="w-3.5 h-3.5 flex items-center justify-center">🔒</span>
-                ???
-              </div>
+            {allAchievements.map((ach) => (
+              <AchievementPill key={ach.id} achievement={ach} />
             ))}
           </div>
         </CardContent>

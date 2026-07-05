@@ -7,10 +7,12 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Trophy, Award, Lock, CheckCircle2, Star, Flame, Compass,
-  Sword, Target, Map, MessageSquare, Zap, TrendingUp, Crown, BookOpen
+  Trophy, Award, CheckCircle2, Star, Compass,
+  Sword, Target,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { computeAchievements } from "@/lib/achievements"
+import { AchievementCard } from "@/components/achievements/achievement-badge"
 
 interface QuestClientProps {
   questData: {
@@ -23,12 +25,6 @@ interface QuestClientProps {
     hasReflection: boolean
     hasCompletedLesson: boolean
   }
-}
-
-const TIER_COLORS = {
-  bronze: "text-amber-600 border-amber-500/20 bg-amber-500/5",
-  silver: "text-slate-400 border-slate-400/20 bg-slate-400/5",
-  gold: "text-primary border-primary/20 bg-primary/5",
 }
 
 const containerVariants = {
@@ -55,7 +51,7 @@ const itemVariants = {
 }
 
 export function QuestClient({ questData }: QuestClientProps) {
-  const { level, xp, streakDays, lessonsCount, reflectionsCount, enrollmentsCount } = questData
+  const { level, xp } = questData
 
   const xpInLevel = xp % 500
   const xpNeeded = 500
@@ -93,98 +89,7 @@ export function QuestClient({ questData }: QuestClientProps) {
   ]
 
   // ── Logros / Insignias Dinámicas ─────────────────────────────────────────
-  const achievements = [
-    {
-      id: "awakening",
-      title: "El Despertar",
-      description: "Diste tus primeros pasos en la plataforma.",
-      icon: Compass,
-      tier: "bronze" as const,
-      unlocked: true,
-      requirement: "Registrarse en la plataforma",
-    },
-    {
-      id: "first_lesson",
-      title: "Primera Sangre",
-      description: "Completaste tu primera lección.",
-      icon: Sword,
-      tier: "bronze" as const,
-      unlocked: lessonsCount >= 1,
-      requirement: "Completar 1 lección",
-    },
-    {
-      id: "first_voice",
-      title: "Voz del Pueblo",
-      description: "Compartiste tu primera reflexión.",
-      icon: MessageSquare,
-      tier: "bronze" as const,
-      unlocked: reflectionsCount >= 1,
-      requirement: "Publicar 1 reflexión en Comunidad",
-    },
-    {
-      id: "explorer",
-      title: "Explorador",
-      description: "Te inscribiste en al menos 2 formaciones.",
-      icon: Map,
-      tier: "bronze" as const,
-      unlocked: enrollmentsCount >= 2,
-      requirement: "Inscribirse en 2 formaciones",
-    },
-    {
-      id: "apprentice",
-      title: "Aprendiz Dedicado",
-      description: "Completaste 5 lecciones de crecimiento.",
-      icon: BookOpen,
-      tier: "silver" as const,
-      unlocked: lessonsCount >= 5,
-      requirement: `Completar 5 lecciones (Llevas ${lessonsCount}/5)`,
-    },
-    {
-      id: "fire_streak",
-      title: "Llama Interna",
-      description: "Racha de 7 días consecutivos activos.",
-      icon: Flame,
-      tier: "silver" as const,
-      unlocked: streakDays >= 7,
-      requirement: `Racha de 7 días (Tu racha: ${streakDays}d)`,
-    },
-    {
-      id: "collector",
-      title: "Coleccionista",
-      description: "Acumulaste tus primeros 1,000 XP.",
-      icon: Star,
-      tier: "silver" as const,
-      unlocked: xp >= 1000,
-      requirement: `Acumular 1000 XP (Tienes ${xp} XP)`,
-    },
-    {
-      id: "warrior",
-      title: "Guerrero del Saber",
-      description: "Completaste 10 lecciones con éxito.",
-      icon: Zap,
-      tier: "silver" as const,
-      unlocked: lessonsCount >= 10,
-      requirement: `Completar 10 lecciones (Llevas ${lessonsCount}/10)`,
-    },
-    {
-      id: "level5",
-      title: "Ascensión",
-      description: "Alcanzaste el Nivel 5 de evolución.",
-      icon: TrendingUp,
-      tier: "gold" as const,
-      unlocked: level >= 5,
-      requirement: `Alcanzar el nivel 5 (Eres nivel ${level})`,
-    },
-    {
-      id: "legend",
-      title: "Leyenda de la Matriz",
-      description: "Nivel 10 — cúspide del conocimiento.",
-      icon: Crown,
-      tier: "gold" as const,
-      unlocked: level >= 10,
-      requirement: `Alcanzar el nivel 10 (Eres nivel ${level})`,
-    },
-  ]
+  const achievements = computeAchievements(questData)
 
   const completedQuestsCount = quests.filter((q) => q.completed).length
   const unlockedCount = achievements.filter((a) => a.unlocked).length
@@ -347,82 +252,18 @@ export function QuestClient({ questData }: QuestClientProps) {
             animate="show"
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
           >
-            {achievements.map((ach) => {
-              const Icon = ach.icon
-              return (
-                <motion.div
-                  key={ach.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className={cn(
-                    "relative border rounded-2xl p-4 sm:p-5 transition-all duration-300 shadow-sm flex flex-col justify-between overflow-hidden",
-                    ach.unlocked
-                      ? cn("bg-card border-border hover:shadow-lg hover:border-primary/30", TIER_BG_SHADOW[ach.tier])
-                      : "bg-muted/10 border-border/30 opacity-40 grayscale"
-                  )}
-                >
-                  {/* Subtle tier ambient glow inside unlocked cards */}
-                  {ach.unlocked && (
-                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none" />
-                  )}
-
-                  <div className="space-y-4">
-                    {/* Top line with Icon and Tier Badge */}
-                    <div className="flex items-center justify-between">
-                      <div
-                        className={cn(
-                          "w-11 h-11 rounded-full flex items-center justify-center shrink-0 border border-border/40 shadow-inner",
-                          ach.unlocked ? TIER_COLORS[ach.tier] : "bg-muted text-muted-foreground/30"
-                        )}
-                      >
-                        {ach.unlocked ? (
-                          <Icon className="w-5 h-5" />
-                        ) : (
-                          <Lock className="w-4 h-4 text-muted-foreground/30" />
-                        )}
-                      </div>
-                      
-                      {ach.unlocked ? (
-                        <Badge variant="outline" className={cn("text-[9px] uppercase font-bold tracking-wider", TIER_COLORS[ach.tier])}>
-                          {ach.tier}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] bg-muted/30 text-muted-foreground/50 border-none">
-                          Bloqueado
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Title and description */}
-                    <div className="space-y-1">
-                      <h3 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-1.5">
-                        {ach.unlocked ? ach.title : "Insignia Oculta"}
-                        {ach.unlocked && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
-                      </h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                        {ach.unlocked ? ach.description : "Continúa explorando tu camino para revelar este logro."}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Requirements display at bottom */}
-                  <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground/80 font-medium">
-                    <span className="truncate pr-1">
-                      Requisito: {ach.requirement}
-                    </span>
-                  </div>
-                </motion.div>
-              )
-            })}
+            {achievements.map((ach) => (
+              <motion.div
+                key={ach.id}
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.02 }}
+              >
+                <AchievementCard achievement={ach} />
+              </motion.div>
+            ))}
           </motion.div>
         </TabsContent>
       </Tabs>
     </div>
   )
-}
-
-const TIER_BG_SHADOW = {
-  bronze: "hover:shadow-amber-500/5",
-  silver: "hover:shadow-slate-400/5",
-  gold: "hover:shadow-primary/10",
 }

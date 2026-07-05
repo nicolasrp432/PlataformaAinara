@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { getAuthUser, getUserProfile } from "@/lib/data-access"
 import { Clock, Sparkles, LogOut, Mail, ArrowRight } from "lucide-react"
+import { BrandMark, Wordmark } from "@/components/ui/brand"
 
 export const metadata: Metadata = {
-  title: "Acceso pendiente — Μήτρα",
+  title: "Acceso pendiente",
 }
 
 export default async function PendingPage() {
@@ -30,10 +31,8 @@ export default async function PendingPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
-        </div>
-        <span className="text-2xl font-light tracking-wide">Μήτρα</span>
+        <BrandMark size="md" />
+        <Wordmark size="md" />
       </Link>
 
       <Card className="w-full max-w-md border-border/50 shadow-lg">

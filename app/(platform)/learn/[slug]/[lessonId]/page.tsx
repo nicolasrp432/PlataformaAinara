@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps) {
     .single()
   
   return {
-    title: lesson ? `${lesson.title} | Μήτρα` : "Lección | Μήτρα",
+    title: lesson ? `${lesson.title}` : "Lección",
   }
 }
 

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { NotificationsAdminClient } from "./notifications-client"
 import { getNotificationCampaigns, getFormationsForAudience } from "./actions"
 
-export const metadata = { title: "Notificaciones | Admin Μήτρα" }
+export const metadata = { title: "Notificaciones — Admin" }
 
 export default async function AdminNotificationsPage() {
   const supabase = await createClient()
