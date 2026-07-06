@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -33,6 +34,33 @@ export async function updateUserAccessAction(
     if (error) throw error
 
     revalidatePath("/admin/users")
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Error desconocido" }
+  }
+}
+
+export async function adminSetUserPasswordAction(
+  userId: string,
+  newPassword: string
+) {
+  try {
+    await requireAdmin()
+
+    if (!newPassword || newPassword.length < 8) {
+      return { success: false, error: "La contraseña debe tener al menos 8 caracteres" }
+    }
+    if (newPassword.length > 72) {
+      return { success: false, error: "La contraseña es demasiado larga (máx. 72)" }
+    }
+
+    const admin = supabaseAdmin()
+    const { error } = await admin.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    })
+
+    if (error) throw error
+
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Error desconocido" }
