@@ -26,6 +26,15 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import {
   Table,
   TableBody,
   TableCell,
@@ -43,8 +52,13 @@ import {
   Users,
   ShieldAlert,
   Loader2,
+  KeyRound,
 } from "lucide-react"
-import { updateUserAccessAction, updateUserRoleAction } from "./actions"
+import {
+  updateUserAccessAction,
+  updateUserRoleAction,
+  adminSetUserPasswordAction,
+} from "./actions"
 import { toast } from "sonner"
 import { useIsMobile } from "@/lib/hooks/use-is-mobile"
 
@@ -96,10 +110,88 @@ function formatDate(dateStr: string | null) {
   })
 }
 
+function ResetPasswordDialog({
+  user,
+  open,
+  onOpenChange,
+}: {
+  user: UserRow
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const [isPending, startTransition] = useTransition()
+  const [password, setPassword] = useState("")
+
+  function handleSubmit() {
+    startTransition(async () => {
+      const res = await adminSetUserPasswordAction(user.id, password)
+      if (res.success) {
+        toast.success(
+          `Contraseña actualizada para ${user.full_name || user.email || "usuario"}`
+        )
+        setPassword("")
+        onOpenChange(false)
+      } else {
+        toast.error(res.error || "Error al actualizar la contraseña")
+      }
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" />
+            Restablecer contraseña
+          </DialogTitle>
+          <DialogDescription>
+            Define una contraseña temporal para{" "}
+            <span className="font-medium text-foreground">
+              {user.full_name || user.email || "este usuario"}
+            </span>
+            . Comunícasela por un canal seguro y recomiéndale cambiarla desde
+            su perfil.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-2">
+          <Label htmlFor={`new-password-${user.id}`}>Nueva contraseña</Label>
+          <Input
+            id={`new-password-${user.id}`}
+            type="text"
+            autoComplete="off"
+            placeholder="Mínimo 8 caracteres"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isPending}
+          />
+        </div>
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isPending || password.length < 8}
+          >
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Actualizar contraseña
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function UserActions({ user }: { user: UserRow }) {
   const [isPending, startTransition] = useTransition()
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
 
   function handleAccess(status: "pending" | "approved" | "suspended") {
     startTransition(async () => {
@@ -171,14 +263,24 @@ function UserActions({ user }: { user: UserRow }) {
               <Button variant="ghost" className="w-full justify-start h-12" disabled={user.role === "mentor"} onClick={closeAnd(() => handleRole("mentor"))}>
                 <ShieldAlert className="mr-3 h-5 w-5" /> Mentor
               </Button>
+              <p className="px-1 pt-3 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Seguridad</p>
+              <Button variant="ghost" className="w-full justify-start h-12" onClick={closeAnd(() => setPasswordDialogOpen(true))}>
+                <KeyRound className="mr-3 h-5 w-5" /> Restablecer contraseña
+              </Button>
             </div>
           </SheetContent>
         </Sheet>
+        <ResetPasswordDialog
+          user={user}
+          open={passwordDialogOpen}
+          onOpenChange={setPasswordDialogOpen}
+        />
       </>
     )
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
@@ -222,8 +324,20 @@ function UserActions({ user }: { user: UserRow }) {
           <ShieldAlert className="mr-2 h-4 w-4" />
           Mentor
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Seguridad</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => setPasswordDialogOpen(true)}>
+          <KeyRound className="mr-2 h-4 w-4" />
+          Restablecer contraseña
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <ResetPasswordDialog
+      user={user}
+      open={passwordDialogOpen}
+      onOpenChange={setPasswordDialogOpen}
+    />
+    </>
   )
 }
 

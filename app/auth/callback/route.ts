@@ -4,13 +4,21 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const rawNext = searchParams.get('next') ?? '/dashboard'
+  // Solo rutas internas, nunca URLs absolutas externas
+  const next = rawNext.startsWith('/') ? rawNext : '/dashboard'
 
   if (code) {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
+      // Recuperación de contraseña: ir siempre al formulario de reset,
+      // aunque la cuenta esté pendiente de aprobación.
+      if (next.startsWith('/reset-password')) {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
+
       // Check profile access status before deciding where to redirect
       const { data: profile } = await supabase
         .from("profiles")
@@ -28,6 +36,12 @@ export async function GET(request: Request) {
     }
   }
 
-  // If there's an error, redirect to auth error page
-  return NextResponse.redirect(`${origin}/auth/error?error=Could not authenticate user`)
+  // Propagar el error real de Supabase (p.ej. otp_expired) si viene en la URL
+  const supabaseError =
+    searchParams.get('error_description') ?? searchParams.get('error')
+  const message =
+    supabaseError ?? 'No se pudo verificar el enlace. Solicita uno nuevo.'
+  return NextResponse.redirect(
+    `${origin}/auth/error?error=${encodeURIComponent(message)}`
+  )
 }

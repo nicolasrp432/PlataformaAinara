@@ -30,9 +30,12 @@ export default async function AuthErrorPage({
           )}
           <div className="flex flex-col gap-2">
             <Button asChild>
-              <Link href="/login">Volver a iniciar sesion</Link>
+              <Link href="/forgot-password">Solicitar nuevo enlace</Link>
             </Button>
             <Button variant="outline" asChild>
+              <Link href="/login">Volver a iniciar sesion</Link>
+            </Button>
+            <Button variant="ghost" asChild>
               <Link href="/">Ir al inicio</Link>
             </Button>
           </div>
