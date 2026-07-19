@@ -31,6 +31,7 @@ import {
   ChevronRight,
   CreditCard,
   MessageSquare,
+  Mail,
   Bot,
   Trophy,
   NotebookPen,
@@ -38,6 +39,7 @@ import {
 import { getInitials, progressToNextLevel } from "@/lib/utils"
 import { BrandMark } from "@/components/ui/brand"
 import { NotificationsBell } from "@/components/notifications/notifications-bell"
+import { MessagesUnreadBadge } from "@/components/messages/messages-unread-badge"
 import { UserSearch } from "@/components/layout/user-search"
 
 interface SidebarUser {
@@ -61,6 +63,7 @@ const navigation = [
   { name: "Reflexión",  href: "/reflexion",    icon: NotebookPen },
   { name: "Logros",     href: "/quest",        icon: Trophy },
   { name: "Comunidad",  href: "/taberna",      icon: MessageSquare },
+  { name: "Mensajes",   href: "/messages",     icon: Mail },
   { name: "Mentoría",   href: "/mentorship",   icon: Users },
   { name: "Asistente",  href: "/assistant",    icon: Bot },
   { name: "Perfil",     href: "/profile",      icon: User },
@@ -266,6 +269,9 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                   />
                   {!isCollapsed && (
                     <span className="relative z-10">{item.name}</span>
+                  )}
+                  {item.href === "/messages" && (
+                    <MessagesUnreadBadge userId={user.id} isCollapsed={isCollapsed} />
                   )}
                 </Link>
               )

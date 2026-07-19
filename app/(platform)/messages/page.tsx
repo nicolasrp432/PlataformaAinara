@@ -4,8 +4,9 @@ import { listConversations } from "@/lib/services/messaging"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { MessageSquare, Inbox } from "lucide-react"
+import { Mail, Inbox } from "lucide-react"
 import { getInitials } from "@/lib/utils"
+import { NewMessageDialog } from "./new-message-dialog"
 
 export const metadata = { title: "Mensajes" }
 
@@ -29,9 +30,19 @@ export default async function MessagesPage() {
 
   return (
     <div className="mx-auto max-w-lg py-6 px-4">
-      <div className="flex items-center gap-2 mb-6">
-        <MessageSquare className="h-5 w-5 text-primary" />
-        <h1 className="text-xl font-bold">Mensajes</h1>
+      <div className="flex items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl gold-gradient shadow-md">
+            <Mail className="h-4.5 w-4.5 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold leading-tight">Mensajes</h1>
+            <p className="text-xs text-muted-foreground leading-tight">
+              Conversaciones privadas con la comunidad
+            </p>
+          </div>
+        </div>
+        <NewMessageDialog currentUserId={user.id} />
       </div>
 
       {conversations.length === 0 ? (
@@ -39,7 +50,7 @@ export default async function MessagesPage() {
           <Inbox className="h-10 w-10 opacity-30" />
           <p className="text-sm">No tienes conversaciones todavía.</p>
           <p className="text-xs opacity-70">
-            Visita el perfil de otro usuario para iniciar un chat.
+            Empieza con &ldquo;Nuevo mensaje&rdquo; o desde el perfil de otro usuario.
           </p>
         </div>
       ) : (
