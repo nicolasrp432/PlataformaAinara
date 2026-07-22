@@ -2,28 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
-import { startConversation } from "@/lib/services/messaging"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { z } from "zod"
-
-export async function startConversationAction(otherUserId: string): Promise<void> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) { redirect("/login") }
-  if (user.id === otherUserId) return
-
-  // Verificar que el destinatario permite mensajes
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("allow_direct_messages")
-    .eq("id", otherUserId)
-    .single()
-  if (!profile?.allow_direct_messages) return
-
-  const { conversationId } = await startConversation(user.id, otherUserId)
-  redirect(`/messages/${conversationId}`)
-}
 
 const commentSchema = z.object({
   content: z.string().min(1).max(1000),

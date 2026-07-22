@@ -35,10 +35,18 @@ export async function startConversation(currentUserId: string, otherUserId: stri
 
   if (error || !conv) throw new Error("No se pudo crear la conversación")
 
-  await admin.from("conversation_participants").insert([
-    { conversation_id: conv.id, user_id: currentUserId },
-    { conversation_id: conv.id, user_id: otherUserId },
-  ])
+  const { error: participantsError } = await admin
+    .from("conversation_participants")
+    .insert([
+      { conversation_id: conv.id, user_id: currentUserId },
+      { conversation_id: conv.id, user_id: otherUserId },
+    ])
+
+  if (participantsError) {
+    // Sin participantes la conversación daría 404 permanente: no dejarla huérfana
+    await admin.from("conversations").delete().eq("id", conv.id)
+    throw new Error("No se pudo iniciar la conversación")
+  }
 
   return { conversationId: conv.id }
 }
@@ -201,11 +209,21 @@ export async function getConversationMessages(
 
 export async function markConversationRead(conversationId: string, userId: string) {
   const supabase = await createClient()
-  await supabase
-    .from("conversation_participants")
-    .update({ last_read_at: new Date().toISOString() })
-    .eq("conversation_id", conversationId)
-    .eq("user_id", userId)
+  await Promise.all([
+    supabase
+      .from("conversation_participants")
+      .update({ last_read_at: new Date().toISOString() })
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userId),
+    // Sincronizar la campana: las notificaciones de esta conversación ya están vistas
+    supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("kind", "new_message")
+      .eq("link", `/messages/${conversationId}`)
+      .is("read_at", null),
+  ])
 }
 
 // ── Comentarios en perfil ─────────────────────────────────────────────────────

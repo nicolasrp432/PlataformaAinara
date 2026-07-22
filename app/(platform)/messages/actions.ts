@@ -10,8 +10,27 @@ export async function startConversationAction(otherUserId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "No autorizado" }
+  if (user.id === otherUserId) return { error: "No puedes enviarte mensajes a ti mismo" }
 
-  const { conversationId } = await startConversation(user.id, otherUserId)
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("allow_direct_messages")
+    .eq("id", otherUserId)
+    .single()
+
+  if (profileError || !profile) return { error: "Usuario no encontrado" }
+  if (profile.allow_direct_messages === false) {
+    return { error: "Este usuario no acepta mensajes directos" }
+  }
+
+  let conversationId: string
+  try {
+    const result = await startConversation(user.id, otherUserId)
+    conversationId = result.conversationId
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo iniciar la conversación" }
+  }
+
   redirect(`/messages/${conversationId}`)
 }
 

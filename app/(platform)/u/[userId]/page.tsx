@@ -2,17 +2,16 @@ import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Star, Flame, BookOpen, MessageCircle, Lock, Send, Award
+  Star, Flame, BookOpen, MessageCircle, Lock, Award
 } from "lucide-react"
 import { computeAchievements } from "@/lib/achievements"
 import { AchievementPill } from "@/components/achievements/achievement-badge"
 import { getInitials } from "@/lib/utils"
 import { getProfileComments } from "@/lib/services/messaging"
 import { ProfileWall } from "./profile-wall"
-import { startConversationAction } from "./actions"
+import { SendMessageButton } from "./send-message-button"
 import { getQuestData } from "@/lib/data-access"
 import { getSunSign } from "@/lib/utils/astrology"
 import { NatalChartSection } from "@/components/profile/NatalChartSection"
@@ -144,12 +143,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
             {!isSelf && currentUser && (
               <div className="w-full sm:w-auto mt-4 sm:mt-0 flex flex-col gap-2 shrink-0">
                 {profile.allow_direct_messages !== false && (
-                  <form action={startConversationAction.bind(null, userId)} className="w-full">
-                    <Button type="submit" size="sm" className="gap-2 w-full h-11 sm:h-9 text-sm shadow-md">
-                      <Send className="h-3.5 w-3.5" />
-                      Enviar mensaje
-                    </Button>
-                  </form>
+                  <SendMessageButton userId={userId} />
                 )}
                 {profile.allow_direct_messages === false && (
                   <Badge variant="outline" className="flex items-center gap-1.5 text-xs text-muted-foreground border-border bg-muted/20 py-2 justify-center">
