@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
-import Image from "next/image"
+import { MediaImage } from "@/components/media/media-image"
 import { 
   ArrowLeft, 
   Play, 
@@ -170,21 +170,15 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
             <CardContent className="pt-6 space-y-4">
               {/* Thumbnail */}
               <div className="relative aspect-video bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg overflow-hidden">
-                {formation.thumbnail_url ? (
-                  <Image
-                    src={formation.thumbnail_url}
-                    alt={formation.title}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 33vw"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Sparkles className="h-8 w-8 text-primary/60" />
-                    </div>
-                  </div>
-                )}
+                <MediaImage
+                  src={formation.thumbnail_url}
+                  alt={formation.title}
+                  title={formation.title}
+                  seed={formation.slug || formation.id}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 33vw"
+                  className="object-cover"
+                />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
                   <div className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
                     <Play className="h-7 w-7 text-primary ml-1" />
@@ -449,9 +443,17 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                                 )}>
                                   {lesson.title}
                                 </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatDuration(lesson.duration_seconds)}
-                                </p>
+                                {/* Sin duración registrada (p. ej. vídeo de YouTube)
+                                    no se muestra "0 min", que confunde. */}
+                                {lesson.duration_seconds ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    {formatDuration(lesson.duration_seconds)}
+                                  </p>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">
+                                    {lesson.video_url ? "Vídeo" : "Lectura"}
+                                  </p>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 {lesson.is_free && !formation.isEnrolled && (

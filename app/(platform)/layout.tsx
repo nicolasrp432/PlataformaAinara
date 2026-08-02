@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { PlatformSidebar } from "@/components/layout/platform-sidebar"
+import { MobileTopBar } from "@/components/layout/mobile-top-bar"
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
 import { getAuthUser, getUserProfile } from "@/lib/data-access"
 import { UserStoreProvider } from "@/lib/store/user-store"
 import { HydrateStore } from "@/lib/store/hydrate-store"
@@ -46,11 +48,14 @@ export default async function PlatformLayout({
       />
       <div className="min-h-screen bg-background">
         <PlatformSidebar user={userData} streak={streak} />
-        <main className="md:pl-64 transition-all duration-300">
-          <div className="container mx-auto p-6 pt-20 md:pt-6">
+        <MobileTopBar user={userData} streak={streak} />
+        {/* --sidebar-w lo escribe el sidebar al colapsar; en móvil siempre 0 */}
+        <main className="transition-[padding] duration-300 md:pl-[var(--sidebar-w,16rem)]">
+          <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 md:px-6 md:pb-10 md:pt-6">
             <Suspense>{children}</Suspense>
           </div>
         </main>
+        <MobileBottomNav user={userData} streak={streak} />
       </div>
     </UserStoreProvider>
   )

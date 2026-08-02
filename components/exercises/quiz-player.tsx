@@ -191,20 +191,20 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
           <p className="text-muted-foreground text-sm leading-relaxed">{quiz.description}</p>
         )}
 
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="border-border/50 bg-card/50 text-center p-4">
-            <p className="text-2xl font-bold text-foreground">{quiz.questions.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Preguntas</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
+            <p className="text-xl sm:text-2xl font-bold text-foreground">{quiz.questions.length}</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-tight">Preguntas</p>
           </Card>
-          <Card className="border-border/50 bg-card/50 text-center p-4">
-            <p className="text-2xl font-bold text-foreground">{quiz.passing_score}%</p>
-            <p className="text-xs text-muted-foreground mt-1">Para aprobar</p>
+          <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
+            <p className="text-xl sm:text-2xl font-bold text-foreground">{quiz.passing_score}%</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-tight">Para aprobar</p>
           </Card>
-          <Card className="border-border/50 bg-card/50 text-center p-4">
-            <p className="text-2xl font-bold text-primary">
+          <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
+            <p className="text-xl sm:text-2xl font-bold text-primary">
               {bestScore !== null ? `${bestScore}%` : "—"}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Mejor intento</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-tight">Mejor intento</p>
           </Card>
         </div>
 

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Inter, JetBrains_Mono, Cormorant_Garamond } from "next/font/google"
-import { Toaster } from "sonner"
+import { AppToaster } from "@/components/ui/app-toaster"
 import "./globals.css"
 
 const inter = Inter({
@@ -69,6 +69,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  // Permite pintar bajo el notch/barra de gestos; las utilidades .safe-* del
+  // globals.css se encargan del padding real.
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
@@ -85,7 +88,7 @@ export default function RootLayout({
         className={`${inter.variable} ${cormorant.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {children}
-        <Toaster richColors position="bottom-right" />
+        <AppToaster />
       </body>
     </html>
   )

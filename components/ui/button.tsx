@@ -45,13 +45,15 @@ const buttonVariants = cva(
         premium:
           "gold-gradient text-white shadow-md hover:shadow-lg hover:brightness-105 active:scale-[0.98] font-semibold tracking-wide",
       },
+      // Alturas táctiles (≥44px) en móvil que se compactan en escritorio,
+      // donde el puntero es preciso y la densidad importa más.
       size: {
-        default: "h-10 px-5 py-2.5",
-        sm:      "h-8 px-3 py-1.5 text-xs rounded-lg",
+        default: "h-11 px-5 py-2.5 md:h-10",
+        sm:      "h-9 px-3 py-1.5 text-xs rounded-lg md:h-8",
         lg:      "h-12 px-7 py-3 text-base rounded-xl",
         xl:      "h-14 px-9 py-4 text-lg rounded-2xl",
-        icon:    "h-10 w-10",
-        "icon-sm": "h-8 w-8",
+        icon:    "h-11 w-11 md:h-10 md:w-10",
+        "icon-sm": "h-9 w-9 md:h-8 md:w-8",
       },
     },
     defaultVariants: {

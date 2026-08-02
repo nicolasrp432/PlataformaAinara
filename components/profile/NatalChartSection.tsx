@@ -115,7 +115,7 @@ export function NatalChartSection({
             {expanded && (
               <div className="space-y-4 pt-1 animate-in fade-in duration-300">
                 {/* Ángulos */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
                   <AngleBox label="Ascendente" sign={asc?.sign} degree={asc?.degree} minutes={asc?.minutes} />
                   <AngleBox
                     label="Medio Cielo"

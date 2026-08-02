@@ -34,9 +34,11 @@ interface NotificationsPanelProps {
   onClose: () => void
   onRead: () => void
   onReadAll: () => void
+  /** "top" abre hacia arriba (sidebar); "bottom" hacia abajo (barra superior móvil) */
+  placement?: "top" | "bottom"
 }
 
-export function NotificationsPanel({ userId, onClose, onRead, onReadAll }: NotificationsPanelProps) {
+export function NotificationsPanel({ userId, onClose, onRead, onReadAll, placement = "top" }: NotificationsPanelProps) {
   const router = useRouter()
   const [items, setItems] = React.useState<Notification[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -99,8 +101,11 @@ export function NotificationsPanel({ userId, onClose, onRead, onReadAll }: Notif
       <div className="fixed inset-0 z-40" onClick={onClose} />
 
       <div className={cn(
-        "absolute bottom-full left-0 z-50 mb-2 w-80 rounded-xl border border-border bg-card shadow-xl",
-        "flex flex-col max-h-[480px]"
+        "absolute z-50 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-border bg-card shadow-xl",
+        "flex flex-col max-h-[480px]",
+        placement === "bottom"
+          ? "top-full right-0 mt-2"
+          : "bottom-full left-0 mb-2"
       )}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">

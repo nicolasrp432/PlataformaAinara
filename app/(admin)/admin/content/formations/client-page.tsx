@@ -132,7 +132,7 @@ export default function FormationsClientPage({ initialData }: { initialData: For
             </div>
             <div className="flex gap-2">
               <Select value={levelFilter} onValueChange={setLevelFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Nivel" />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,7 +143,7 @@ export default function FormationsClientPage({ initialData }: { initialData: For
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>

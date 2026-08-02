@@ -18,29 +18,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   LayoutDashboard,
-  BookOpen,
-  Users,
   User,
   Settings,
   LogOut,
-  Menu,
-  X,
   Flame,
   Star,
   ChevronLeft,
   ChevronRight,
   CreditCard,
-  MessageSquare,
-  Mail,
-  Bot,
-  Trophy,
-  NotebookPen,
 } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
 import { BrandMark } from "@/components/ui/brand"
 import { NotificationsBell } from "@/components/notifications/notifications-bell"
 import { MessagesUnreadBadge } from "@/components/messages/messages-unread-badge"
 import { UserSearch } from "@/components/layout/user-search"
+import { PLATFORM_NAV, isNavItemActive } from "@/lib/navigation"
 
 interface SidebarUser {
   id: string
@@ -57,18 +49,6 @@ interface PlatformSidebarProps {
   streak: number
 }
 
-const navigation = [
-  { name: "Dashboard",  href: "/dashboard",   icon: LayoutDashboard },
-  { name: "Biblioteca", href: "/library",      icon: BookOpen },
-  { name: "Reflexión",  href: "/reflexion",    icon: NotebookPen },
-  { name: "Logros",     href: "/quest",        icon: Trophy },
-  { name: "Comunidad",  href: "/taberna",      icon: MessageSquare },
-  { name: "Mensajes",   href: "/messages",     icon: Mail },
-  { name: "Mentoría",   href: "/mentorship",   icon: Users },
-  { name: "Asistente",  href: "/assistant",    icon: Bot },
-  { name: "Perfil",     href: "/profile",      icon: User },
-]
-
 const SIDEBAR_COLLAPSED_KEY = "sendero:sidebar:collapsed"
 
 export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
@@ -78,7 +58,6 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
   const liveXp = storeState.xp > 0 ? storeState.xp : user.xp
   const liveLevel = storeState.level > 0 ? storeState.level : user.level
   const [isCollapsed, setIsCollapsed] = React.useState(false)
-  const [isMobileOpen, setIsMobileOpen] = React.useState(false)
   const [hydrated, setHydrated] = React.useState(false)
 
   // Persist collapsed state
@@ -97,38 +76,27 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
     } catch { /* ignore */ }
   }, [isCollapsed, hydrated])
 
+  // El <main> lee --sidebar-w para su padding: sin esto quedaban 192px de hueco
+  // al colapsar el sidebar (el padding estaba fijado a pl-64).
+  React.useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sidebar-w",
+      isCollapsed ? "4rem" : "16rem"
+    )
+  }, [isCollapsed])
+
   const progress = progressToNextLevel(liveXp)
 
   return (
     <>
-      {/* Mobile menu toggle */}
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        className="fixed left-4 top-4 z-50 md:hidden bg-card border border-border shadow-[var(--shadow-sm)] rounded-lg"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        aria-label="Toggle menu"
-      >
-        {isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </Button>
-
-      {/* Mobile overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-
-      {/* ── SIDEBAR ───────────────────────────────────────────── */}
+      {/* ── SIDEBAR (solo escritorio; en móvil manda MobileBottomNav) ──── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col",
+          "fixed inset-y-0 left-0 z-50 hidden flex-col md:flex",
           "bg-sidebar border-r border-sidebar-border",
           "shadow-sm",
           "transition-all duration-300 ease-out",
-          isCollapsed ? "w-16" : "w-64",
-          isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          isCollapsed ? "w-16" : "w-64"
         )}
       >
         {/* ── Logo bar ──────────────────────────────────────── */}
@@ -139,7 +107,6 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           <Link
             href="/dashboard"
             className="flex items-center gap-2.5 min-w-0"
-            onClick={() => setIsMobileOpen(false)}
           >
             <BrandMark size="sm" />
             {!isCollapsed && (
@@ -233,16 +200,13 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
         {/* ── Navigation with animated active pill ─────────────── */}
         <nav className="flex-1 overflow-y-auto overscroll-contain py-3 px-2">
           <div className="space-y-0.5">
-            {navigation.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                pathname?.startsWith(item.href + "/")
+            {PLATFORM_NAV.map((item) => {
+              const isActive = isNavItemActive(pathname, item.href)
 
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setIsMobileOpen(false)}
                   className={cn(
                     "relative flex items-center gap-3 rounded-lg px-3 py-2.5",
                     "text-sm font-medium leading-none",

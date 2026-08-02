@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react"
 import { motion, useMotionValue, useSpring } from "framer-motion"
 import { ChevronLeft, ChevronRight, Lock, Clock, BookOpen, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { MediaImage } from "@/components/media/media-image"
 import Link from "next/link"
 
 interface Formation {
@@ -45,13 +46,17 @@ const PLACEHOLDER_FORMATIONS: Formation[] = [
 
 const CARD_WIDTH = 320
 const CARD_GAP = 24
+/** En móvil la tarjeta se encoge para que se intuya la siguiente. */
+const MIN_CARD_WIDTH = 260
 
+// Velo inferior para que el texto se lea; deliberadamente suave para no tapar
+// la portada (antes llegaba a /80 desde la mitad de la tarjeta).
 const gradients = [
-  "from-amber-900/80 via-amber-800/60 to-transparent",
-  "from-stone-900/80 via-stone-800/60 to-transparent",
-  "from-zinc-900/80 via-zinc-800/60 to-transparent",
-  "from-slate-900/80 via-slate-800/60 to-transparent",
-  "from-neutral-900/80 via-neutral-800/60 to-transparent",
+  "from-amber-950/85 via-amber-900/30 to-transparent",
+  "from-stone-950/85 via-stone-900/30 to-transparent",
+  "from-zinc-950/85 via-zinc-900/30 to-transparent",
+  "from-slate-950/85 via-slate-900/30 to-transparent",
+  "from-neutral-950/85 via-neutral-900/30 to-transparent",
 ]
 
 const bgColors = [
@@ -62,39 +67,38 @@ const bgColors = [
   "bg-gradient-to-br from-neutral-800/20 via-amber-900/10 to-slate-900/20",
 ]
 
-function FormationCard({ formation, index }: { formation: Formation; index: number }) {
+function FormationCard({
+  formation,
+  index,
+  cardWidth,
+}: {
+  formation: Formation
+  index: number
+  cardWidth: number
+}) {
   const diff = formation.difficulty ?? "beginner"
   const isPlaceholder = formation.slug === "#"
 
   const cardContent = (
     <motion.div
       className="relative flex-shrink-0 overflow-hidden rounded-2xl border border-border/50 bg-card cursor-pointer group"
-      style={{ width: CARD_WIDTH, height: 420 }}
+      style={{ width: cardWidth, height: 420 }}
       whileHover={{ y: -8, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
       {/* Thumbnail / Background */}
       <div className={`absolute inset-0 ${bgColors[index % bgColors.length]}`}>
-        {formation.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={formation.thumbnail_url}
-            alt={formation.title}
-            className="h-full w-full object-cover opacity-70 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 0.95, 1] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: index * 0.5 }}
-            >
-              <Sparkles className="h-16 w-16 text-primary/30" />
-            </motion.div>
-          </div>
-        )}
+        <MediaImage
+          src={formation.thumbnail_url}
+          alt={formation.title}
+          seed={isPlaceholder ? formation.id : formation.slug}
+          fill
+          sizes="320px"
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+        />
       </div>
 
-      {/* Gradient overlay */}
+      {/* Gradient overlay — suave, para que la portada siga siendo legible */}
       <div className={`absolute inset-0 bg-gradient-to-t ${gradients[index % gradients.length]}`} />
 
       {/* Gold top bar */}
@@ -154,10 +158,29 @@ export function FormationsCarousel({ formations }: FormationsCarouselProps) {
   const x = useMotionValue(0)
   const springX = useSpring(x, { stiffness: 300, damping: 30 })
 
-  const totalWidth = data.length * (CARD_WIDTH + CARD_GAP) - CARD_GAP
-  const containerWidth = typeof window !== "undefined" ? Math.min(window.innerWidth - 64, 1280) : 1200
+  // El ancho se mide en el cliente con ResizeObserver. Antes se leía
+  // `window.innerWidth` durante el render (desajuste con el SSR y sin reaccionar
+  // al giro de pantalla), lo que dejaba los límites de arrastre mal calculados.
+  const [containerWidth, setContainerWidth] = useState(1200)
+
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width)
+    })
+    observer.observe(el)
+    setContainerWidth(el.clientWidth)
+    return () => observer.disconnect()
+  }, [])
+
+  const cardWidth = Math.max(
+    MIN_CARD_WIDTH,
+    Math.min(CARD_WIDTH, containerWidth - 56)
+  )
+  const totalWidth = data.length * (cardWidth + CARD_GAP) - CARD_GAP
   const maxX = 0
-  const minX = -(totalWidth - containerWidth)
+  const minX = Math.min(0, -(totalWidth - containerWidth))
 
   const updateButtons = useCallback((currentX: number) => {
     setCanPrev(currentX < 0)
@@ -169,7 +192,7 @@ export function FormationsCarousel({ formations }: FormationsCarouselProps) {
   }, [x, updateButtons])
 
   function slide(direction: "prev" | "next") {
-    const step = CARD_WIDTH + CARD_GAP
+    const step = cardWidth + CARD_GAP
     const current = x.get()
     const next = direction === "next"
       ? Math.max(current - step * 2, minX)
@@ -180,8 +203,8 @@ export function FormationsCarousel({ formations }: FormationsCarouselProps) {
 
   return (
     <div className="relative w-full">
-      {/* Navigation arrows */}
-      <div className="mb-6 flex items-center justify-end gap-2 px-4 lg:px-0">
+      {/* Navigation arrows — en móvil sobra: la tira se arrastra con el dedo */}
+      <div className="mb-6 hidden items-center justify-end gap-2 px-4 sm:flex lg:px-0">
         <motion.button
           onClick={() => slide("prev")}
           disabled={!canPrev}
@@ -225,7 +248,7 @@ export function FormationsCarousel({ formations }: FormationsCarouselProps) {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: i * 0.08, ease: "easeOut" }}
             >
-              <FormationCard formation={formation} index={i} />
+              <FormationCard formation={formation} index={i} cardWidth={cardWidth} />
             </motion.div>
           ))}
         </motion.div>

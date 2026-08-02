@@ -766,12 +766,18 @@ export const getDailyReflectionData = cache(async (userId: string) => {
   const supabase = await createClient()
   const today = new Date().toISOString().slice(0, 10)
 
+  // Ventana de 180 días: el calendario permite navegar hacia atrás, así que
+  // necesita más histórico que los 60 registros que se traían antes.
+  const windowStart = new Date()
+  windowStart.setUTCDate(windowStart.getUTCDate() - 180)
+
   const { data: entries } = await supabase
     .from("daily_reflections")
     .select("id, entry_date, mood, content, updated_at")
     .eq("user_id", userId)
+    .gte("entry_date", windowStart.toISOString().slice(0, 10))
     .order("entry_date", { ascending: false })
-    .limit(60)
+    .limit(200)
 
   const recent = (entries ?? []) as DailyReflectionEntry[]
   const todayEntry = recent.find((e) => e.entry_date === today) ?? null

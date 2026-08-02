@@ -466,7 +466,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                         <p className="mt-1 text-xs text-muted-foreground">60% completado</p>
                       </div>
                       {/* Stats */}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
                         {[
                           { label: "Nivel", value: "12" },
                           { label: "XP Total", value: "2,840" },
