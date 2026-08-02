@@ -36,6 +36,11 @@
 --   resources, sort_order, is_free, is_published, xp_reward,
 --   created_at, updated_at
 -- Renamed: lesson_type → content_type (already applied)
+-- content_type CHECK (vivo, viene de migrations/0001_initial_schema.sql):
+--     ('video', 'audio', 'text', 'quiz', 'exercise')
+--   ⚠️ El CHECK de scripts/003a_create_tables.sql, que incluye 'meditation' y
+--   no incluye 'audio', pertenece a otra rama del esquema y NUNCA se aplicó.
+--   Escribir 'meditation' aquí falla con 23514 (lessons_content_type_check).
 -- Renamed: video_duration / video_duration_seconds → duration_seconds (already applied)
 -- Renamed: order_index → sort_order (already applied)
 -- Renamed: is_preview / is_free_preview → is_free (already applied)

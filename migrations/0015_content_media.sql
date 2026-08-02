@@ -11,6 +11,9 @@
 --   · la biblioteca sale vacía;
 --   · todas las lecciones muestran "Video no disponible".
 --
+-- Va toda dentro de una transacción: si algo falla no se aplica nada, y se
+-- puede volver a lanzar entera sin efectos secundarios.
+--
 -- Esta migración es IDEMPOTENTE y CONSERVADORA: todos los UPDATE llevan
 -- `IS NULL` en la columna que escriben, así que NUNCA pisan una portada o un
 -- vídeo que ya hayas configurado desde el panel de admin. Se puede ejecutar
@@ -57,14 +60,20 @@ UPDATE public.lessons l
    AND f.slug IN ('leyes-universales-regulacion-emocional', 're-conecta')
    AND l.is_published = false;
 
--- ── 3. NORMALIZAR content_type ─────────────────────────────────────────────
--- El seed 007 usa 'audio', que no está en el CHECK original de la tabla ni en
--- el tipo ContentType de TypeScript. 'meditation' sí existe y cae en la misma
--- rama del reproductor.
-
-UPDATE public.lessons
-   SET content_type = 'meditation'
- WHERE content_type = 'audio';
+-- ── 3. content_type: NO SE TOCA ────────────────────────────────────────────
+-- Nota para el futuro: el CHECK vivo de esta base de datos es el de
+-- `migrations/0001_initial_schema.sql`:
+--
+--     content_type IN ('video', 'audio', 'text', 'quiz', 'exercise')
+--
+-- O sea, 'audio' es VÁLIDO y 'meditation' NO existe. El CHECK de
+-- `scripts/003a_create_tables.sql` (que sí incluye 'meditation') pertenece a
+-- otra rama del esquema que nunca se aplicó aquí — no te fíes de él.
+-- El desplegable del panel de admin ya ofrece exactamente estos cinco valores.
+--
+-- Las lecciones con content_type = 'audio' se quedan como están: el visor solo
+-- bifurca por 'exercise' y 'quiz', así que 'audio' cae en el reproductor de
+-- vídeo, que es justo lo que queremos para un enlace de YouTube.
 
 -- ── 4. VÍDEOS TEMPORALES ───────────────────────────────────────────────────
 -- URL completa de YouTube: el reproductor (components/video/video-player.tsx)

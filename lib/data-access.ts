@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { cacheServiceClient, CACHE_TAGS } from "@/lib/cache"
 import { progressToNextLevel } from "@/lib/utils"
+import type { ContentType } from "@/types"
 
 // ─── Auth & Profile (deduplicadas por React.cache) ─────────────────────
 
@@ -683,7 +684,7 @@ export const getLessonPageData = cache(
         xpReward: currentLesson.xp_reward ?? 50,
         isCompleted: completedLessons.includes(currentLesson.id),
         watchedSeconds: currentProgress?.watched_seconds || 0,
-        contentType: (currentLesson.content_type ?? "video") as "video" | "text" | "quiz" | "exercise" | "meditation",
+        contentType: (currentLesson.content_type ?? "video") as ContentType,
         transcript: currentLesson.transcript as string | null,
       },
       comments,

@@ -16,6 +16,7 @@ import {
   Paperclip,
   Bot,
 } from "lucide-react"
+import type { ContentType } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -76,7 +77,7 @@ interface LessonViewerProps {
       xpReward: number
       isCompleted: boolean
       watchedSeconds: number
-      contentType: "video" | "text" | "quiz" | "exercise" | "meditation"
+      contentType: ContentType
       transcript: string | null
     }
     module: {

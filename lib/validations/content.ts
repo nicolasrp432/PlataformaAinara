@@ -34,7 +34,7 @@ export const createLessonSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres').max(100),
   slug: z.string().optional().nullable(),
   description: z.string().max(500).optional().nullable(),
-  content_type: z.enum(['video', 'text', 'quiz', 'exercise', 'meditation']).default('video'),
+  content_type: z.enum(['video', 'audio', 'text', 'quiz', 'exercise']).default('video'),
   video_url: z.string().url().optional().nullable(),
   duration_seconds: z.number().int().min(0).default(0),
   is_free: z.boolean().default(false),
