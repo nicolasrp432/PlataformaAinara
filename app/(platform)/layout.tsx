@@ -6,6 +6,7 @@ import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
 import { getAuthUser, getUserProfile } from "@/lib/data-access"
 import { UserStoreProvider } from "@/lib/store/user-store"
 import { HydrateStore } from "@/lib/store/hydrate-store"
+import { NotificationsProvider } from "@/components/notifications/notifications-provider"
 
 export default async function PlatformLayout({
   children,
@@ -46,17 +47,22 @@ export default async function PlatformLayout({
         streakDays={streak}
         completedLessons={[]}
       />
-      <div className="min-h-screen bg-background">
-        <PlatformSidebar user={userData} streak={streak} />
-        <MobileTopBar user={userData} streak={streak} />
-        {/* --sidebar-w lo escribe el sidebar al colapsar; en móvil siempre 0 */}
-        <main className="transition-[padding] duration-300 md:pl-[var(--sidebar-w,16rem)]">
-          <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 md:px-6 md:pb-10 md:pt-6">
-            <Suspense>{children}</Suspense>
-          </div>
-        </main>
-        <MobileBottomNav user={userData} streak={streak} />
-      </div>
+      {/* Una sola suscripción Realtime a `notifications` para todo el layout:
+          la campana y el badge de Mensajes se renderizan por duplicado entre
+          sidebar y navegación móvil. */}
+      <NotificationsProvider userId={user.id}>
+        <div className="min-h-screen bg-background">
+          <PlatformSidebar user={userData} streak={streak} />
+          <MobileTopBar user={userData} streak={streak} />
+          {/* --sidebar-w lo escribe el sidebar al colapsar; en móvil siempre 0 */}
+          <main className="transition-[padding] duration-300 md:pl-[var(--sidebar-w,16rem)]">
+            <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 md:px-6 md:pb-10 md:pt-6">
+              <Suspense>{children}</Suspense>
+            </div>
+          </main>
+          <MobileBottomNav user={userData} streak={streak} />
+        </div>
+      </NotificationsProvider>
     </UserStoreProvider>
   )
 }

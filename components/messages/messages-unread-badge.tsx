@@ -1,54 +1,16 @@
 "use client"
 
-import * as React from "react"
-import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { useNotifications } from "@/components/notifications/notifications-provider"
 
-// Cuenta notificaciones new_message sin leer. Se apoya en notifications (RLS
-// propia + ya publicada en Realtime para la campana) en lugar de recorrer
-// conversaciones desde el cliente.
-export function MessagesUnreadBadge({
-  userId,
-  isCollapsed,
-}: {
-  userId: string
-  isCollapsed?: boolean
-}) {
-  const [count, setCount] = React.useState(0)
-
-  React.useEffect(() => {
-    const supabase = createClient()
-
-    const fetchCount = async () => {
-      const { count: unread } = await supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("kind", "new_message")
-        .is("read_at", null)
-      setCount(unread ?? 0)
-    }
-
-    fetchCount()
-
-    const channel = supabase
-      .channel(`messages-unread:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => fetchCount()
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId])
+/**
+ * Contador de mensajes sin leer. El número y la suscripción Realtime vienen de
+ * NotificationsProvider: este badge se renderiza a la vez en el sidebar, en el
+ * botón "Más" de la barra inferior y en la hoja de navegación, y cada instancia
+ * con su propio canal rompía el cliente de Supabase.
+ */
+export function MessagesUnreadBadge({ isCollapsed }: { isCollapsed?: boolean }) {
+  const { unreadMessages: count } = useNotifications()
 
   if (count === 0) return null
 
