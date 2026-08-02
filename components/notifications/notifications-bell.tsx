@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import { Bell } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { NotificationsPanel } from "./notifications-panel"
+import { useNotifications } from "./notifications-provider"
 
 interface NotificationsBellProps {
   userId: string
@@ -13,55 +13,11 @@ interface NotificationsBellProps {
 }
 
 export function NotificationsBell({ userId, isCollapsed, placement = "top" }: NotificationsBellProps) {
-  const [unreadCount, setUnreadCount] = React.useState(0)
+  // El contador y la suscripción Realtime viven en NotificationsProvider: este
+  // componente se renderiza a la vez en el sidebar y en la cabecera móvil, y
+  // dos suscripciones al mismo topic rompen el cliente de Supabase.
+  const { unreadTotal: unreadCount, decrementUnread, clearUnread } = useNotifications()
   const [panelOpen, setPanelOpen] = React.useState(false)
-
-  React.useEffect(() => {
-    const supabase = createClient()
-
-    // Carga inicial del count
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .is("read_at", null)
-      .then(({ count }) => setUnreadCount(count ?? 0))
-
-    // Suscripción Realtime — patrón replicado de taberna-feed.tsx
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => setUnreadCount((n) => n + 1)
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          // Re-fetch count cuando hay UPDATE (marcado como leído)
-          supabase
-            .from("notifications")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .is("read_at", null)
-            .then(({ count }) => setUnreadCount(count ?? 0))
-        }
-      )
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [userId])
 
   if (isCollapsed) {
     return (
@@ -85,8 +41,8 @@ export function NotificationsBell({ userId, isCollapsed, placement = "top" }: No
             userId={userId}
             placement={placement}
             onClose={() => setPanelOpen(false)}
-            onRead={() => setUnreadCount((n) => Math.max(0, n - 1))}
-            onReadAll={() => setUnreadCount(0)}
+            onRead={decrementUnread}
+            onReadAll={clearUnread}
           />
         )}
       </div>
@@ -113,8 +69,8 @@ export function NotificationsBell({ userId, isCollapsed, placement = "top" }: No
           userId={userId}
           placement={placement}
           onClose={() => setPanelOpen(false)}
-          onRead={() => setUnreadCount((n) => Math.max(0, n - 1))}
-          onReadAll={() => setUnreadCount(0)}
+          onRead={decrementUnread}
+          onReadAll={clearUnread}
         />
       )}
     </div>

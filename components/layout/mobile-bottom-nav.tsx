@@ -116,7 +116,7 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
             )}
             <span className="relative z-10">
               <MoreHorizontal className="h-5 w-5" />
-              <MessagesUnreadBadge userId={user.id} isCollapsed />
+              <MessagesUnreadBadge isCollapsed />
             </span>
             <span className="relative z-10 text-[11px] font-medium leading-none">
               Más
@@ -176,7 +176,7 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
                   />
                   <span className="text-xs font-medium leading-none">{item.name}</span>
                   {item.href === "/messages" && (
-                    <MessagesUnreadBadge userId={user.id} isCollapsed />
+                    <MessagesUnreadBadge isCollapsed />
                   )}
                 </Link>
               )

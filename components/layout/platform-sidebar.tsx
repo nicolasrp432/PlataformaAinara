@@ -235,7 +235,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                     <span className="relative z-10">{item.name}</span>
                   )}
                   {item.href === "/messages" && (
-                    <MessagesUnreadBadge userId={user.id} isCollapsed={isCollapsed} />
+                    <MessagesUnreadBadge isCollapsed={isCollapsed} />
                   )}
                 </Link>
               )
