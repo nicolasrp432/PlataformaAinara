@@ -1,11 +1,17 @@
 // El visor de lección es inmersivo: cancela el padding del contenedor de
-// plataforma (`container p-6 pt-20 md:pt-6`) para ir a ancho/alto completo en
-// mobile. Esto hace que el header sticky de la lección quede pegado al top del
-// viewport (sin hueco) y elimina el solape con el menú global.
+// plataforma (`px-4 pb-28 pt-4 md:px-6 md:pb-10 md:pt-6`) para ir a ancho y
+// alto completo. La cabecera y la barra inferior globales de móvil se ocultan
+// solas en esta ruta (ver `isImmersiveRoute` en lib/navigation.ts), así que el
+// header sticky de la lección queda pegado al top y su barra de acciones
+// inferior no se solapa con la navegación global.
 export default function LearnLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <div className="-m-6 -mt-20 md:-mt-6 min-h-screen">{children}</div>
+  return (
+    <div className="-mx-4 -mb-28 -mt-4 min-h-screen md:-mx-6 md:-mb-10 md:-mt-6">
+      {children}
+    </div>
+  )
 }

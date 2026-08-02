@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import Image from "next/image"
+import { MediaImage } from "@/components/media/media-image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import {
@@ -201,21 +201,16 @@ export default async function DashboardPage() {
                   <div className="flex items-start justify-between gap-4">
                     <Link
                       href={`/formations/${formation.slug}`}
-                      className="relative hidden sm:block w-32 aspect-video shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5"
+                      className="relative block w-24 sm:w-32 aspect-video shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5"
                     >
-                      {formation.thumbnailUrl ? (
-                        <Image
-                          src={formation.thumbnailUrl}
-                          alt={formation.title}
-                          fill
-                          sizes="128px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <BookOpen className="h-6 w-6 text-primary/60" />
-                        </div>
-                      )}
+                      <MediaImage
+                        src={formation.thumbnailUrl}
+                        alt={formation.title}
+                        seed={formation.slug || formation.id}
+                        fill
+                        sizes="128px"
+                        className="object-cover"
+                      />
                     </Link>
                     <div className="flex-1 space-y-3">
                       <div>

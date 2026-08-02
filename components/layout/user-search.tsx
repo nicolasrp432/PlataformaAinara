@@ -17,7 +17,12 @@ interface SearchResult {
   xp?: number
 }
 
-export function UserSearch() {
+interface UserSearchProps {
+  /** "sidebar": barra completa con atajo ⌘K. "icon": solo lupa, para la barra superior móvil. */
+  variant?: "sidebar" | "icon"
+}
+
+export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
   const router = useRouter()
   const [isOpen, setIsOpen] = React.useState(false)
   const [query, setQuery] = React.useState("")
@@ -104,29 +109,42 @@ export function UserSearch() {
   return (
     <>
       {/* Search trigger button */}
-      <div className="px-3 mb-4">
+      {variant === "icon" ? (
         <button
           onClick={() => setIsOpen(true)}
+          aria-label="Buscar exploradores"
           className={cn(
-            "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition-all",
-            "bg-muted/40 border border-border/40 hover:bg-muted/70 hover:border-primary/20",
-            "text-muted-foreground hover:text-foreground group shadow-inner"
+            "flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
+            "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           )}
         >
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            <span className="text-xs font-medium">Buscar exploradores...</span>
-          </div>
-          <kbd className="pointer-events-none select-none rounded border border-border/60 bg-muted px-1.5 py-0.5 text-[10px] font-mono font-medium text-muted-foreground/80 shadow-sm">
-            ⌘K
-          </kbd>
+          <Search className="h-5 w-5" />
         </button>
-      </div>
+      ) : (
+        <div className="px-3 mb-4">
+          <button
+            onClick={() => setIsOpen(true)}
+            className={cn(
+              "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition-all",
+              "bg-muted/40 border border-border/40 hover:bg-muted/70 hover:border-primary/20",
+              "text-muted-foreground hover:text-foreground group shadow-inner"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="text-xs font-medium">Buscar exploradores...</span>
+            </div>
+            <kbd className="pointer-events-none hidden select-none rounded border border-border/60 bg-muted px-1.5 py-0.5 text-[10px] font-mono font-medium text-muted-foreground/80 shadow-sm sm:inline-block">
+              ⌘K
+            </kbd>
+          </button>
+        </div>
+      )}
 
       {/* Modal Dialog portal */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4">
+          <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-16 sm:pt-24">
             {/* Backdrop overlay */}
             <motion.div
               initial={{ opacity: 0 }}

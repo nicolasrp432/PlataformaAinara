@@ -8,9 +8,11 @@ import { NotificationsPanel } from "./notifications-panel"
 interface NotificationsBellProps {
   userId: string
   isCollapsed?: boolean
+  /** Dirección en la que se despliega el panel. Por defecto hacia arriba (sidebar). */
+  placement?: "top" | "bottom"
 }
 
-export function NotificationsBell({ userId, isCollapsed }: NotificationsBellProps) {
+export function NotificationsBell({ userId, isCollapsed, placement = "top" }: NotificationsBellProps) {
   const [unreadCount, setUnreadCount] = React.useState(0)
   const [panelOpen, setPanelOpen] = React.useState(false)
 
@@ -63,11 +65,11 @@ export function NotificationsBell({ userId, isCollapsed }: NotificationsBellProp
 
   if (isCollapsed) {
     return (
-      <div className="relative">
+      <div className="relative w-full">
         <button
           type="button"
           onClick={() => setPanelOpen(true)}
-          className="w-full h-9 rounded-lg flex items-center justify-center hover:bg-sidebar-accent/50 transition-colors text-muted-foreground hover:text-foreground relative"
+          className="w-full min-h-11 h-9 md:min-h-0 rounded-lg flex items-center justify-center hover:bg-sidebar-accent/50 transition-colors text-muted-foreground hover:text-foreground relative"
           aria-label="Notificaciones"
           title="Notificaciones"
         >
@@ -81,6 +83,7 @@ export function NotificationsBell({ userId, isCollapsed }: NotificationsBellProp
         {panelOpen && (
           <NotificationsPanel
             userId={userId}
+            placement={placement}
             onClose={() => setPanelOpen(false)}
             onRead={() => setUnreadCount((n) => Math.max(0, n - 1))}
             onReadAll={() => setUnreadCount(0)}
@@ -108,6 +111,7 @@ export function NotificationsBell({ userId, isCollapsed }: NotificationsBellProp
       {panelOpen && (
         <NotificationsPanel
           userId={userId}
+          placement={placement}
           onClose={() => setPanelOpen(false)}
           onRead={() => setUnreadCount((n) => Math.max(0, n - 1))}
           onReadAll={() => setUnreadCount(0)}

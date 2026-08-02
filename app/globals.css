@@ -571,6 +571,21 @@
     isolation: isolate;
   }
 
+  /* ---- SAFE AREAS (iPhone con notch / barra de gestos) ---- */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* ---- TAP TARGET MÍNIMO (WCAG 2.5.5: 44x44) ---- */
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
   /* ---- HIDE SCROLLBAR (mobile horizontal carousels) ---- */
   .scrollbar-hide {
     -ms-overflow-style: none;

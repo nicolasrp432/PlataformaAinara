@@ -154,7 +154,7 @@ export default function ModulesPage() {
           />
         </div>
         <Select value={selectedFormation} onValueChange={setSelectedFormation}>
-          <SelectTrigger className="w-[250px]">
+          <SelectTrigger className="w-full sm:w-[250px]">
             <SelectValue placeholder="Filtrar por formación" />
           </SelectTrigger>
           <SelectContent>

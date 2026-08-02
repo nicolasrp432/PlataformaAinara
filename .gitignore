@@ -40,3 +40,4 @@ lerna-debug.log*
 
 # Proyecto carta-natal: repo Git independiente, se despliega por separado en Vercel
 carta-natal/
+tsconfig.tsbuildinfo

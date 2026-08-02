@@ -44,6 +44,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "i.vimeocdn.com",
       },
+      // Hosts habituales cuando el admin pega una URL de imagen a mano.
+      // Cualquier otro host cae al FormationCover de <MediaImage>, así que
+      // nunca queda un hueco vacío.
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "plus.unsplash.com" },
+      { protocol: "https", hostname: "images.pexels.com" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
 

@@ -42,7 +42,7 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-background">
       <AdminSidebar user={userData} />
       <main className="md:pl-64 transition-all duration-300">
-        <div className="container mx-auto p-6 pt-20 md:pt-6">
+        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-20 md:px-6 md:pt-6">
           {children}
         </div>
       </main>

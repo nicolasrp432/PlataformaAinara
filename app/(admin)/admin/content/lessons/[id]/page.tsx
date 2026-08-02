@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import {
   ArrowLeft,
   Save,
@@ -86,7 +87,13 @@ export default function LessonEditorPage() {
   }, [lessonId, isNew])
 
   const handleSave = async () => {
-    if (!lesson || isNew) return
+    if (!lesson) return
+    if (isNew) {
+      setSaveError(
+        "Las lecciones se crean desde el árbol de la formación, no desde aquí."
+      )
+      return
+    }
     setSaving(true)
     setSaveError(null)
 
@@ -139,6 +146,27 @@ export default function LessonEditorPage() {
 
   if (!lesson) {
     return <div className="p-8 text-muted-foreground">Leccion no encontrada</div>
+  }
+
+  // No existe endpoint de creación de lecciones: se crean desde el árbol de la
+  // formación. Antes esta pantalla mostraba un formulario en blanco cuyo botón
+  // de guardar no hacía absolutamente nada.
+  if (isNew) {
+    return (
+      <div className="mx-auto max-w-lg space-y-4 py-16 text-center">
+        <h1 className="text-xl font-semibold text-foreground">
+          Crea la lección desde su formación
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Las lecciones nacen dentro de un módulo. Abre la formación, añade la
+          lección en el módulo que quieras y vuelve aquí para configurar su
+          vídeo, recursos y ajustes.
+        </p>
+        <Button asChild>
+          <Link href="/admin/content/formations">Ir a Formaciones</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -220,7 +248,7 @@ export default function LessonEditorPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="content-type">Tipo de Contenido</Label>
                   <Select
@@ -336,7 +364,7 @@ export default function LessonEditorPage() {
               <CardTitle>Configuracion del Video</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>
                     <Clock className="h-4 w-4 inline mr-1" />

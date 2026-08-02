@@ -146,7 +146,7 @@ export function SettingsClient({ settings: initialSettings }: { settings: Settin
           <CardDescription>Puntos de experiencia y progresión de niveles</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {XP_KEYS.map(renderField)}
           </div>
         </CardContent>

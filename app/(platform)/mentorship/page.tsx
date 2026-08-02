@@ -160,7 +160,7 @@ export default async function MentorshipPage() {
       </div>
 
       {/* AI Companion - Active Chat */}
-      <Card className="border border-primary/25 bg-card/60 backdrop-blur-xl shadow-2xl shadow-black/5 p-6 sm:p-8 flex flex-col min-h-[520px] rounded-2xl relative overflow-hidden group">
+      <Card className="border border-primary/25 bg-card/60 backdrop-blur-xl shadow-2xl shadow-black/5 p-4 sm:p-8 flex flex-col min-h-[420px] sm:min-h-[520px] rounded-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="flex items-center gap-3 pb-4 border-b border-border/50 shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">

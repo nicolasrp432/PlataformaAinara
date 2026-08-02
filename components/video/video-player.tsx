@@ -226,13 +226,28 @@ function YouTubePlayer({
     )}>
       {/* YT.Player reemplaza este div con un <iframe> */}
       <div ref={containerRef} className="w-full h-full" />
-      {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
-            <p className="text-white/60 text-sm">Cargando video...</p>
+      {!videoId ? (
+        // Sin este caso, una URL mal formada dejaba el spinner girando para
+        // siempre porque el efecto sale antes de crear el player.
+        <div className="absolute inset-0 flex items-center justify-center bg-black px-6 text-center">
+          <div className="space-y-1">
+            <p className="text-white/80 text-sm font-medium">
+              No se pudo cargar el vídeo
+            </p>
+            <p className="text-white/50 text-xs">
+              El enlace de YouTube de esta lección no es válido.
+            </p>
           </div>
         </div>
+      ) : (
+        !isLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
+              <p className="text-white/60 text-sm">Cargando video...</p>
+            </div>
+          </div>
+        )
       )}
     </div>
   )
