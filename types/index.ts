@@ -1,7 +1,10 @@
 // ── Enums / Union Types ──────────────────────────────────────
 export type UserRole = 'student' | 'mentor' | 'admin'
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced'
-export type ContentType = 'video' | 'text' | 'quiz' | 'exercise' | 'meditation'
+// Debe coincidir con el CHECK vivo de `lessons.content_type`
+// (migrations/0001_initial_schema.sql). Ojo: 'meditation' NO existe en esta
+// base de datos; ese valor viene de scripts/003a, que nunca se aplicó.
+export type ContentType = 'video' | 'audio' | 'text' | 'quiz' | 'exercise'
 export type ProgressStatus = 'not_started' | 'in_progress' | 'completed'
 export type EnrollmentStatus = 'active' | 'completed' | 'cancelled'
 
