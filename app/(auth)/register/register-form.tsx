@@ -51,6 +51,11 @@ export function RegisterForm() {
             full_name: name,
             avatar_url: null,
             role: "student",
+            // Prueba del consentimiento: el formulario ya obliga a aceptar los
+            // términos y la privacidad, pero hasta ahora no quedaba constancia
+            // de cuándo. Se guarda con la cuenta, en auth.users.
+            terms_accepted_at: new Date().toISOString(),
+            privacy_accepted_at: new Date().toISOString(),
           },
         },
       })

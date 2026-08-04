@@ -1,7 +1,32 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { getAuthUser, getUserProfile, getReflections } from "@/lib/data-access"
 import { TabernaFeed } from "./taberna-feed"
+
+/**
+ * El feed se resuelve dentro de su propia frontera de Suspense: la cabecera
+ * aparece en cuanto pasa el control de acceso, sin esperar a las reflexiones.
+ */
+async function Feed({
+  currentUser,
+}: {
+  currentUser: { full_name: string; avatarUrl: string | null }
+}) {
+  const reflections = await getReflections()
+  return <TabernaFeed initialReflections={reflections} currentUser={currentUser} />
+}
+
+function FeedSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      <div className="h-32 shimmer rounded-2xl border border-border/30" />
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="h-40 shimmer rounded-2xl border border-border/30" />
+      ))}
+    </div>
+  )
+}
 
 export const metadata: Metadata = {
   title: "Comunidad",
@@ -15,10 +40,7 @@ export default async function TabernaPage() {
     redirect("/login")
   }
 
-  const [profile, reflections] = await Promise.all([
-    getUserProfile(user.id),
-    getReflections(),
-  ])
+  const profile = await getUserProfile(user.id)
 
   // Segunda capa de seguridad: solo suscriptores acceden a la comunidad
   const hasAccess =
@@ -47,7 +69,9 @@ export default async function TabernaPage() {
         </p>
       </div>
 
-      <TabernaFeed initialReflections={reflections} currentUser={currentUser} />
+      <Suspense fallback={<FeedSkeleton />}>
+        <Feed currentUser={currentUser} />
+      </Suspense>
     </div>
   )
 }

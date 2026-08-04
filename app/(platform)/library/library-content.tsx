@@ -190,7 +190,7 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFormations.map((formation) => (
+          {filteredFormations.map((formation, index) => (
             <Link
               key={formation.id}
               href={`/formations/${formation.slug}`}
@@ -206,6 +206,8 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
                     seed={formation.slug || formation.id}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    // Las primeras portadas son el LCP de la biblioteca.
+                    priority={index < 3}
                     className="object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
                   

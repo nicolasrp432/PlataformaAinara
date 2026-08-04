@@ -32,6 +32,8 @@ declare global {
         element: HTMLElement | string,
         config: {
           videoId: string
+          /** Dominio desde el que se sirve el reproductor (youtube-nocookie.com). */
+          host?: string
           playerVars?: Record<string, unknown>
           events?: {
             onReady?: () => void
@@ -118,9 +120,11 @@ function loadYouTubeAPI(): Promise<void> {
       prev?.()
       resolve()
     }
-    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+    if (!document.querySelector('script[src*="/iframe_api"]')) {
       const script = document.createElement("script")
-      script.src = "https://www.youtube.com/iframe_api"
+      // Dominio sin cookies: evita que YouTube instale cookies de seguimiento
+      // publicitario al cargar la lección.
+      script.src = "https://www.youtube-nocookie.com/iframe_api"
       document.head.appendChild(script)
     }
   })
@@ -161,6 +165,8 @@ function YouTubePlayer({
 
       playerRef.current = new window.YT.Player(containerRef.current, {
         videoId,
+        // Reproductor servido desde youtube-nocookie.com (privacidad mejorada).
+        host: "https://www.youtube-nocookie.com",
         playerVars: {
           start: Math.floor(initialProgress),
           rel: 0,

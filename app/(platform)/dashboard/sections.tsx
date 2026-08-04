@@ -1,0 +1,511 @@
+import Link from "next/link"
+import { MediaImage } from "@/components/media/media-image"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import {
+  BookOpen,
+  Flame,
+  Star,
+  Trophy,
+  Play,
+  ArrowRight,
+  Clock,
+  CheckCircle2,
+  Sparkles,
+  NotebookPen,
+} from "lucide-react"
+import {
+  getUserProfile,
+  getDashboardData,
+  getFormationsInProgress,
+  getRecentActivity,
+  getDailyReflectionData,
+} from "@/lib/data-access"
+
+/**
+ * Secciones del dashboard, cada una esperando SOLO su propio dato.
+ *
+ * Antes la página hacía un `Promise.all` de las cinco consultas y no pintaba
+ * nada hasta que respondía la más lenta. Envueltas en `<Suspense>` desde
+ * page.tsx, la cabecera aparece de inmediato y cada bloque entra en cuanto
+ * tiene sus datos.
+ */
+
+type RecentActivityItem = {
+  type: "lesson_completed" | string
+  title: string
+  xp: number
+  time: string
+}
+
+// ─── Banner de suscripción ────────────────────────────────────────────────
+
+export async function UpsellBanner({ userId }: { userId: string }) {
+  const profile = await getUserProfile(userId)
+
+  const accessStatus = profile?.access_status ?? "pending"
+  const role = profile?.role ?? "student"
+  const hasFullAccess =
+    accessStatus === "approved" || role === "admin" || role === "mentor"
+
+  if (hasFullAccess) return null
+
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+          <Sparkles className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="font-medium text-foreground text-sm">
+            Activa tu suscripción para desbloquear todo
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Formaciones, comunidad, mentoría y más — acceso completo a la plataforma
+          </p>
+        </div>
+      </div>
+      <Button size="sm" className="shrink-0 bg-primary hover:bg-primary/90" asChild>
+        <Link href="/billing">Activar acceso</Link>
+      </Button>
+    </div>
+  )
+}
+
+// ─── Tarjetas de estadísticas ─────────────────────────────────────────────
+
+export function StatsSkeleton() {
+  return (
+    <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="min-w-[72%] shrink-0 space-y-3 rounded-xl border border-border/30 bg-card/30 p-6 backdrop-blur-sm sm:min-w-[45%] md:min-w-0"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-24 shimmer rounded" />
+            <div className="h-4 w-4 shimmer rounded" />
+          </div>
+          <div className="h-7 w-20 shimmer rounded" />
+          <div className="h-3 w-32 shimmer rounded" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export async function StatsSection({ userId }: { userId: string }) {
+  const { stats } = await getDashboardData(userId)
+
+  const cardClass =
+    "min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm"
+
+  return (
+    <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Racha Actual
+          </CardTitle>
+          <Flame className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-semibold">{stats.currentStreak} dias</div>
+          <p className="text-xs text-muted-foreground">Mantente constante</p>
+        </CardContent>
+      </Card>
+
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            XP Total
+          </CardTitle>
+          <Star className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-semibold">
+            {stats.totalXp.toLocaleString()}
+          </div>
+          <div className="mt-2 space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Nivel {stats.level}</span>
+              <span className="text-primary">{stats.nextLevelProgress}%</span>
+            </div>
+            <Progress value={stats.nextLevelProgress} className="h-1.5" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Lecciones
+          </CardTitle>
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-semibold">{stats.lessonsCompleted}</div>
+          <p className="text-xs text-muted-foreground">Completadas</p>
+        </CardContent>
+      </Card>
+
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Formaciones
+          </CardTitle>
+          <Trophy className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-semibold">{stats.formationsCompleted}</div>
+          <p className="text-xs text-muted-foreground">
+            Completadas de{" "}
+            {stats.formationsInProgress + stats.formationsCompleted}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Continuar aprendiendo ────────────────────────────────────────────────
+
+export function ContinueLearningSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div
+          key={i}
+          className="space-y-3 rounded-xl border border-border/30 bg-card/30 p-6"
+        >
+          <div className="h-5 w-3/4 shimmer rounded" />
+          <div className="h-3 w-40 shimmer rounded" />
+          <div className="h-2 w-full shimmer rounded-full" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export async function ContinueLearningSection({ userId }: { userId: string }) {
+  const formationsIP = await getFormationsInProgress(userId)
+
+  if (formationsIP.length === 0) {
+    return (
+      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <BookOpen className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="mt-4 font-medium text-foreground">
+            No tienes formaciones en curso
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
+            Explora nuestra biblioteca y comienza tu primera formacion para
+            transformar tu vida
+          </p>
+          <Button className="mt-6 bg-primary hover:bg-primary/90" asChild>
+            <Link href="/library">Explorar Biblioteca</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {formationsIP.map((formation) => (
+        <Card
+          key={formation.id}
+          className="border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-colors"
+        >
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <Link
+                href={`/formations/${formation.slug}`}
+                className="relative block w-24 sm:w-32 aspect-video shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5"
+              >
+                <MediaImage
+                  src={formation.thumbnailUrl}
+                  alt={formation.title}
+                  seed={formation.slug || formation.id}
+                  fill
+                  sizes="128px"
+                  className="object-cover"
+                />
+              </Link>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <h3 className="font-medium text-foreground">{formation.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {formation.lessonsCompleted} de {formation.totalLessons} lecciones
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Progreso</span>
+                    <span className="font-medium text-primary">
+                      {formation.progress}%
+                    </span>
+                  </div>
+                  <Progress value={formation.progress} className="h-2" />
+                </div>
+              </div>
+              <Button asChild className="bg-primary hover:bg-primary/90">
+                <Link href={`/formations/${formation.slug}`}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Continuar
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+// ─── Reflexión de hoy ─────────────────────────────────────────────────────
+
+export function CardSkeleton({ height = "h-32" }: { height?: string }) {
+  return (
+    <div className={`w-full ${height} shimmer rounded-xl border border-border/30`} />
+  )
+}
+
+export async function ReflexionCard({ userId }: { userId: string }) {
+  const reflexion = await getDailyReflectionData(userId)
+
+  return (
+    <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden">
+      <div className="absolute top-0 left-0 h-1 w-full gold-gradient" />
+      <CardContent className="p-5">
+        {reflexion.todayEntry ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <NotebookPen className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  Reflexión de hoy completada
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Racha de {reflexion.streak}{" "}
+                  {reflexion.streak === 1 ? "día" : "días"} · vuelve mañana
+                </p>
+              </div>
+            </div>
+            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <NotebookPen className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Reflexión de hoy
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Un minuto para volver a ti. ¿Cómo te sientes hoy?
+                </p>
+              </div>
+            </div>
+            <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90">
+              <Link href="/reflexion">
+                Escribir mi reflexión
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Gráfico semanal + actividad reciente ─────────────────────────────────
+
+export async function ActivityCard({ userId }: { userId: string }) {
+  // getDashboardData ya está deduplicado con cache(): si StatsSection lo pidió
+  // en este mismo render, aquí no vuelve a viajar.
+  const [{ stats }, recentAct] = await Promise.all([
+    getDashboardData(userId),
+    getRecentActivity(userId),
+  ])
+
+  const weeklyXp = stats.weeklyXp || [0, 0, 0, 0, 0, 0, 0]
+  const totalWeeklyXp = weeklyXp.reduce((acc: number, curr: number) => acc + curr, 0)
+  const maxWeeklyXp = Math.max(...weeklyXp, 100)
+  const points = weeklyXp.map((xp, i) => {
+    const x = 5 + i * 15
+    const y = 35 - (xp / maxWeeklyXp) * 30
+    return { x, y, xp }
+  })
+  const linePath = points.reduce((path, p, i) => {
+    if (i === 0) return `M ${p.x} ${p.y}`
+    const prev = points[i - 1]
+    return `${path} C ${prev.x + 7.5} ${prev.y}, ${p.x - 7.5} ${p.y}, ${p.x} ${p.y}`
+  }, "")
+  const areaPath = `${linePath} L 95 40 L 5 40 Z`
+  const isXpActive = totalWeeklyXp > 0
+
+  return (
+    <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+      <CardContent className="p-5 space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+              Evolución de XP Semanal
+            </p>
+            {isXpActive ? (
+              <span className="text-[10px] text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                +{totalWeeklyXp} XP esta semana
+              </span>
+            ) : (
+              <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+                Sin actividad
+              </span>
+            )}
+          </div>
+          <div className="h-[120px] w-full bg-background/40 rounded-xl p-3 border border-border/40 flex flex-col justify-between relative overflow-hidden">
+            <svg
+              className="w-full h-[70px] mt-2 overflow-visible"
+              viewBox="0 0 100 40"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="var(--primary)" />
+                  <stop offset="100%" stopColor="#E2B755" />
+                </linearGradient>
+              </defs>
+
+              <line x1="0" y1="10" x2="100" y2="10" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/15" strokeDasharray="2,2" />
+              <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/15" strokeDasharray="2,2" />
+              <line x1="0" y1="30" x2="100" y2="30" stroke="currentColor" strokeWidth="0.1" className="text-muted-foreground/15" strokeDasharray="2,2" />
+
+              {isXpActive ? (
+                <>
+                  <path d={areaPath} fill="url(#chartGrad)" />
+                  <path d={linePath} fill="none" stroke="url(#lineGrad)" strokeWidth="1.5" strokeLinecap="round" />
+                  {points.map(
+                    (p, i) =>
+                      p.xp > 0 && (
+                        <g key={i}>
+                          <circle cx={p.x} cy={p.y} r="2" fill="var(--primary)" />
+                          <circle cx={p.x} cy={p.y} r="4" fill="var(--primary)" className="opacity-20 animate-ping" />
+                        </g>
+                      )
+                  )}
+                </>
+              ) : (
+                <line x1="5" y1="35" x2="95" y2="35" stroke="currentColor" strokeWidth="0.75" className="text-muted-foreground/30" strokeDasharray="3,3" />
+              )}
+            </svg>
+
+            <div className="flex justify-between text-[9px] text-muted-foreground/80 font-medium px-1">
+              <span>Lun</span>
+              <span>Mar</span>
+              <span>Mié</span>
+              <span>Jue</span>
+              <span>Vie</span>
+              <span>Sáb</span>
+              <span>Dom</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-px bg-border/40" />
+
+        {recentAct.length > 0 ? (
+          <div className="space-y-4">
+            {recentAct.map((activity: RecentActivityItem, index: number) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 pb-4 last:pb-0 last:border-0 border-b border-border/50"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  {activity.type === "lesson_completed" ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Flame className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1 min-w-0">
+                  <p className="text-sm font-medium leading-tight text-foreground truncate">
+                    {activity.title}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] bg-primary/10 text-primary border-0 font-bold px-2 py-0.5"
+                    >
+                      +{activity.xp} XP
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {activity.time}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">
+              Aún no tienes actividad reciente. Comienza una lección para ver tu
+              progreso aquí.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Acciones rápidas (sin datos: se pinta de inmediato) ──────────────────
+
+export function QuickActions() {
+  const linkClass =
+    "justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30 h-11 text-sm font-medium px-4"
+
+  return (
+    <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-medium">Acciones Rápidas</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
+          <Button variant="outline" className={linkClass} asChild>
+            <Link href="/library">
+              <BookOpen className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+              Explorar Formaciones
+            </Link>
+          </Button>
+          <Button variant="outline" className={linkClass} asChild>
+            <Link href="/reflexion">
+              <NotebookPen className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+              Reflexión Diaria
+            </Link>
+          </Button>
+          <Button variant="outline" className={linkClass} asChild>
+            <Link href="/mentorship">
+              <Clock className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+              Agendar Mentoría
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Loader2, ShieldCheck, Bell, Mail, Trash2, Eye, MessageCircle } from "lucide-react"
+import { Loader2, ShieldCheck, Bell, Mail, Trash2, Eye, MessageCircle, Download } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { changePasswordAction, requestAccountDeactivation, updatePrivacySettings } from "./actions"
@@ -216,6 +217,35 @@ export function SettingsClient({
         </CardContent>
       </Card>
 
+      {/* Tus datos — derechos RGPD */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Download className="w-5 h-5 text-primary" /> Tus datos
+          </CardTitle>
+          <CardDescription>
+            Descarga una copia de todo lo que guardamos sobre ti: perfil, diario,
+            progreso, mensajes y carta natal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button variant="outline" asChild>
+            <a href="/api/account/export" download>
+              <Download className="mr-2 h-4 w-4" />
+              Descargar mis datos
+            </a>
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Se descarga un archivo JSON. Puedes ejercer el resto de tus derechos
+            escribiendo al contacto indicado en la{" "}
+            <Link href="/privacy" className="text-primary underline underline-offset-4">
+              Política de Privacidad
+            </Link>
+            .
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Danger zone */}
       <Card className="border-destructive/30 bg-destructive/5">
         <CardHeader>
@@ -223,22 +253,25 @@ export function SettingsClient({
             <Trash2 className="w-5 h-5" /> Zona delicada
           </CardTitle>
           <CardDescription>
-            Desactivar tu cuenta suspende tu acceso. Tus datos se conservan; puedes volver más adelante.
+            Solicitar la baja suspende tu acceso de inmediato y registra la petición
+            de eliminación, que atenderemos en un plazo máximo de 30 días.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                Desactivar mi cuenta
+                Solicitar la eliminación de mi cuenta
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>¿Desactivar tu cuenta?</AlertDialogTitle>
+                <AlertDialogTitle>¿Solicitar la eliminación de tu cuenta?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Perderás acceso a todas las formaciones y a la comunidad. Tus datos
-                  se conservan para que puedas reactivar la cuenta contactándonos.
+                  Perderás el acceso a las formaciones y a la comunidad de inmediato.
+                  Tus datos se eliminarán en un plazo máximo de 30 días, salvo la
+                  información de facturación, que la ley obliga a conservar. Si
+                  cambias de idea antes de que se complete, escríbenos.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -248,7 +281,7 @@ export function SettingsClient({
                   disabled={isDeactivating}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {isDeactivating ? "Desactivando..." : "Sí, desactivar"}
+                  {isDeactivating ? "Enviando..." : "Sí, solicitar la baja"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

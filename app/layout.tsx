@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, JetBrains_Mono, Cormorant_Garamond } from "next/font/google"
+import { Inter, Cormorant_Garamond } from "next/font/google"
 import { AppToaster } from "@/components/ui/app-toaster"
+import { CookieNotice } from "@/components/legal/cookie-notice"
 import "./globals.css"
 
 const inter = Inter({
@@ -18,12 +19,8 @@ const cormorant = Cormorant_Garamond({
   preload: true,
 })
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-  display: "swap",
-  preload: false,
-})
+// JetBrains Mono se retiró: se descargaba en cada visita y nunca se usaba
+// (globals.css define --font-mono como ui-monospace, sin referenciarla).
 
 export const metadata: Metadata = {
   title: {
@@ -85,10 +82,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${inter.variable} ${cormorant.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${cormorant.variable} font-sans antialiased`}
       >
         {children}
         <AppToaster />
+        <CookieNotice />
       </body>
     </html>
   )
