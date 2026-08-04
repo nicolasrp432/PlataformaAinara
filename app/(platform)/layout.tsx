@@ -8,6 +8,24 @@ import { UserStoreProvider } from "@/lib/store/user-store"
 import { HydrateStore } from "@/lib/store/hydrate-store"
 import { NotificationsProvider } from "@/components/notifications/notifications-provider"
 
+/** Esqueleto genérico mientras la página resuelve sus datos. */
+function PageFallback() {
+  return (
+    <div className="space-y-6" aria-hidden>
+      <div className="h-9 w-64 max-w-full shimmer rounded-lg" />
+      <div className="h-4 w-80 max-w-full shimmer rounded" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-40 shimmer rounded-xl border border-border/30"
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default async function PlatformLayout({
   children,
 }: {
@@ -57,7 +75,9 @@ export default async function PlatformLayout({
           {/* --sidebar-w lo escribe el sidebar al colapsar; en móvil siempre 0 */}
           <main className="transition-[padding] duration-300 md:pl-[var(--sidebar-w,16rem)]">
             <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 md:px-6 md:pb-10 md:pt-6">
-              <Suspense>{children}</Suspense>
+              {/* Frontera de streaming: el cascarón (sidebar, cabecera y barra
+                  inferior) se pinta sin esperar a los datos de la página. */}
+              <Suspense fallback={<PageFallback />}>{children}</Suspense>
             </div>
           </main>
           <MobileBottomNav user={userData} streak={streak} />

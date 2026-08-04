@@ -672,8 +672,10 @@ export function LandingPage({ formations }: LandingPageProps) {
               <p className="text-sm text-muted-foreground text-center">
                 Plataforma de educación para la transformación personal y espiritual.
               </p>
-              <div className="flex gap-6 text-sm text-muted-foreground">
+              <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                <Link href="/legal" className="hover:text-primary transition-colors">Aviso legal</Link>
                 <Link href="/privacy" className="hover:text-primary transition-colors">Privacidad</Link>
+                <Link href="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
                 <Link href="/terms" className="hover:text-primary transition-colors">Términos</Link>
                 <Link href="/login" className="hover:text-primary transition-colors">Acceso</Link>
               </div>

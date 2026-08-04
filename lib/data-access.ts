@@ -49,15 +49,16 @@ export const getDashboardData = cache(async (userId: string) => {
   mondayOfThisWeek.setDate(today.getDate() - daysToSubtract)
   mondayOfThisWeek.setHours(0, 0, 0, 0)
 
-  // 5 queries en paralelo
+  // 4 queries en paralelo + el perfil, que ya viene deduplicado por cache()
+  // desde getUserProfile (antes se volvía a pedir aquí con select("*")).
   const [
-    { data: profile },
+    profile,
     { count: totalEnrollments },
     { count: completedEnrollments },
     { count: lessonsCompleted },
     { data: currentWeekProgress },
   ] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", userId).single(),
+    getUserProfile(userId),
     supabase
       .from("enrollments")
       .select("*", { count: "exact", head: true })

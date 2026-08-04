@@ -1,5 +1,15 @@
 import type { NextConfig } from "next"
 
+// Origen de Supabase para el preconnect. Si la variable no está definida en el
+// entorno de build, se cae a un valor inocuo y el header simplemente no ayuda.
+const supabaseOrigin = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin
+  } catch {
+    return "https://supabase.co"
+  }
+})()
+
 const nextConfig: NextConfig = {
   // ── Image optimization ─────────────────────────────────────
   images: {
@@ -63,6 +73,7 @@ const nextConfig: NextConfig = {
     // Optimize package imports to avoid barrel file waterfalls
     optimizePackageImports: [
       "lucide-react",
+      "framer-motion",
       "@radix-ui/react-accordion",
       "@radix-ui/react-alert-dialog",
       "@radix-ui/react-avatar",
@@ -96,8 +107,12 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           {
+            // next/font auto-hospeda las tipografías, así que el preconnect a
+            // fonts.googleapis.com no servía de nada. El origen del que sí
+            // depende cada pantalla es Supabase: adelantar DNS + TLS ahí ahorra
+            // el handshake de la primera consulta.
             key: "Link",
-            value: "<https://fonts.googleapis.com>; rel=preconnect",
+            value: `<${supabaseOrigin}>; rel=preconnect; crossorigin`,
           },
         ],
       },
