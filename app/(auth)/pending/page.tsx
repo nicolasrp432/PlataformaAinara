@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { getAuthUser, getUserProfile } from "@/lib/data-access"
 import { Clock, Sparkles, LogOut, Mail, ArrowRight } from "lucide-react"
 import { BrandMark, Wordmark } from "@/components/ui/brand"
+import { CONTROLLER } from "@/components/legal/legal-doc"
 
 export const metadata: Metadata = {
   title: "Acceso pendiente",
@@ -48,7 +49,7 @@ export default async function PendingPage() {
                 un error, por favor contacta con el equipo de soporte.
               </p>
               <Button variant="outline" asChild>
-                <a href="mailto:soporte@mitra.com">
+                <a href={`mailto:${CONTROLLER.email}`}>
                   <Mail className="mr-2 h-4 w-4" />
                   Contactar soporte
                 </a>
