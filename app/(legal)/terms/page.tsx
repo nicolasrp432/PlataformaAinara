@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { CONTROLLER, LegalDoc, PlaceholderWarning } from "@/components/legal/legal-doc"
+import { CONTROLLER, LegalDoc } from "@/components/legal/legal-doc"
 
 export const metadata: Metadata = {
   title: "Términos y Condiciones",
@@ -11,8 +11,6 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <LegalDoc title="Términos y Condiciones" updatedAt="agosto de 2026">
-      <PlaceholderWarning />
-
       <p>
         Estas condiciones regulan el uso de {CONTROLLER.brand} (
         {CONTROLLER.site}), titularidad de {CONTROLLER.name}. Al crear una cuenta

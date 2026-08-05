@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { CONTROLLER, LegalDoc, PlaceholderWarning } from "@/components/legal/legal-doc"
+import { CONTROLLER, LegalDoc } from "@/components/legal/legal-doc"
 
 export const metadata: Metadata = {
   title: "Aviso Legal",
@@ -11,8 +11,6 @@ export const metadata: Metadata = {
 export default function LegalNoticePage() {
   return (
     <LegalDoc title="Aviso Legal" updatedAt="agosto de 2026">
-      <PlaceholderWarning />
-
       <p>
         En cumplimiento del artículo 10 de la Ley 34/2002, de Servicios de la
         Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se

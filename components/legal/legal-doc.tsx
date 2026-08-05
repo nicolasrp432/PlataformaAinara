@@ -48,33 +48,17 @@ export function LegalDoc({
 }
 
 /**
- * Aviso visible para el titular: recuerda sustituir los marcadores antes de
- * publicar. Se elimina borrando este componente de la página.
+ * Datos del responsable del tratamiento, en un solo sitio.
+ *
+ * Los cuatro documentos legales y la pantalla de cuenta suspendida leen de
+ * aquí, así que un cambio de domicilio o de correo se hace en un único punto y
+ * queda reflejado en todas partes.
  */
-export function PlaceholderWarning() {
-  return (
-    <div className="mb-8 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-      <p className="mb-0 font-semibold text-foreground">
-        ⚠️ Pendiente de completar antes de publicar
-      </p>
-      <p className="mb-0 mt-1 text-muted-foreground">
-        Este documento contiene marcadores entre corchetes —{" "}
-        <strong>[RAZÓN SOCIAL]</strong>, <strong>[NIF/CIF]</strong>,{" "}
-        <strong>[DOMICILIO]</strong> y <strong>[EMAIL DE CONTACTO]</strong> —
-        que deben sustituirse por los datos reales del responsable. Están todos
-        en <code>components/legal/legal-doc.tsx</code>. Este aviso desaparece al
-        borrar <code>&lt;PlaceholderWarning /&gt;</code> de cada página.
-      </p>
-    </div>
-  )
-}
-
-/** Datos del responsable, en un solo sitio para no repetir los marcadores. */
 export const CONTROLLER = {
-  name: "[RAZÓN SOCIAL O NOMBRE Y APELLIDOS]",
-  taxId: "[NIF/CIF]",
-  address: "[DOMICILIO COMPLETO]",
-  email: "[EMAIL DE CONTACTO]",
+  name: "Ainara Unamunzaga",
+  taxId: "78298690C",
+  address: "Bilbao (Bizkaia), España",
+  email: "info@ainaracoaching.com",
   site: "ainaracoaching.com",
   brand: "Mitra",
 } as const

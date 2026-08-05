@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { CONTROLLER, LegalDoc, PlaceholderWarning } from "@/components/legal/legal-doc"
+import { CONTROLLER, LegalDoc } from "@/components/legal/legal-doc"
 
 export const metadata: Metadata = {
   title: "Política de Privacidad",
@@ -11,8 +11,6 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalDoc title="Política de Privacidad" updatedAt="agosto de 2026">
-      <PlaceholderWarning />
-
       <p>
         En {CONTROLLER.brand} tratamos datos muy personales: lo que escribes en tu
         diario privado, cómo te sientes cada día y tus conversaciones con otras
