@@ -76,6 +76,22 @@ const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const COMPLETION_THRESHOLD = 0.9
 const TRACK_INTERVAL_MS = 10_000
 
+/**
+ * El script de la IFrame API **solo** se sirve desde `youtube.com`. En
+ * `youtube-nocookie.com` esa ruta no existe: devuelve 404, el callback
+ * `onYouTubeIframeAPIReady` no llega nunca y la lección se quedaba con el
+ * spinner girando para siempre.
+ *
+ * La privacidad no se pierde por cargarlo desde aquí: lo que instala cookies es
+ * el reproductor, y ese se sigue sirviendo desde `youtube-nocookie.com` gracias
+ * a la opción `host` del constructor (ver abajo).
+ */
+const YT_API_SRC = "https://www.youtube.com/iframe_api"
+const YT_PLAYER_HOST = "https://www.youtube-nocookie.com"
+
+/** Pasado este tiempo sin respuesta, se da la carga por fallida y se ofrece reintentar. */
+const YT_API_TIMEOUT_MS = 12_000
+
 // ─── URL detection ────────────────────────────────────────────────────────────
 
 type VideoType = "youtube" | "vimeo" | "native"
@@ -114,19 +130,49 @@ function loadYouTubeAPI(): Promise<void> {
   if (window.YT?.Player) return Promise.resolve()
   if (window._ytApiPromise) return window._ytApiPromise
 
-  window._ytApiPromise = new Promise<void>((resolve) => {
+  window._ytApiPromise = new Promise<void>((resolve, reject) => {
+    let settled = false
+
+    const succeed = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve()
+    }
+
+    /**
+     * Ante un fallo se descarta la promesa cacheada: si no, el primer error
+     * dejaría el reproductor roto durante toda la sesión y el botón de
+     * reintentar no serviría de nada.
+     */
+    const fail = (reason: string) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      delete window._ytApiPromise
+      reject(new Error(reason))
+    }
+
+    const timer = setTimeout(() => fail("timeout"), YT_API_TIMEOUT_MS)
+
     const prev = window.onYouTubeIframeAPIReady
     window.onYouTubeIframeAPIReady = () => {
       prev?.()
-      resolve()
+      succeed()
     }
-    if (!document.querySelector('script[src*="/iframe_api"]')) {
-      const script = document.createElement("script")
-      // Dominio sin cookies: evita que YouTube instale cookies de seguimiento
-      // publicitario al cargar la lección.
-      script.src = "https://www.youtube-nocookie.com/iframe_api"
+
+    let script = document.querySelector<HTMLScriptElement>(
+      `script[src="${YT_API_SRC}"]`
+    )
+    if (!script) {
+      script = document.createElement("script")
+      script.src = YT_API_SRC
+      script.async = true
       document.head.appendChild(script)
     }
+    // Bloqueadores de anuncios y cortes de red hacen que el script no cargue.
+    // Sin esto la promesa quedaba pendiente y el usuario veía el spinner eterno.
+    script.addEventListener("error", () => fail("network"))
   })
 
   return window._ytApiPromise
@@ -146,7 +192,8 @@ function YouTubePlayer({
   const playerRef = useRef<YTPlayerInstance | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const hasCompletedRef = useRef(false)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
+  const [retryCount, setRetryCount] = useState(0)
 
   const videoId = extractYouTubeId(src)
 
@@ -156,50 +203,91 @@ function YouTubePlayer({
   useEffect(() => { onProgressRef.current = onProgress }, [onProgress])
   useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
 
+  /**
+   * El punto de reanudación solo importa al crear el reproductor. Si estuviera
+   * en las dependencias del efecto, cada `router.refresh()` del visor de
+   * lecciones (al comentar o al completar) llegaría con un `watchedSeconds`
+   * nuevo y destruiría y recrearía el player en mitad de la reproducción.
+   *
+   * Se mantiene al día en un efecto declarado **antes** que el de creación,
+   * para que al cambiar de lección el player ya lea el minuto de la nueva.
+   */
+  const initialProgressRef = useRef(initialProgress)
+  useEffect(() => { initialProgressRef.current = initialProgress }, [initialProgress])
+
   useEffect(() => {
     if (!containerRef.current || !videoId) return
+    const container = containerRef.current
     let destroyed = false
 
-    loadYouTubeAPI().then(() => {
-      if (destroyed || !containerRef.current) return
+    setStatus("loading")
+    // Cada vídeo arranca con su propio marcador: sin esto, al pasar de una
+    // lección terminada a la siguiente el ref seguía en `true` y la nueva no
+    // se marcaba nunca como completada.
+    hasCompletedRef.current = false
 
-      playerRef.current = new window.YT.Player(containerRef.current, {
-        videoId,
-        // Reproductor servido desde youtube-nocookie.com (privacidad mejorada).
-        host: "https://www.youtube-nocookie.com",
-        playerVars: {
-          start: Math.floor(initialProgress),
-          rel: 0,
-          modestbranding: 1,
-          origin: window.location.origin,
-        },
-        events: {
-          onReady: () => {
-            if (!destroyed) setIsLoaded(true)
+    loadYouTubeAPI()
+      .then(() => {
+        if (destroyed || !containerRef.current) return
+
+        // YT.Player **reemplaza** el nodo que se le pasa por su propio <iframe>,
+        // y `destroy()` lo borra. Si se le entregara el div de React, al cambiar
+        // de lección el player se montaría sobre un nodo ya huérfano y no se
+        // vería nada. Con un hijo desechable, React solo gobierna el contenedor,
+        // que YouTube nunca toca.
+        const mount = document.createElement("div")
+        mount.className = "w-full h-full"
+        containerRef.current.replaceChildren(mount)
+
+        playerRef.current = new window.YT.Player(mount, {
+          videoId,
+          // El reproductor sí se sirve desde el dominio sin cookies: es lo que
+          // evita que YouTube instale cookies de seguimiento publicitario.
+          host: YT_PLAYER_HOST,
+          playerVars: {
+            start: Math.floor(initialProgressRef.current),
+            rel: 0,
+            modestbranding: 1,
+            origin: window.location.origin,
           },
-          onStateChange: (event) => {
-            if (destroyed) return
-            // Video ended → trigger completion
-            if (event.data === 0 && !hasCompletedRef.current) {
-              hasCompletedRef.current = true
-              onCompleteRef.current?.()
-            }
+          events: {
+            onReady: () => {
+              if (!destroyed) setStatus("ready")
+            },
+            onStateChange: (event) => {
+              if (destroyed) return
+              // Video ended → trigger completion
+              if (event.data === 0 && !hasCompletedRef.current) {
+                hasCompletedRef.current = true
+                onCompleteRef.current?.()
+              }
+            },
           },
-        },
+        })
       })
-    })
+      .catch((err) => {
+        if (destroyed) return
+        console.error("No se pudo cargar el reproductor de YouTube:", err)
+        setStatus("error")
+      })
 
     return () => {
       destroyed = true
       if (intervalRef.current) clearInterval(intervalRef.current)
-      playerRef.current?.destroy()
+      try {
+        playerRef.current?.destroy()
+      } catch {
+        // destroy() revienta si el iframe ya se fue con la navegación; da igual,
+        // el contenedor se vacía a continuación.
+      }
       playerRef.current = null
+      container.replaceChildren()
     }
-  }, [videoId, initialProgress])
+  }, [videoId, retryCount])
 
   // Progress tracking — starts only after player is ready
   useEffect(() => {
-    if (!isLoaded || !autoTrackProgress) return
+    if (status !== "ready" || !autoTrackProgress) return
 
     intervalRef.current = setInterval(() => {
       const p = playerRef.current
@@ -218,19 +306,19 @@ function YouTubePlayer({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [isLoaded, autoTrackProgress])
+  }, [status, autoTrackProgress])
 
   return (
-    // aspect-video aquí porque YT.Player reemplaza containerRef con un <iframe>
-    // y ese iframe no hereda las clases CSS — sin aspect-video en el outer div
-    // el contenedor colapsa y queda área negra debajo del iframe.
-    // [&>iframe]:* fuerza al iframe generado por YT a llenar el contenedor.
+    // aspect-video aquí porque el <iframe> que crea YT.Player no hereda las
+    // clases CSS — sin aspect-video en el outer div el contenedor colapsa y
+    // queda área negra debajo del iframe.
+    // [&_iframe]:* fuerza al iframe generado por YT a llenar el contenedor.
     <div className={cn(
       "relative bg-black rounded-lg overflow-hidden aspect-video",
-      "[&>iframe]:absolute [&>iframe]:inset-0 [&>iframe]:w-full [&>iframe]:h-full",
+      "[&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:w-full [&_iframe]:h-full",
       className
     )}>
-      {/* YT.Player reemplaza este div con un <iframe> */}
+      {/* Contenedor estable: el player se monta en un hijo desechable (ver efecto) */}
       <div ref={containerRef} className="w-full h-full" />
       {!videoId ? (
         // Sin este caso, una URL mal formada dejaba el spinner girando para
@@ -245,8 +333,30 @@ function YouTubePlayer({
             </p>
           </div>
         </div>
+      ) : status === "error" ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-black px-6 text-center">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-white/80 text-sm font-medium">
+                El vídeo está tardando demasiado
+              </p>
+              <p className="text-white/50 text-xs">
+                Revisa tu conexión o desactiva el bloqueador de anuncios para
+                esta página.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+              onClick={() => setRetryCount((n) => n + 1)}
+            >
+              Reintentar
+            </Button>
+          </div>
+        </div>
       ) : (
-        !isLoaded && (
+        status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
             <div className="flex flex-col items-center gap-3">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
