@@ -25,10 +25,10 @@ export interface NavItem {
  */
 export const PLATFORM_NAV: NavItem[] = [
   { name: "Dashboard",  href: "/dashboard",   icon: LayoutDashboard, shortName: "Inicio" },
-  { name: "Biblioteca", href: "/library",     icon: BookOpen },
-  { name: "Reflexión",  href: "/reflexion",   icon: NotebookPen },
-  { name: "Logros",     href: "/quest",       icon: Trophy },
-  { name: "Comunidad",  href: "/taberna",     icon: MessageSquare },
+  { name: "Biblioteca", href: "/library",     icon: BookOpen, shortName: "Cursos" },
+  { name: "Reflexión",  href: "/reflexion",   icon: NotebookPen, shortName: "Reflexión" },
+  { name: "Logros",     href: "/quest",       icon: Trophy, shortName: "Logros" },
+  { name: "Comunidad",  href: "/taberna",     icon: MessageSquare, shortName: "Comunidad" },
   { name: "Mensajes",   href: "/messages",    icon: Mail },
   { name: "Mentoría",   href: "/mentorship",  icon: Users },
   { name: "Asistente",  href: "/assistant",   icon: Bot },

@@ -1,12 +1,12 @@
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getAuthUser } from "@/lib/data-access"
-import { Bot } from "lucide-react"
+import { Bot, Sparkles } from "lucide-react"
 import { ChatPanel } from "@/components/ai/chat-panel"
 
 export const metadata: Metadata = {
-  title: "Asistente IA",
-  description: "Tu guía de aprendizaje inteligente.",
+  title: "Asistente IA Ainara",
+  description: "Tu guía de aprendizaje inteligente y autoconocimiento.",
 }
 
 export default async function AssistantPage() {
@@ -14,22 +14,25 @@ export default async function AssistantPage() {
   if (!user) redirect("/login")
 
   return (
-    <div className="flex flex-col h-[calc(100svh-4rem)] max-w-3xl mx-auto px-4">
-      <div className="py-5 border-b border-border/50 shrink-0">
+    <div className="flex flex-col h-[calc(100svh-4.5rem)] max-w-3xl mx-auto px-2 sm:px-4">
+      <div className="py-3.5 border-b border-border shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <Bot className="h-5 w-5 text-primary" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <Bot className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold">Asistente Mitra</h1>
-            <p className="text-sm text-muted-foreground">
-              Haz preguntas sobre tus formaciones y lecciones.
+            <h1 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-1.5">
+              Asistente Ainara
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Guía personalizada para tus formaciones, reflexiones y dudas.
             </p>
           </div>
         </div>
       </div>
 
-      <ChatPanel className="flex-1" />
+      <ChatPanel className="flex-1 min-h-0" />
     </div>
   )
 }

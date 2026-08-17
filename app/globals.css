@@ -442,6 +442,36 @@
     padding: 0 1.5rem;
   }
 
+  /* ---- LUXURY GLOW & GLASS UTILITIES ---- */
+  .gold-glow {
+    box-shadow: 0 0 25px -4px rgba(246, 210, 92, 0.35);
+  }
+
+  .gold-glow-subtle {
+    box-shadow: 0 0 18px -6px rgba(246, 210, 92, 0.22);
+  }
+
+  .luxury-glass {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(246, 210, 92, 0.22);
+  }
+
+  .luxury-glass-dark {
+    background: rgba(23, 23, 23, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .touch-scale {
+    transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .touch-scale:active {
+    transform: scale(0.96);
+  }
+
   /* ---- ANIMATED SHIMMER (loading skeleton) ---- */
   .shimmer {
     background: linear-gradient(90deg,

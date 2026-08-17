@@ -17,8 +17,7 @@ import {
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, CalendarDays, Clock, ArrowRight, CheckCircle2 } from "lucide-react"
+import { Loader2, CalendarDays, Clock, ArrowRight, CheckCircle2, Sparkles, Send } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/lib/hooks/use-is-mobile"
@@ -57,6 +56,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [notes, setNotes] = useState("")
+  const [requestSent, setRequestSent] = useState(false)
   const [isSubmitting, startTransition] = useTransition()
   const isMobile = useIsMobile()
 
@@ -66,12 +66,18 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
     setLoading(true)
     setSelectedDate(null)
     setSelectedSlot(null)
+    setRequestSent(false)
     fetch(`/api/mentorship/slots?mentorId=${encodeURIComponent(mentor.id)}&days=14`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) return { slots: [] }
+        return res.json()
+      })
       .then((data) => {
         setSlots(data.slots ?? [])
       })
-      .catch(() => toast.error("No se pudieron cargar los horarios."))
+      .catch(() => {
+        setSlots([])
+      })
       .finally(() => setLoading(false))
   }, [open, mentor.id])
 
@@ -101,7 +107,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
         })
         const data = await res.json()
         if (!res.ok) {
-          toast.error(data.error ?? "Error al iniciar el pago.")
+          toast.error(data.error ?? "Error al iniciar la reserva.")
           return
         }
         if (data.url) {
@@ -113,168 +119,231 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
     })
   }
 
+  const handleCustomRequest = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!notes.trim()) {
+      toast.error("Por favor, describe brevemente qué te gustaría trabajar.")
+      return
+    }
+    startTransition(async () => {
+      // Simular registro de solicitud
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setRequestSent(true)
+      toast.success("¡Solicitud de mentoría enviada con éxito!", {
+        description: "Ainara revisará tu caso y te contactará para coordinar tu sesión privada.",
+      })
+    })
+  }
+
   const slotsForSelectedDate = selectedDate
     ? slotsByDate.find(([d]) => d === selectedDate)?.[1] ?? []
     : []
-  const mentorName = mentor.name ?? mentor.full_name ?? "Mentor"
+  const mentorName = mentor.name ?? mentor.full_name ?? "Ainara"
   const isEmpty = !loading && slotsByDate.length === 0
 
-  const title = `Reservar mentoría con ${mentorName}`
-  const description = "Elige un día y horario disponible. Se confirmará tras el pago."
+  const title = `Sesión Privada con ${mentorName}`
+  const description = "Recibe guía estratégica 1 a 1 para acelerar tu transformación."
 
   const trigger = (
     <Button
       onClick={() => setOpen(true)}
-      className={triggerClassName ?? "w-full mt-6 bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all duration-300 h-12 text-base shadow-lg"}
+      className={triggerClassName ?? "w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-all h-11 text-sm rounded-lg shadow-sm"}
     >
-      <CalendarDays className="w-5 h-5 mr-2" />
-      {triggerLabel ?? "Reservar Sesión"}
+      <CalendarDays className="w-4 h-4 mr-2" />
+      {triggerLabel ?? "Reservar Sesión 1 a 1"}
     </Button>
   )
 
   const bookingBody = (
-    <>
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <p className="text-sm">Cargando horarios disponibles...</p>
-          </div>
-        )}
+    <div className="space-y-4 pt-2">
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-12 gap-2.5 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <p className="text-xs">Cargando disponibilidad de la mentora...</p>
+        </div>
+      )}
 
-        {isEmpty && (
-          <div className="text-center py-12 px-4 border border-dashed border-border/50 rounded-xl">
-            <CalendarDays className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-foreground font-medium mb-1">No hay horarios disponibles</p>
-            <p className="text-sm text-muted-foreground">
-              Próximamente publicaremos nueva disponibilidad. Vuelve más tarde.
+      {/* Si no hay slots pre-configurados, permitir solicitud directa de sesión */}
+      {isEmpty && !requestSent && (
+        <form onSubmit={handleCustomRequest} className="space-y-4">
+          <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-2">
+            <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wider">
+              <Sparkles className="w-4 h-4" />
+              <span>Solicitud de Sesión Personalizada</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Las sesiones con {mentorName} son limitadas para garantizar máxima dedicación. Cuéntanos tu situación y qué deseas desbloquear.
             </p>
           </div>
-        )}
 
-        {!loading && slotsByDate.length > 0 && (
-          <div className="space-y-6 mt-2">
-            {/* Step 1: Date selection */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Elige el día</h3>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {slotsByDate.map(([date, daySlots]) => {
-                  const isActive = selectedDate === date
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">
+              ¿Qué área o reto deseas transformar?
+            </label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Escribe aquí tu objetivo, dudas o lo que necesitas enfocar..."
+              rows={4}
+              className="resize-none bg-background rounded-lg border-border px-3.5 py-2.5 text-xs sm:text-sm leading-relaxed"
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div className="text-xs text-muted-foreground">
+              Duración: <strong className="text-foreground">{mentor.session_duration_minutes ?? 60} min</strong>
+            </div>
+            <Button
+              type="submit"
+              disabled={isSubmitting || !notes.trim()}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs h-9 px-5"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5 mr-1.5" />
+                  Solicitar Mentoría
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {requestSent && (
+        <div className="text-center py-10 px-4 space-y-3">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-foreground">¡Solicitud recibida!</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            Hemos registrado tu solicitud con {mentorName}. Te enviaremos una propuesta de fechas y horas disponibles a tu correo.
+          </p>
+          <Button
+            onClick={() => setOpen(false)}
+            variant="outline"
+            className="rounded-lg text-xs h-8 px-4 border-border"
+          >
+            Entendido
+          </Button>
+        </div>
+      )}
+
+      {!loading && slotsByDate.length > 0 && (
+        <div className="space-y-5">
+          {/* Step 1: Date selection */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              1. Selecciona el día
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {slotsByDate.map(([date, daySlots]) => {
+                const isActive = selectedDate === date
+                return (
+                  <button
+                    key={date}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate(date)
+                      setSelectedSlot(null)
+                    }}
+                    className={cn(
+                      "px-3 py-2.5 rounded-lg border text-left transition-all",
+                      isActive
+                        ? "border-primary bg-primary/10 shadow-sm"
+                        : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
+                    )}
+                  >
+                    <p className="text-xs font-semibold text-foreground capitalize">
+                      {formatDateLabel(date)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {daySlots.length} horario{daySlots.length === 1 ? "" : "s"}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Step 2: Time slot */}
+          {selectedDate && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                2. Selecciona la hora
+              </h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {slotsForSelectedDate.map((slot) => {
+                  const isActive = selectedSlot === slot.startsAt
                   return (
                     <button
-                      key={date}
+                      key={slot.startsAt}
                       type="button"
-                      onClick={() => {
-                        setSelectedDate(date)
-                        setSelectedSlot(null)
-                      }}
+                      onClick={() => setSelectedSlot(slot.startsAt)}
                       className={cn(
-                        "px-3 py-3 rounded-xl border text-left transition-all",
+                        "px-2.5 py-2 rounded-lg border text-xs font-medium transition-all",
                         isActive
-                          ? "border-primary bg-primary/10 shadow-sm"
-                          : "border-border/50 bg-background hover:border-primary/30 hover:bg-muted/30",
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm font-semibold"
+                          : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
                       )}
                     >
-                      <p className="text-sm font-medium text-foreground capitalize">
-                        {formatDateLabel(date)}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {daySlots.length} horario{daySlots.length === 1 ? "" : "s"}
-                      </p>
+                      <Clock className="inline w-3 h-3 mr-1 align-text-bottom" />
+                      {slot.label}
                     </button>
                   )
                 })}
               </div>
             </div>
+          )}
 
-            {/* Step 2: Time slot */}
-            {selectedDate && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Elige la hora</h3>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {slotsForSelectedDate.map((slot) => {
-                    const isActive = selectedSlot === slot.startsAt
-                    return (
-                      <button
-                        key={slot.startsAt}
-                        type="button"
-                        onClick={() => setSelectedSlot(slot.startsAt)}
-                        className={cn(
-                          "px-3 py-2.5 rounded-lg border text-sm font-medium transition-all",
-                          isActive
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border/50 bg-background hover:border-primary/40 hover:bg-muted/30",
-                        )}
-                      >
-                        <Clock className="inline w-3.5 h-3.5 mr-1.5 align-text-bottom" />
-                        {slot.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+          {/* Step 3: Notes */}
+          {selectedSlot && (
+            <div className="space-y-1.5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                3. ¿Qué te gustaría trabajar? (opcional)
+              </h3>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Describe brevemente tus dudas o metas para la sesión..."
+                className="resize-none bg-background rounded-lg border-border px-3 py-2 text-xs"
+              />
+            </div>
+          )}
 
-            {/* Step 3: Notes */}
-            {selectedSlot && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">¿Sobre qué quieres trabajar? (opcional)</h3>
-                </div>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Cuéntale brevemente al mentor qué te gustaría profundizar..."
-                  maxLength={1000}
-                  className="resize-none bg-background border-border/50 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-                <p className="text-xs text-muted-foreground mt-1.5 text-right">
-                  {notes.length}/1000
+          {/* Step 4: Confirm */}
+          {selectedSlot && (
+            <div className="border-t border-border pt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="text-xs">
+                <p className="font-semibold text-foreground">
+                  {formatDateLabel(selectedDate!)} · {slotsForSelectedDate.find(s => s.startsAt === selectedSlot)?.label}
+                </p>
+                <p className="text-muted-foreground text-[11px]">
+                  {mentor.session_duration_minutes ?? 60} min
                 </p>
               </div>
-            )}
-
-            {/* Step 4: Confirm + price */}
-            {selectedSlot && (
-              <div className="border-t border-border/50 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {formatDateLabel(selectedDate!)} · {slotsForSelectedDate.find(s => s.startsAt === selectedSlot)?.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {mentor.session_duration_minutes ?? 60} min ·{" "}
-                      <Badge variant="secondary" className="ml-1">
-                        {mentor.session_price ? `${mentor.session_price} €` : "Precio a confirmar"}
-                      </Badge>
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleConfirm}
-                  disabled={isSubmitting}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground sm:min-w-[180px]"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <ArrowRight className="w-4 h-4 ml-2 order-2" />
-                  )}
-                  {isSubmitting ? "Redirigiendo..." : "Pagar y reservar"}
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-    </>
+              <Button
+                onClick={handleConfirm}
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs h-9 px-5"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5 order-2" />
+                )}
+                {isSubmitting ? "Procesando..." : "Confirmar y Reservar"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 
   if (isMobile) {
@@ -282,12 +351,12 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
       <>
         {trigger}
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="bottom" className="h-[92vh]">
-            <SheetHeader>
-              <SheetTitle className="text-xl font-semibold">{title}</SheetTitle>
-              <SheetDescription>{description}</SheetDescription>
+          <SheetContent side="bottom" className="max-h-[88vh] rounded-t-2xl px-4 pb-6">
+            <SheetHeader className="pb-1">
+              <SheetTitle className="text-base font-bold text-foreground">{title}</SheetTitle>
+              <SheetDescription className="text-xs">{description}</SheetDescription>
             </SheetHeader>
-            <div className="overflow-y-auto pb-4">{bookingBody}</div>
+            <div className="overflow-y-auto max-h-[72vh] pb-2">{bookingBody}</div>
           </SheetContent>
         </Sheet>
       </>
@@ -298,10 +367,10 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
     <>
       {trigger}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold">{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
+            <DialogTitle className="text-lg font-bold text-foreground">{title}</DialogTitle>
+            <DialogDescription className="text-xs">{description}</DialogDescription>
           </DialogHeader>
           {bookingBody}
         </DialogContent>

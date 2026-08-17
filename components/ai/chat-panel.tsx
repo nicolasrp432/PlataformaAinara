@@ -19,6 +19,12 @@ interface ChatPanelProps {
   className?: string
 }
 
+const QUICK_SUGGESTIONS = [
+  { label: "💡 ¿Cómo aplico esto en mi vida?", prompt: "¿Cómo puedo aplicar los conceptos de esta lección en mi vida cotidiana de forma práctica?" },
+  { label: "🧘 Guíame en una reflexión", prompt: "Hazme 2 preguntas poderosas de autoconocimiento basadas en esta lección." },
+  { label: "📖 Resumen en 3 puntos", prompt: "Dame un resumen conciso en 3 puntos clave de lo que debo recordar." },
+]
+
 export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -29,6 +35,10 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  const handleSendPrompt = (promptText: string) => {
+    setInput(promptText)
+  }
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -105,16 +115,34 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
   return (
     <div className={cn("flex flex-col min-h-0", className)}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto py-3 space-y-3.5">
         {messages.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Bot className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">¿En qué puedo ayudarte?</p>
-            <p className="text-sm mt-1 opacity-70">
-              {lessonId
-                ? "Haz preguntas sobre el contenido de esta lección."
-                : "Haz preguntas sobre tus formaciones y lecciones."}
-            </p>
+          <div className="text-center py-8 text-muted-foreground space-y-3">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto text-primary">
+              <Bot className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground text-sm">Asistente Ainara</p>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-xs mx-auto">
+                {lessonId
+                  ? "Pregúntame cualquier duda sobre el contenido de esta lección o pide orientación para tu práctica."
+                  : "Pregúntame sobre tus formaciones, reflexiones y camino de autoconocimiento."}
+              </p>
+            </div>
+
+            {/* Quick prompt chips */}
+            <div className="pt-2 flex flex-col gap-1.5 max-w-sm mx-auto px-2">
+              {QUICK_SUGGESTIONS.map((s, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSendPrompt(s.prompt)}
+                  className="text-left text-xs font-medium px-3 py-2 rounded-lg border border-border bg-card hover:bg-primary/10 hover:border-primary/30 text-foreground transition-all shadow-sm active:scale-95"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -122,34 +150,34 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
           <div
             key={msg.id}
             className={cn(
-              "flex gap-3 items-start",
-              msg.role === "user" ? "flex-row-reverse ml-8" : "mr-8",
+              "flex gap-2.5 items-start",
+              msg.role === "user" ? "flex-row-reverse ml-6" : "mr-6",
             )}
           >
             <div
               className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-xs",
                 msg.role === "user"
-                  ? "bg-primary border-primary text-primary-foreground"
+                  ? "bg-primary border-primary text-primary-foreground font-bold"
                   : "bg-muted border-border text-muted-foreground",
               )}
             >
-              {msg.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+              {msg.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5 text-primary" />}
             </div>
             <div
               className={cn(
-                "rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words",
+                "rounded-xl px-3.5 py-2.5 text-xs sm:text-sm leading-relaxed break-words shadow-sm",
                 msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-tr-sm"
-                  : "bg-muted text-foreground rounded-tl-sm",
+                  ? "bg-primary text-primary-foreground rounded-tr-none"
+                  : "bg-card border border-border text-foreground rounded-tl-none",
               )}
             >
               {msg.content ? (
                 <span className="whitespace-pre-wrap">{msg.content}</span>
               ) : (
-                <span className="flex gap-1.5 items-center text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Pensando...
+                <span className="flex gap-1.5 items-center text-muted-foreground text-xs">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Conectando intuición...
                 </span>
               )}
             </div>
@@ -160,22 +188,22 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
       </div>
 
       {/* Input */}
-      <div className="border-t border-border/50 pt-3 pb-1">
+      <div className="border-t border-border pt-2.5 pb-1">
         <form onSubmit={handleSubmit} className="flex gap-2 items-end">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Escribe tu pregunta... (Enter para enviar, Shift+Enter nueva línea)"
+            placeholder="Pregunta lo que necesites..."
             rows={1}
             disabled={isStreaming}
-            className="resize-none min-h-[2.5rem] max-h-32 bg-muted/40 border-border/60 focus-visible:ring-1 focus-visible:ring-primary/30 text-sm"
+            className="resize-none min-h-[38px] max-h-28 bg-card rounded-lg border-border px-3 py-2 text-xs sm:text-sm"
           />
           <Button
             type="submit"
             size="icon"
             disabled={isStreaming || !input.trim()}
-            className="shrink-0 rounded-xl h-10 w-10"
+            className="shrink-0 rounded-lg h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isStreaming ? (
               <Loader2 className="h-4 w-4 animate-spin" />

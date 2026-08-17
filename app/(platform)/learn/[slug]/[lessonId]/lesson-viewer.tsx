@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -15,6 +15,8 @@ import {
   Send,
   Paperclip,
   Bot,
+  Share2,
+  Lightbulb,
 } from "lucide-react"
 import type { ContentType } from "@/types"
 import { Button } from "@/components/ui/button"
@@ -31,7 +33,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { addLessonComment, markLessonCompleted } from "./actions"
-import { useTransition } from "react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { CommentThread, type ThreadedComment } from "@/components/comments/comment-thread"
@@ -41,10 +42,10 @@ import dynamic from "next/dynamic"
 const VideoPlayer = dynamic(() => import("@/components/video/video-player").then((mod) => mod.VideoPlayer), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full aspect-video flex items-center justify-center bg-black/85 rounded-2xl border border-white/5">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-xs text-white/40 tracking-wider">Cargando reproductor...</p>
+    <div className="w-full h-full aspect-video flex items-center justify-center bg-black/90 rounded-xl border border-white/10">
+      <div className="flex flex-col items-center gap-2.5">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-xs text-white/50 tracking-wider">Cargando reproductor...</p>
       </div>
     </div>
   ),
@@ -52,19 +53,18 @@ const VideoPlayer = dynamic(() => import("@/components/video/video-player").then
 
 const ChatPanel = dynamic(() => import("@/components/ai/chat-panel").then((mod) => mod.ChatPanel), {
   ssr: false,
-  loading: () => <div className="h-full w-full shimmer rounded-2xl" />,
+  loading: () => <div className="h-full w-full shimmer rounded-xl" />,
 })
 
 const ExerciseViewer = dynamic(() => import("@/components/exercises/exercise-viewer").then((mod) => mod.ExerciseViewer), {
   ssr: false,
-  loading: () => <div className="h-[400px] w-full shimmer rounded-2xl" />,
+  loading: () => <div className="h-[400px] w-full shimmer rounded-xl" />,
 })
 
 const QuizPlayer = dynamic(() => import("@/components/exercises/quiz-player").then((mod) => mod.QuizPlayer), {
   ssr: false,
-  loading: () => <div className="h-[400px] w-full shimmer rounded-2xl" />,
+  loading: () => <div className="h-[400px] w-full shimmer rounded-xl" />,
 })
-
 
 interface LessonViewerProps {
   data: {
@@ -112,7 +112,7 @@ interface LessonViewerProps {
 
 type Curriculum = LessonViewerProps["data"]["curriculum"]
 
-/* ── Bloques reutilizables (desktop + bottom sheets mobile) ───────────── */
+/* ── Panel de Curriculum ─────────────────────────────────────────────── */
 
 function CurriculumPanel({
   curriculum,
@@ -124,22 +124,22 @@ function CurriculumPanel({
   progressPercent: number
 }) {
   return (
-    <div>
+    <div className="space-y-4">
       {/* Progress */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-muted-foreground">Progreso</span>
-          <span className="font-medium text-primary">{progressPercent}%</span>
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+        <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+          <span className="text-muted-foreground uppercase tracking-wider">Tu Progreso</span>
+          <span className="text-primary">{progressPercent}%</span>
         </div>
-        <Progress value={progressPercent} className="h-2" />
+        <Progress value={progressPercent} className="h-1.5" />
       </div>
 
       {/* Modules */}
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         {curriculum.map((mod) => (
-          <div key={mod.id}>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">
-              Modulo {mod.order}: {mod.title}
+          <div key={mod.id} className="space-y-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">
+              Módulo {mod.order}: {mod.title}
             </h4>
             <div className="space-y-1">
               {mod.lessons.map((l, lessonIndex) => (
@@ -147,31 +147,31 @@ function CurriculumPanel({
                   key={l.id}
                   href={`/learn/${formationSlug}/${l.id}`}
                   className={cn(
-                    "flex items-center gap-3 p-2 rounded-lg text-sm transition-colors",
+                    "flex items-center gap-2.5 p-2 rounded-lg text-sm font-medium transition-all",
                     l.isCurrent
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-primary/5"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "hover:bg-primary/5 text-foreground hover:text-primary"
                   )}
                 >
                   <div
                     className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 transition-colors",
                       l.isCompleted
-                        ? "bg-emerald-500/10 text-emerald-600"
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                         : l.isCurrent
                         ? "bg-white/20 text-white"
                         : "bg-muted text-muted-foreground"
                     )}
                   >
                     {l.isCompleted ? (
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-3.5 w-3.5" />
                     ) : (
                       lessonIndex + 1
                     )}
                   </div>
                   <span className={cn(
-                    "truncate",
-                    l.isCurrent ? "text-primary-foreground" : "text-foreground"
+                    "truncate flex-1 text-xs",
+                    l.isCurrent ? "text-primary-foreground font-semibold" : "text-foreground"
                   )}>
                     {l.title}
                   </span>
@@ -184,6 +184,8 @@ function CurriculumPanel({
     </div>
   )
 }
+
+/* ── Panel de Comentarios ────────────────────────────────────────────── */
 
 function CommentsPanel({
   comments,
@@ -205,27 +207,35 @@ function CommentsPanel({
   formationSlug: string
 }) {
   return (
-    <div className="space-y-6">
-      <div className="bg-card/30 border border-border/50 rounded-2xl p-4">
-        <form onSubmit={onSubmit} className="space-y-3">
+    <div className="space-y-4">
+      <div className="bg-card/70 border border-border rounded-xl p-3.5 shadow-sm">
+        <form onSubmit={onSubmit} className="space-y-2.5">
           <Textarea
             value={commentText}
             onChange={(e) => onCommentTextChange(e.target.value)}
-            placeholder="Escribe tu duda, reflexión o comentario aquí..."
-            className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0 text-base"
+            placeholder="Comparte tu revelación, pregunta o reflexión con los demás..."
+            className="w-full resize-none rounded-lg border-border bg-background px-3.5 py-2.5 text-xs sm:text-sm placeholder:text-muted-foreground/60 leading-relaxed"
             rows={3}
             disabled={isPending}
           />
-          <div className="flex justify-end border-t border-border/50 pt-3">
-            <Button type="submit" size="sm" disabled={isPending || !commentText.trim()} className="rounded-full px-6">
-              <Send className="w-4 h-4 mr-2" />
+          <div className="flex items-center justify-between border-t border-border/40 pt-2.5">
+            <span className="text-[11px] text-muted-foreground hidden sm:inline">
+              Respeto y calidez en la comunidad
+            </span>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isPending || !commentText.trim()}
+              className="rounded-lg px-4 h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground ml-auto"
+            >
+              <Send className="w-3.5 h-3.5 mr-1" />
               {isPending ? "Publicando..." : "Publicar"}
             </Button>
           </div>
         </form>
       </div>
 
-      <div className="pt-4">
+      <div className="pt-1">
         <CommentThread
           comments={comments}
           currentUserId={currentUserId}
@@ -237,6 +247,8 @@ function CommentsPanel({
   )
 }
 
+/* ── Panel de Asistente IA ───────────────────────────────────────────── */
+
 function AssistantPanel({
   lessonId,
   formationId,
@@ -247,23 +259,29 @@ function AssistantPanel({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-col border border-border/50 rounded-2xl p-4 bg-card/30", className)}>
+    <div className={cn("flex flex-col border border-border rounded-xl p-3.5 bg-card/60 shadow-sm", className)}>
       <ChatPanel lessonId={lessonId} formationId={formationId} className="flex-1" />
     </div>
   )
 }
 
+/* ── Panel de Recursos ───────────────────────────────────────────────── */
+
 function ResourcesPanel() {
   return (
-    <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center">
-      <Paperclip className="w-10 h-10 mx-auto mb-3 text-primary/50" />
-      <h3 className="text-lg font-medium text-foreground mb-2">Recursos Descargables</h3>
-      <p className="text-muted-foreground text-sm max-w-md mx-auto">
-        Los cuadernos de trabajo asociados a esta lección estarán disponibles pronto.
+    <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 text-center space-y-1.5">
+      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto text-primary">
+        <Paperclip className="w-5 h-5" />
+      </div>
+      <h3 className="text-sm font-semibold text-foreground">Recursos y Cuadernos</h3>
+      <p className="text-muted-foreground text-xs max-w-sm mx-auto">
+        Los materiales descargables, ejercicios guiados y fichas de integración están activos en la pestaña de Práctica.
       </p>
     </div>
   )
 }
+
+/* ── Componente Principal LessonViewer ───────────────────────────────── */
 
 export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
   const router = useRouter()
@@ -280,7 +298,6 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
   const [openComentarios, setOpenComentarios] = useState(false)
   const [openIA, setOpenIA] = useState(false)
 
-  // Sync comments when server provides updated data after router.refresh()
   useEffect(() => {
     setComments(data.comments || [])
   }, [data.comments])
@@ -293,12 +310,23 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
     0,
   )
 
+  const handleShareToTaberna = () => {
+    sessionStorage.setItem(
+      "taberna_draft",
+      JSON.stringify({
+        content: `✨ Descubrimiento en "${formation.title}" · Lección: ${lesson.title}\n\n`,
+        source: lesson.title,
+      })
+    )
+    toast.success("Abriendo La Taberna para compartir tu aprendizaje...")
+    router.push("/taberna")
+  }
+
   const handleCommentSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault()
     const trimmed = commentText.trim()
     if (!trimmed) return
 
-    // Optimistic update — comment appears immediately at top
     const optimistic: ThreadedComment = {
       id: `temp-${Date.now()}`,
       content: trimmed,
@@ -341,9 +369,6 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
       }
     }
 
-    // Completion saves immediately; regular progress is debounced 2s to prevent
-    // concurrent requests when the video player fires onProgress at the same time
-    // as a manual completion action.
     if (completed) {
       if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current)
       await doFetch()
@@ -359,12 +384,11 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
     const result = await markLessonCompleted(lesson.id, formation.slug)
     setIsSaving(false)
     if (result && !result.error && !result.alreadyCompleted) {
-      // Optimistic update in global store — XP shows instantly without server roundtrip
       markLessonComplete(lesson.id)
       addXP(result.xpEarned ?? 0, result.leveledUp ?? false)
 
       toast.success(`¡Lección completada! +${result.xpEarned} XP`, {
-        description: result.leveledUp ? "¡Subiste de nivel! 🎉" : undefined,
+        description: result.leveledUp ? "¡Subiste de nivel! 🎉" : "Continúa integrando tu aprendizaje.",
       })
       if (result.certificateIssued) {
         setTimeout(() => {
@@ -374,7 +398,6 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
           })
         }, 1500)
       }
-      // Refresca el Server Component del layout para actualizar XP/nivel en el sidebar
       router.refresh()
     }
     if (nextLesson) {
@@ -387,43 +410,51 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Navigation — z-30 queda por debajo del navbar global (z-50) para
-          que éste lo cubra al abrirse; pl-14 deja sitio al botón hamburguesa */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50">
-        <div className="flex items-center justify-between h-14 px-4 pl-14 md:pl-4 gap-2">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+      {/* ── Top Header ────────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border">
+        <div className="flex items-center justify-between h-14 px-3 sm:px-6 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link href={`/formations/${formation.slug}`} className="shrink-0">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2 sm:px-3">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2 sm:px-2.5 rounded-lg h-8">
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline ml-1.5">Volver</span>
+                <span className="hidden sm:inline ml-1 text-xs font-semibold">Formación</span>
               </Button>
             </Link>
-            <Separator orientation="vertical" className="h-6 bg-border/50 shrink-0 hidden sm:block" />
+            <Separator orientation="vertical" className="h-4 bg-border shrink-0 hidden sm:block" />
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate max-w-[150px] sm:max-w-[220px] md:max-w-[300px] text-foreground">
+              <p className="text-xs sm:text-sm font-semibold truncate max-w-[170px] sm:max-w-[260px] md:max-w-[360px] text-foreground">
                 {formation.title}
               </p>
-              <p className="text-xs text-muted-foreground hidden sm:block truncate max-w-[220px] md:max-w-[300px]">
-                {module.title}
+              <p className="text-[10px] text-muted-foreground hidden sm:block truncate max-w-[260px] md:max-w-[360px]">
+                Módulo {module.order}: {module.title}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             <div className="hidden md:flex items-center gap-2">
-              <Progress value={progressPercent} className="w-32 h-2" />
-              <span className="text-sm text-muted-foreground">
+              <span className="text-[11px] font-medium text-muted-foreground">
                 {completedCount}/{totalCount}
               </span>
+              <Progress value={progressPercent} className="w-24 h-1.5" />
             </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShareToTaberna}
+              className="hidden sm:inline-flex border-primary/30 text-primary hover:bg-primary/10 rounded-lg text-xs h-8 px-2.5"
+            >
+              <Share2 className="h-3.5 w-3.5 mr-1" />
+              Comunidad
+            </Button>
           </div>
         </div>
       </header>
 
       <div className="flex">
-        {/* Main Content */}
+        {/* ── Main Content Area ──────────────────────────────── */}
         <main className="flex-1 min-w-0">
-          {/* Content Area — renders differently based on content type */}
           {lesson.contentType === "exercise" ? (
             <ExerciseViewer
               lesson={{
@@ -445,8 +476,8 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               formationId={formation.id}
             />
           ) : (
-            /* Video/Audio/Text/Meditation — show video player */
-            <div className="bg-black overflow-hidden">
+            /* Video Player / Theater Screen */
+            <div className="bg-black/95 shadow-inner overflow-hidden">
               <div className="w-full max-w-5xl mx-auto">
                 <div className="aspect-video w-full">
                   {lesson.videoUrl ? (
@@ -460,13 +491,13 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                       className="w-full h-full"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/60">
-                      <div className="text-center">
-                        <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
-                          <Play className="h-12 w-12" />
+                    <div className="w-full h-full flex items-center justify-center text-white/70 p-6">
+                      <div className="text-center space-y-2.5">
+                        <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center mx-auto text-primary">
+                          <Play className="h-8 w-8" />
                         </div>
-                        <p className="text-lg">Video no disponible</p>
-                        <p className="text-sm mt-2">El contenido de video se agregara pronto</p>
+                        <p className="text-sm font-semibold">Video en preparación</p>
+                        <p className="text-xs text-white/50 max-w-sm">Puedes leer las notas, realizar los ejercicios de práctica o consultar con el Asistente IA.</p>
                       </div>
                     </div>
                   )}
@@ -475,86 +506,88 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
             </div>
           )}
 
-          {/* Lesson Content */}
-          <div className="max-w-4xl mx-auto px-4 py-8 pb-24 md:pb-8">
-            {/* Lesson Header */}
-            <div className="flex items-start justify-between gap-3 mb-6">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <Badge variant="outline" className="border-border/50 text-muted-foreground text-xs">
-                    Modulo {module.order}: {module.title}
+          {/* ── Lesson Body & Didactic Notes ──────────────────── */}
+          <div className="max-w-4xl mx-auto px-4 py-5 sm:py-7 pb-24 md:pb-10 space-y-5">
+            {/* Header info */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+              <div>
+                <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                  <Badge variant="outline" className="border-primary/30 text-primary text-[10px] font-semibold rounded">
+                    Módulo {module.order}
                   </Badge>
                   {lessonCompleted && (
-                    <Badge className="bg-emerald-500 text-white border-0">
+                    <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] rounded">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       Completada
                     </Badge>
                   )}
                 </div>
-                <h1 className="text-xl sm:text-2xl font-medium text-foreground">{lesson.title}</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-foreground">{lesson.title}</h1>
               </div>
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
-                <Sparkles className="h-4 w-4 text-primary" />
+
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-foreground self-start shrink-0">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
                 <span>+{lesson.xpReward} XP</span>
               </div>
             </div>
 
-            {/* Mark as Complete Button — hidden for exercises/quizzes (they have their own complete logic) */}
+            {/* Quick Action / Completion Card */}
             {canMarkComplete && (
-              <Card className="mb-6 border-primary/20 bg-primary/5">
-                <CardContent className="py-4">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">Marcar como completada</p>
-                      <p className="text-sm text-muted-foreground">
-                        {lesson.videoUrl
-                          ? "O ve el video hasta el 90% para completar automaticamente"
-                          : "Marca esta leccion como completada para continuar"}
-                      </p>
-                    </div>
-                    <Button
-                      onClick={handleMarkComplete}
-                      disabled={isSaving}
-                      className="bg-primary hover:bg-primary/90 self-start sm:self-auto shrink-0"
-                    >
-                      {isSaving ? "Guardando..." : "Completar"}
-                      <CheckCircle2 className="h-4 w-4 ml-2" />
-                    </Button>
+              <Card className="border border-primary/25 bg-primary/5 rounded-xl shadow-sm">
+                <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-foreground text-xs sm:text-sm">¿Terminaste de ver la lección?</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Márcala como completada para sumar tus XP y pasar al siguiente paso de tu camino.
+                    </p>
                   </div>
+                  <Button
+                    onClick={handleMarkComplete}
+                    disabled={isSaving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-5 rounded-lg h-9 text-xs shrink-0 shadow-sm"
+                  >
+                    {isSaving ? "Guardando..." : "Completar Lección"}
+                    <CheckCircle2 className="h-3.5 w-3.5 ml-1.5" />
+                  </Button>
                 </CardContent>
               </Card>
             )}
 
-            {/* Description */}
+            {/* Didactic Key Takeaways & Description */}
             {lesson.description && (
-              <Card className="mb-6 border-border/50 bg-card/50">
-                <CardHeader>
-                  <CardTitle className="text-lg text-foreground">Acerca de esta leccion</CardTitle>
+              <Card className="border border-border bg-card/70 rounded-xl shadow-sm">
+                <CardHeader className="pb-2 pt-3.5 px-4 sm:px-5 border-b border-border/40">
+                  <CardTitle className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <Lightbulb className="h-4 w-4 text-primary" />
+                    Puntos Clave y Resumen Didáctico
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{lesson.description}</p>
+                <CardContent className="p-4 sm:p-5">
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
+                    {lesson.description}
+                  </p>
                 </CardContent>
               </Card>
             )}
 
-            {/* Comentarios & Recursos — desktop tabs; en mobile se usan los bottom sheets */}
-            <Tabs defaultValue="comments" className="mb-6 w-full hidden md:block">
-              <TabsList className="bg-muted/50 w-full justify-start p-1 rounded-xl h-auto">
-                <TabsTrigger value="comments" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Comentarios ({totalCommentCount})
+            {/* Interactive Tabs */}
+            <Tabs defaultValue="comments" className="w-full">
+              <TabsList className="bg-muted/60 w-full justify-start p-1 rounded-lg h-auto flex flex-wrap">
+                <TabsTrigger value="comments" className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                  Comunidad ({totalCommentCount})
                 </TabsTrigger>
-                <TabsTrigger value="resources" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <Paperclip className="w-4 h-4 mr-2" />
-                  Recursos Extras
-                </TabsTrigger>
-                <TabsTrigger value="assistant" className="rounded-lg py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <Bot className="w-4 h-4 mr-2" />
+                <TabsTrigger value="assistant" className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Bot className="w-3.5 h-3.5 mr-1.5" />
                   Asistente IA
+                </TabsTrigger>
+                <TabsTrigger value="resources" className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Paperclip className="w-3.5 h-3.5 mr-1.5" />
+                  Recursos
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="comments" className="mt-6 outline-none">
+              <TabsContent value="comments" className="mt-3.5 outline-none">
                 <CommentsPanel
                   comments={comments}
                   commentText={commentText}
@@ -567,26 +600,21 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                 />
               </TabsContent>
 
-              <TabsContent value="assistant" className="mt-6 outline-none">
-                <AssistantPanel lessonId={lesson.id} formationId={formation.id} className="h-[520px]" />
+              <TabsContent value="assistant" className="mt-3.5 outline-none">
+                <AssistantPanel lessonId={lesson.id} formationId={formation.id} className="h-[440px]" />
               </TabsContent>
 
-              <TabsContent value="resources" className="mt-6 outline-none">
+              <TabsContent value="resources" className="mt-3.5 outline-none">
                 <ResourcesPanel />
               </TabsContent>
             </Tabs>
 
-            {/* Recursos — visible en mobile (placeholder informativo) */}
-            <div className="mb-6 md:hidden">
-              <ResourcesPanel />
-            </div>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between pt-6 border-t border-border/50">
+            {/* Navigation buttons */}
+            <div className="flex items-center justify-between pt-4 border-t border-border">
               {previousLesson ? (
                 <Link href={`/learn/${formation.slug}/${previousLesson.id}`}>
-                  <Button variant="outline" className="border-border/50 hover:border-primary/30">
-                    <ChevronLeft className="h-4 w-4 mr-2" />
+                  <Button variant="outline" className="border-border hover:border-primary/40 rounded-lg text-xs h-8">
+                    <ChevronLeft className="h-3.5 w-3.5 mr-1" />
                     <span className="hidden sm:inline">{previousLesson.title}</span>
                     <span className="sm:hidden">Anterior</span>
                   </Button>
@@ -597,17 +625,17 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
 
               {nextLesson ? (
                 <Link href={`/learn/${formation.slug}/${nextLesson.id}`}>
-                  <Button className="bg-primary hover:bg-primary/90">
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs h-8">
                     <span className="hidden sm:inline">{nextLesson.title}</span>
                     <span className="sm:hidden">Siguiente</span>
-                    <ChevronRight className="h-4 w-4 ml-2" />
+                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
                   </Button>
                 </Link>
               ) : (
                 <Link href={`/formations/${formation.slug}`}>
-                  <Button className="bg-primary hover:bg-primary/90">
-                    Finalizar formacion
-                    <CheckCircle2 className="h-4 w-4 ml-2" />
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs h-8">
+                    Finalizar formación
+                    <CheckCircle2 className="h-3.5 w-3.5 ml-1" />
                   </Button>
                 </Link>
               )}
@@ -615,42 +643,38 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
           </div>
         </main>
 
-        {/* Sidebar - Curriculum (desktop) */}
-        <aside className="hidden md:block md:relative md:w-80 bg-background border-l border-border/50">
-          <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-foreground">Contenido del curso</h3>
-              </div>
-              <CurriculumPanel
-                curriculum={curriculum}
-                formationSlug={formation.slug}
-                progressPercent={progressPercent}
-              />
-            </div>
+        {/* ── Curriculum Sidebar (Desktop) ───────────────────── */}
+        <aside className="hidden lg:block lg:w-80 bg-card/40 border-l border-border">
+          <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto p-4 space-y-3.5">
+            <h3 className="font-semibold text-foreground text-xs uppercase tracking-wider">Contenido del Curso</h3>
+            <CurriculumPanel
+              curriculum={curriculum}
+              formationSlug={formation.slug}
+              progressPercent={progressPercent}
+            />
           </div>
         </aside>
       </div>
 
-      {/* ── Barra de acciones inferior (solo mobile) ─────────────────── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 md:hidden bg-background/95 backdrop-blur-sm border-t border-border/50">
-        <div className="flex items-center gap-1 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      {/* ── Mobile Sticky Navigation Dock ──────────────────── */}
+      <nav className="fixed bottom-0 inset-x-0 z-30 md:hidden bg-card/95 backdrop-blur-2xl border-t border-border safe-bottom">
+        <div className="flex items-center justify-between gap-1 px-3 py-1.5">
           <button
             onClick={() => setOpenContenido(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/5 transition-colors"
+            className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           >
-            <List className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Contenido</span>
+            <List className="h-4.5 w-4.5" />
+            <span className="text-[10px] font-medium">Temario</span>
           </button>
 
           <button
             onClick={() => setOpenComentarios(true)}
-            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/5 transition-colors"
+            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           >
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Comentarios</span>
+            <MessageSquare className="h-4.5 w-4.5" />
+            <span className="text-[10px] font-medium">Comunidad</span>
             {totalCommentCount > 0 && (
-              <span className="absolute top-0.5 right-1/4 translate-x-1/2 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-semibold flex items-center justify-center">
+              <span className="absolute top-0 right-1/4 translate-x-1/2 min-w-3.5 h-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8.5px] font-bold flex items-center justify-center">
                 {totalCommentCount > 99 ? "99+" : totalCommentCount}
               </span>
             )}
@@ -658,53 +682,52 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
 
           <button
             onClick={() => setOpenIA(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/5 transition-colors"
+            className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-muted-foreground hover:text-foreground active:scale-95 transition-all"
           >
-            <Bot className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Asistente</span>
+            <Bot className="h-4.5 w-4.5 text-primary" />
+            <span className="text-[10px] font-medium">IA Guía</span>
           </button>
 
-          {/* Acción primaria */}
+          {/* Primary Action Button */}
           {canMarkComplete ? (
             <Button
               onClick={handleMarkComplete}
               disabled={isSaving}
               size="sm"
-              className="flex-[1.3] bg-primary hover:bg-primary/90 h-auto py-2 flex-col gap-0.5"
+              className="flex-[1.3] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-lg flex items-center justify-center gap-1"
             >
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{isSaving ? "..." : "Completar"}</span>
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span className="text-[11px] font-semibold">{isSaving ? "..." : "Completar"}</span>
             </Button>
           ) : nextLesson ? (
             <Button
               onClick={() => router.push(`/learn/${formation.slug}/${nextLesson.id}`)}
               size="sm"
-              className="flex-[1.3] bg-primary hover:bg-primary/90 h-auto py-2 flex-col gap-0.5"
+              className="flex-[1.3] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-lg flex items-center justify-center gap-1"
             >
-              <ChevronRight className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Siguiente</span>
+              <span className="text-[11px] font-semibold">Siguiente</span>
+              <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           ) : (
             <Button
               onClick={() => router.push(`/formations/${formation.slug}`)}
               size="sm"
-              className="flex-[1.3] bg-primary hover:bg-primary/90 h-auto py-2 flex-col gap-0.5"
+              className="flex-[1.3] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-lg flex items-center justify-center gap-1"
             >
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Finalizar</span>
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span className="text-[11px] font-semibold">Finalizar</span>
             </Button>
           )}
         </div>
       </nav>
 
-      {/* ── Bottom sheets (mobile) ───────────────────────────────────── */}
+      {/* ── Mobile Sheets ─────────────────────────────────── */}
       <Sheet open={openContenido} onOpenChange={setOpenContenido}>
-        <SheetContent className="md:hidden">
-          <SheetHeader>
-            <SheetTitle>Contenido del curso</SheetTitle>
+        <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl md:hidden px-4 pb-6">
+          <SheetHeader className="pb-2">
+            <SheetTitle className="text-left text-sm font-semibold">Temario del Curso</SheetTitle>
           </SheetHeader>
-          <div className="overflow-y-auto pb-4" onClick={(e) => {
-            // Cerrar el sheet al navegar a otra lección
+          <div className="overflow-y-auto max-h-[70vh] pb-4" onClick={(e) => {
             const target = e.target as HTMLElement
             if (target.closest("a")) setOpenContenido(false)
           }}>
@@ -718,11 +741,11 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
       </Sheet>
 
       <Sheet open={openComentarios} onOpenChange={setOpenComentarios}>
-        <SheetContent className="md:hidden">
-          <SheetHeader>
-            <SheetTitle>Comentarios ({totalCommentCount})</SheetTitle>
+        <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl md:hidden px-4 pb-6">
+          <SheetHeader className="pb-2">
+            <SheetTitle className="text-left text-sm font-semibold">Comunidad ({totalCommentCount})</SheetTitle>
           </SheetHeader>
-          <div className="overflow-y-auto pb-4">
+          <div className="overflow-y-auto max-h-[70vh] pb-4">
             <CommentsPanel
               comments={comments}
               commentText={commentText}
@@ -738,9 +761,9 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
       </Sheet>
 
       <Sheet open={openIA} onOpenChange={setOpenIA}>
-        <SheetContent className="h-[85vh] md:hidden">
-          <SheetHeader>
-            <SheetTitle>Asistente IA</SheetTitle>
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl md:hidden px-4 pb-6">
+          <SheetHeader className="pb-2">
+            <SheetTitle className="text-left text-sm font-semibold">Asistente IA Ainara</SheetTitle>
           </SheetHeader>
           <AssistantPanel lessonId={lesson.id} formationId={formation.id} className="flex-1 min-h-0" />
         </SheetContent>

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 type ReflectionAuthor = {
   full_name: string | null
@@ -70,10 +71,18 @@ interface TabernaFeedProps {
   currentUser: { full_name: string; avatarUrl: string | null }
 }
 
+const FEED_FILTERS = [
+  { id: "all", label: "🌟 Todas" },
+  { id: "revelacion", label: "💡 Revelaciones", match: "#revelación" },
+  { id: "pregunta", label: "❓ Preguntas", match: "#pregunta" },
+  { id: "practica", label: "🎯 Práctica", match: "#práctica" },
+]
+
 export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProps) {
   const [reflections, setReflections] = useState<ReflectionItem[]>(
     initialReflections.map((r) => ({ ...r, replies: r.replies || [] }))
   )
+  const [activeFilter, setActiveFilter] = useState("all")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState("")
   const [isPendingReply, startReplyTransition] = useTransition()
@@ -212,32 +221,66 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     }
   }, [])
 
+  // Filtrado de reflexiones
+  const filteredReflections = reflections.filter((r) => {
+    if (activeFilter === "all") return true
+    const targetFilter = FEED_FILTERS.find((f) => f.id === activeFilter)
+    if (!targetFilter?.match) return true
+    return r.content.toLowerCase().includes(targetFilter.match)
+  })
+
   return (
     <>
       <ReflectionForm user={currentUser} onOptimisticReflection={handleOptimisticReflection} />
 
-      <div className="space-y-6">
-        <h2 className="text-xl font-medium tracking-tight border-b border-border/50 pb-2">
-          Últimas Voces
-        </h2>
+      <div className="space-y-4">
+        {/* Cabecera y Filtros */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-border/70 pb-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              Voces de la Comunidad
+            </h2>
+          </div>
 
-        {reflections.length === 0 ? (
-          <div className="text-center py-12 px-4 border border-dashed border-border/50 rounded-xl bg-card/20 backdrop-blur-sm">
-            <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-            <h3 className="text-lg font-medium text-foreground">El silencio reina...</h3>
-            <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-1">
-              Sé el primero en romper el hielo compartiendo tu visión del mundo.
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {FEED_FILTERS.map((filter) => {
+              const isSelected = activeFilter === filter.id
+              return (
+                <button
+                  key={filter.id}
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={cn(
+                    "text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all active:scale-95 shrink-0",
+                    isSelected
+                      ? "border-primary bg-primary/15 text-primary shadow-sm"
+                      : "border-border bg-card/40 text-muted-foreground hover:bg-card/80 hover:text-foreground"
+                  )}
+                >
+                  {filter.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {filteredReflections.length === 0 ? (
+          <div className="text-center py-12 px-4 border border-dashed border-border rounded-xl bg-card/20 backdrop-blur-sm">
+            <MessageCircle className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2.5" />
+            <h3 className="text-base font-semibold text-foreground">Aún no hay publicaciones en este tema</h3>
+            <p className="text-muted-foreground text-xs max-w-sm mx-auto mt-1">
+              Sé el primero en compartir tu experiencia o aprendizaje con los demás.
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-5">
-            {reflections.map((reflection) => {
+          <div className="flex flex-col gap-3.5">
+            {filteredReflections.map((reflection) => {
               const authorProfile = Array.isArray(reflection.profiles)
                 ? reflection.profiles[0]
                 : reflection.profiles
-              const authorName = authorProfile?.full_name || "Usuario Anónimo"
+              const authorName = authorProfile?.full_name || "Usuario de la Tribu"
               const authorAvatar = authorProfile?.avatar_url || ""
               const isAuthorAdmin = authorProfile?.role === "admin"
+              const isAuthorMentor = authorProfile?.role === "mentor"
               const isTemp = reflection.id?.startsWith("temp-")
               const isReplying = replyingTo === reflection.id
               const replies: ReflectionReply[] = reflection.replies || []
@@ -245,15 +288,15 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
               return (
                 <Card
                   key={reflection.id}
-                  className={`border-border/60 bg-card/40 backdrop-blur-sm shadow-sm overflow-hidden group transition-all duration-300 ${
-                    isTemp ? "opacity-70 animate-pulse" : "hover:bg-card/60"
+                  className={`border-border bg-card/70 backdrop-blur-md rounded-xl shadow-sm overflow-hidden transition-all ${
+                    isTemp ? "opacity-70 animate-pulse" : "hover:border-primary/40"
                   }`}
                 >
-                  <CardContent className="p-5 sm:p-6">
-                    <div className="flex gap-4">
-                      <Avatar className="h-10 w-10 shrink-0 border border-border/50 mt-1">
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="flex gap-3">
+                      <Avatar className="h-9 w-9 shrink-0 ring-1 ring-primary/20 mt-0.5">
                         <AvatarImage src={authorAvatar} className="object-cover" />
-                        <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                        <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
                           {authorName.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -261,41 +304,51 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1 text-sm">
                           <div className="flex items-center gap-2 truncate pr-2">
-                            <span className="font-semibold text-foreground truncate">{authorName}</span>
+                            <span className="font-semibold text-foreground truncate text-xs sm:text-sm">
+                              {authorName}
+                            </span>
                             {isAuthorAdmin && (
                               <Badge
                                 variant="secondary"
-                                className="bg-primary/15 text-primary border-none cursor-default py-0 px-2 h-5 text-[10px] uppercase font-bold tracking-wider"
+                                className="bg-primary/20 text-primary border-none cursor-default py-0 px-1.5 h-4 text-[9px] uppercase font-bold tracking-wider rounded"
                               >
-                                Fundador
+                                Guía
                               </Badge>
                             )}
-                            <span className="text-muted-foreground text-xs hidden sm:inline">
+                            {isAuthorMentor && !isAuthorAdmin && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-emerald-500/15 text-emerald-600 border-none cursor-default py-0 px-1.5 h-4 text-[9px] uppercase font-bold tracking-wider rounded"
+                              >
+                                Mentor
+                              </Badge>
+                            )}
+                            <span className="text-muted-foreground text-[11px] hidden sm:inline">
                               &bull; {formatTimeAgo(reflection.created_at)}
                             </span>
                           </div>
-                          <span className="text-muted-foreground text-xs sm:hidden">
+                          <span className="text-muted-foreground text-[10px] sm:hidden">
                             {formatTimeAgo(reflection.created_at)}
                           </span>
                         </div>
 
                         {reflection.lessons && (
-                          <div className="mb-3">
+                          <div className="mb-2">
                             <Badge
                               variant="secondary"
-                              className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+                              className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium rounded-md"
                             >
-                              Comentado en: {reflection.lessons.title}
+                              Lección: {reflection.lessons.title}
                             </Badge>
                           </div>
                         )}
 
-                        <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                        <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
                           {reflection.content}
                         </p>
 
                         {!isTemp && (
-                          <div className="flex items-center gap-6 mt-4 pt-3 border-t border-border/30">
+                          <div className="flex items-center gap-5 mt-3 pt-2.5 border-t border-border/40">
                             <ResonanceButton
                               reflectionId={reflection.id}
                               initialCount={reflection.likes_count || 0}
@@ -306,27 +359,27 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                   ? handleCancelReply()
                                   : handleReply(reflection.id, authorName)
                               }
-                              className={`flex items-center gap-2 text-xs font-medium transition-colors ${
+                              className={`flex items-center gap-1 text-xs font-medium transition-colors ${
                                 isReplying
                                   ? "text-primary"
                                   : "text-muted-foreground hover:text-primary"
                               }`}
                             >
-                              <MessageCircle className="w-4 h-4" />
+                              <MessageCircle className="w-3.5 h-3.5" />
                               <span>
                                 {isReplying
                                   ? "Cancelar"
                                   : replies.length > 0
-                                  ? `Debatir · ${replies.length}`
-                                  : "Debatir"}
+                                  ? `Respuestas (${replies.length})`
+                                  : "Responder"}
                               </span>
                             </button>
                           </div>
                         )}
 
-                        {/* Thread replies */}
+                        {/* Hilos de Respuestas */}
                         {replies.length > 0 && (
-                          <div className="mt-5 space-y-4 pl-4 border-l-2 border-border/40">
+                          <div className="mt-3 space-y-2.5 pl-3 border-l-2 border-primary/20">
                             {replies.map((reply) => {
                               const rp = Array.isArray(reply.profiles) ? reply.profiles[0] : reply.profiles
                               const rName = rp?.full_name || "Usuario Anónimo"
@@ -336,22 +389,22 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                               return (
                                 <div
                                   key={reply.id}
-                                  className={`flex gap-3 ${rTemp ? "opacity-60 animate-pulse" : ""}`}
+                                  className={`flex gap-2 p-2 rounded-lg bg-background/50 ${rTemp ? "opacity-60 animate-pulse" : ""}`}
                                 >
-                                  <Avatar className="h-7 w-7 shrink-0 border border-border/40 mt-0.5">
+                                  <Avatar className="h-6 w-6 shrink-0 ring-1 ring-primary/20 mt-0.5">
                                     <AvatarImage src={rAvatar} className="object-cover" />
-                                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                    <AvatarFallback className="bg-primary/15 text-primary text-[9px] font-bold">
                                       {rName.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 text-xs mb-1">
-                                      <span className="font-semibold text-foreground">{rName}</span>
-                                      <span className="text-muted-foreground">
+                                    <div className="flex items-center gap-1.5 text-xs mb-0.5">
+                                      <span className="font-semibold text-foreground text-xs">{rName}</span>
+                                      <span className="text-muted-foreground text-[10px]">
                                         &bull; {formatTimeAgo(reply.created_at)}
                                       </span>
                                     </div>
-                                    <p className="text-foreground/85 text-sm whitespace-pre-wrap leading-relaxed">
+                                    <p className="text-foreground/85 text-xs whitespace-pre-wrap leading-relaxed">
                                       {reply.content}
                                     </p>
                                   </div>
@@ -361,28 +414,28 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                           </div>
                         )}
 
-                        {/* Reply form */}
+                        {/* Formulario de Respuesta */}
                         {isReplying && (
                           <form
                             onSubmit={(e) => handleSubmitReply(e, reflection.id)}
-                            className="mt-4 space-y-2"
+                            className="mt-3 space-y-2"
                           >
                             <Textarea
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
-                              placeholder={`Respondiendo a @${authorName}...`}
-                              className="min-h-[80px] resize-none bg-background/50 focus-visible:ring-primary/50"
+                              placeholder={`Escribe tu respuesta a @${authorName}...`}
+                              className="min-h-[70px] resize-none bg-background rounded-lg border-border px-3 py-2 text-xs sm:text-sm"
                               disabled={isPendingReply}
                               autoFocus
                             />
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1.5">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleCancelReply}
                                 disabled={isPendingReply}
-                                className="text-muted-foreground"
+                                className="text-muted-foreground text-xs rounded-lg h-8 px-3"
                               >
                                 Cancelar
                               </Button>
@@ -390,7 +443,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                 type="submit"
                                 size="sm"
                                 disabled={isPendingReply || !replyText.trim()}
-                                className="bg-primary hover:bg-primary/90 rounded-full px-5"
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg px-4 h-8"
                               >
                                 {isPendingReply ? (
                                   <>
@@ -398,7 +451,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                     Enviando...
                                   </>
                                 ) : (
-                                  "Responder"
+                                  "Enviar"
                                 )}
                               </Button>
                             </div>

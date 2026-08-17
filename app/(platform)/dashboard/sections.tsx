@@ -11,10 +11,12 @@ import {
   Trophy,
   Play,
   ArrowRight,
-  Clock,
   CheckCircle2,
   Sparkles,
   NotebookPen,
+  Quote,
+  MessageSquare,
+  Bot,
 } from "lucide-react"
 import {
   getUserProfile,
@@ -23,15 +25,7 @@ import {
   getRecentActivity,
   getDailyReflectionData,
 } from "@/lib/data-access"
-
-/**
- * Secciones del dashboard, cada una esperando SOLO su propio dato.
- *
- * Antes la página hacía un `Promise.all` de las cinco consultas y no pintaba
- * nada hasta que respondía la más lenta. Envueltas en `<Suspense>` desde
- * page.tsx, la cabecera aparece de inmediato y cada bloque entra en cuanto
- * tiene sus datos.
- */
+import { phraseForDate } from "@/lib/daily-phrases"
 
 type RecentActivityItem = {
   type: "lesson_completed" | string
@@ -53,22 +47,22 @@ export async function UpsellBanner({ userId }: { userId: string }) {
   if (hasFullAccess) return null
 
   return (
-    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-          <Sparkles className="h-5 w-5 text-primary" />
+    <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+      <div className="flex items-center gap-3.5">
+        <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 text-primary">
+          <Sparkles className="h-5 w-5" />
         </div>
         <div>
-          <p className="font-medium text-foreground text-sm">
-            Activa tu suscripción para desbloquear todo
+          <p className="font-semibold text-foreground text-sm sm:text-base">
+            Activa tu membresía para desbloquear todo el camino
           </p>
-          <p className="text-xs text-muted-foreground">
-            Formaciones, comunidad, mentoría y más — acceso completo a la plataforma
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Formaciones en video, comunidad, cuaderno de autoconocimiento y mentoría personalizada.
           </p>
         </div>
       </div>
-      <Button size="sm" className="shrink-0 bg-primary hover:bg-primary/90" asChild>
-        <Link href="/billing">Activar acceso</Link>
+      <Button size="sm" className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-5 rounded-xl shadow-sm" asChild>
+        <Link href="/billing">Activar acceso completo</Link>
       </Button>
     </div>
   )
@@ -82,14 +76,14 @@ export function StatsSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="min-w-[72%] shrink-0 space-y-3 rounded-xl border border-border/30 bg-card/30 p-6 backdrop-blur-sm sm:min-w-[45%] md:min-w-0"
+          className="min-w-[72%] shrink-0 space-y-3 rounded-2xl border border-border/40 bg-card/40 p-5 backdrop-blur-sm sm:min-w-[45%] md:min-w-0"
         >
           <div className="flex items-center justify-between">
-            <div className="h-4 w-24 shimmer rounded" />
-            <div className="h-4 w-4 shimmer rounded" />
+            <div className="h-4 w-24 shimmer rounded-md" />
+            <div className="h-4 w-4 shimmer rounded-full" />
           </div>
-          <div className="h-7 w-20 shimmer rounded" />
-          <div className="h-3 w-32 shimmer rounded" />
+          <div className="h-7 w-20 shimmer rounded-md" />
+          <div className="h-3 w-32 shimmer rounded-md" />
         </div>
       ))}
     </div>
@@ -100,69 +94,86 @@ export async function StatsSection({ userId }: { userId: string }) {
   const { stats } = await getDashboardData(userId)
 
   const cardClass =
-    "min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/50 bg-card/50 backdrop-blur-sm"
+    "min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm hover:border-primary/30 transition-all"
 
   return (
-    <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
+    <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
+      {/* Racha */}
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Racha Actual
           </CardTitle>
-          <Flame className="h-4 w-4 text-primary" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-500">
+            <Flame className="h-4 w-4" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-semibold">{stats.currentStreak} dias</div>
-          <p className="text-xs text-muted-foreground">Mantente constante</p>
+          <div className="text-2xl sm:text-3xl font-bold text-foreground">
+            {stats.currentStreak} <span className="text-base font-normal text-muted-foreground">días</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Práctica constante diaria</p>
         </CardContent>
       </Card>
 
+      {/* XP & Nivel */}
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            XP Total
+          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Experiencia & Nivel
           </CardTitle>
-          <Star className="h-4 w-4 text-primary" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-primary">
+            <Star className="h-4 w-4" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-semibold">
-            {stats.totalXp.toLocaleString()}
+          <div className="text-2xl sm:text-3xl font-bold text-foreground">
+            {stats.totalXp.toLocaleString()} <span className="text-xs font-semibold text-primary uppercase">XP</span>
           </div>
           <div className="mt-2 space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Nivel {stats.level}</span>
-              <span className="text-primary">{stats.nextLevelProgress}%</span>
+            <div className="flex justify-between text-[11px]">
+              <span className="font-semibold text-muted-foreground">Nivel {stats.level}</span>
+              <span className="font-bold text-primary">{stats.nextLevelProgress}%</span>
             </div>
             <Progress value={stats.nextLevelProgress} className="h-1.5" />
           </div>
         </CardContent>
       </Card>
 
+      {/* Lecciones */}
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Lecciones
           </CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-semibold">{stats.lessonsCompleted}</div>
-          <p className="text-xs text-muted-foreground">Completadas</p>
+          <div className="text-2xl sm:text-3xl font-bold text-foreground">
+            {stats.lessonsCompleted}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Lecciones y ejercicios integrados</p>
         </CardContent>
       </Card>
 
+      {/* Formaciones */}
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Formaciones
           </CardTitle>
-          <Trophy className="h-4 w-4 text-primary" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-primary">
+            <Trophy className="h-4 w-4" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-semibold">{stats.formationsCompleted}</div>
-          <p className="text-xs text-muted-foreground">
-            Completadas de{" "}
-            {stats.formationsInProgress + stats.formationsCompleted}
+          <div className="text-2xl sm:text-3xl font-bold text-foreground">
+            {stats.formationsCompleted}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Completadas de {stats.formationsInProgress + stats.formationsCompleted} activas
           </p>
         </CardContent>
       </Card>
@@ -178,10 +189,10 @@ export function ContinueLearningSkeleton() {
       {Array.from({ length: 2 }).map((_, i) => (
         <div
           key={i}
-          className="space-y-3 rounded-xl border border-border/30 bg-card/30 p-6"
+          className="space-y-3 rounded-2xl border border-border/40 bg-card/40 p-5"
         >
-          <div className="h-5 w-3/4 shimmer rounded" />
-          <div className="h-3 w-40 shimmer rounded" />
+          <div className="h-5 w-3/4 shimmer rounded-md" />
+          <div className="h-3 w-40 shimmer rounded-md" />
           <div className="h-2 w-full shimmer rounded-full" />
         </div>
       ))}
@@ -194,20 +205,22 @@ export async function ContinueLearningSection({ userId }: { userId: string }) {
 
   if (formationsIP.length === 0) {
     return (
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <BookOpen className="h-8 w-8 text-primary" />
+      <Card className="border-border/60 bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm">
+        <CardContent className="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-3">
+            <BookOpen className="h-8 w-8" />
           </div>
-          <h3 className="mt-4 font-medium text-foreground">
+          <h3 className="text-lg font-semibold text-foreground">
             No tienes formaciones en curso
           </h3>
-          <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-            Explora nuestra biblioteca y comienza tu primera formacion para
-            transformar tu vida
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md">
+            Explora nuestra biblioteca de formaciones en video y comienza tu camino de transformación y autoconocimiento.
           </p>
-          <Button className="mt-6 bg-primary hover:bg-primary/90" asChild>
-            <Link href="/library">Explorar Biblioteca</Link>
+          <Button className="mt-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 rounded-xl shadow-sm" asChild>
+            <Link href="/library">
+              Explorar Formaciones
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -219,43 +232,52 @@ export async function ContinueLearningSection({ userId }: { userId: string }) {
       {formationsIP.map((formation) => (
         <Card
           key={formation.id}
-          className="border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-colors"
+          className="border-border/60 bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm hover:border-primary/40 hover:shadow-md transition-all overflow-hidden"
         >
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <Link
                 href={`/formations/${formation.slug}`}
-                className="relative block w-24 sm:w-32 aspect-video shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5"
+                className="relative block w-full sm:w-36 aspect-video shrink-0 rounded-xl overflow-hidden bg-muted group"
               >
                 <MediaImage
                   src={formation.thumbnailUrl}
                   alt={formation.title}
                   seed={formation.slug || formation.id}
                   fill
-                  sizes="128px"
-                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, 144px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-              </Link>
-              <div className="flex-1 space-y-3">
-                <div>
-                  <h3 className="font-medium text-foreground">{formation.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {formation.lessonsCompleted} de {formation.totalLessons} lecciones
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Progreso</span>
-                    <span className="font-medium text-primary">
-                      {formation.progress}%
-                    </span>
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-9 h-9 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-lg">
+                    <Play className="h-4 w-4 ml-0.5" />
                   </div>
+                </div>
+              </Link>
+
+              <div className="flex-1 min-w-0 space-y-2 w-full">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-semibold text-foreground text-base sm:text-lg leading-snug">
+                      {formation.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formation.lessonsCompleted} de {formation.totalLessons} lecciones completadas
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-primary shrink-0">
+                    {formation.progress}%
+                  </span>
+                </div>
+
+                <div className="space-y-1">
                   <Progress value={formation.progress} className="h-2" />
                 </div>
               </div>
-              <Button asChild className="bg-primary hover:bg-primary/90">
+
+              <Button asChild className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-5 rounded-xl shrink-0 shadow-sm">
                 <Link href={`/formations/${formation.slug}`}>
-                  <Play className="mr-2 h-4 w-4" />
+                  <Play className="mr-1.5 h-4 w-4" />
                   Continuar
                 </Link>
               </Button>
@@ -267,57 +289,71 @@ export async function ContinueLearningSection({ userId }: { userId: string }) {
   )
 }
 
-// ─── Reflexión de hoy ─────────────────────────────────────────────────────
+// ─── Tarjeta de Práctica Diaria / Reflexión ────────────────────────────────
 
 export function CardSkeleton({ height = "h-32" }: { height?: string }) {
   return (
-    <div className={`w-full ${height} shimmer rounded-xl border border-border/30`} />
+    <div className={`w-full ${height} shimmer rounded-2xl border border-border/30`} />
   )
 }
 
 export async function ReflexionCard({ userId }: { userId: string }) {
   const reflexion = await getDailyReflectionData(userId)
+  const todayQuote = phraseForDate(new Date())
 
   return (
-    <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden">
+    <Card className="w-full border-primary/25 bg-gradient-to-b from-card/80 to-primary/5 backdrop-blur-md rounded-2xl shadow-sm overflow-hidden relative">
       <div className="absolute top-0 left-0 h-1 w-full gold-gradient" />
-      <CardContent className="p-5">
+      <CardContent className="p-5 space-y-4">
+        {/* Oráculo / Frase Semilla */}
+        <div className="space-y-1.5 border-b border-border/40 pb-3.5">
+          <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-widest font-bold text-primary">
+            <Quote className="h-3.5 w-3.5" />
+            <span>Semilla de Sabiduría de Hoy</span>
+          </div>
+          <p className="font-display text-sm sm:text-base italic leading-relaxed text-foreground/90">
+            &ldquo;{todayQuote}&rdquo;
+          </p>
+        </div>
+
+        {/* Estado de reflexión de hoy */}
         {reflexion.todayEntry ? (
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 pt-1">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                <NotebookPen className="h-5 w-5 text-primary" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600">
+                <CheckCircle2 className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  Reflexión de hoy completada
+                <p className="text-sm font-semibold text-foreground">
+                  Reflexión de hoy registrada
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Racha de {reflexion.streak}{" "}
-                  {reflexion.streak === 1 ? "día" : "días"} · vuelve mañana
+                  Racha de {reflexion.streak} {reflexion.streak === 1 ? "día" : "días"} de conexión interior
                 </p>
               </div>
             </div>
-            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+            <Button asChild variant="outline" size="sm" className="border-primary/30 text-primary hover:bg-primary/5 rounded-xl text-xs shrink-0">
+              <Link href="/reflexion">Ver diario</Link>
+            </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 pt-1">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                <NotebookPen className="h-5 w-5 text-primary" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+                <NotebookPen className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">
-                  Reflexión de hoy
+                <p className="text-sm font-semibold text-foreground">
+                  Tu pausa de autoconocimiento
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Un minuto para volver a ti. ¿Cómo te sientes hoy?
+                  Toma 1 minuto para chequear cómo te sientes hoy (+XP).
                 </p>
               </div>
             </div>
-            <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90">
+            <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-sm">
               <Link href="/reflexion">
-                Escribir mi reflexión
+                Escribir mi reflexión de hoy
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -331,8 +367,6 @@ export async function ReflexionCard({ userId }: { userId: string }) {
 // ─── Gráfico semanal + actividad reciente ─────────────────────────────────
 
 export async function ActivityCard({ userId }: { userId: string }) {
-  // getDashboardData ya está deduplicado con cache(): si StatsSection lo pidió
-  // en este mismo render, aquí no vuelve a viajar.
   const [{ stats }, recentAct] = await Promise.all([
     getDashboardData(userId),
     getRecentActivity(userId),
@@ -355,16 +389,15 @@ export async function ActivityCard({ userId }: { userId: string }) {
   const isXpActive = totalWeeklyXp > 0
 
   return (
-    <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
-      <CardContent className="p-5 space-y-6">
+    <Card className="w-full border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm relative overflow-hidden">
+      <CardContent className="p-5 space-y-5">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Evolución de XP Semanal
             </p>
             {isXpActive ? (
-              <span className="text-[10px] text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/15 px-2.5 py-0.5 rounded-full">
                 +{totalWeeklyXp} XP esta semana
               </span>
             ) : (
@@ -373,7 +406,7 @@ export async function ActivityCard({ userId }: { userId: string }) {
               </span>
             )}
           </div>
-          <div className="h-[120px] w-full bg-background/40 rounded-xl p-3 border border-border/40 flex flex-col justify-between relative overflow-hidden">
+          <div className="h-[120px] w-full bg-background/50 rounded-xl p-3 border border-border/50 flex flex-col justify-between relative overflow-hidden">
             <svg
               className="w-full h-[70px] mt-2 overflow-visible"
               viewBox="0 0 100 40"
@@ -381,7 +414,7 @@ export async function ActivityCard({ userId }: { userId: string }) {
             >
               <defs>
                 <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.35" />
                   <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
                 </linearGradient>
                 <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
@@ -397,13 +430,13 @@ export async function ActivityCard({ userId }: { userId: string }) {
               {isXpActive ? (
                 <>
                   <path d={areaPath} fill="url(#chartGrad)" />
-                  <path d={linePath} fill="none" stroke="url(#lineGrad)" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d={linePath} fill="none" stroke="url(#lineGrad)" strokeWidth="1.75" strokeLinecap="round" />
                   {points.map(
                     (p, i) =>
                       p.xp > 0 && (
                         <g key={i}>
-                          <circle cx={p.x} cy={p.y} r="2" fill="var(--primary)" />
-                          <circle cx={p.x} cy={p.y} r="4" fill="var(--primary)" className="opacity-20 animate-ping" />
+                          <circle cx={p.x} cy={p.y} r="2.5" fill="var(--primary)" />
+                          <circle cx={p.x} cy={p.y} r="5" fill="var(--primary)" className="opacity-25 animate-ping" />
                         </g>
                       )
                   )}
@@ -413,7 +446,7 @@ export async function ActivityCard({ userId }: { userId: string }) {
               )}
             </svg>
 
-            <div className="flex justify-between text-[9px] text-muted-foreground/80 font-medium px-1">
+            <div className="flex justify-between text-[9px] text-muted-foreground font-semibold px-1">
               <span>Lun</span>
               <span>Mar</span>
               <span>Mié</span>
@@ -428,31 +461,34 @@ export async function ActivityCard({ userId }: { userId: string }) {
         <div className="h-px bg-border/40" />
 
         {recentAct.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Última Actividad
+            </p>
             {recentAct.map((activity: RecentActivityItem, index: number) => (
               <div
                 key={index}
-                className="flex items-start gap-3 pb-4 last:pb-0 last:border-0 border-b border-border/50"
+                className="flex items-start gap-3 pb-3 last:pb-0 last:border-0 border-b border-border/40"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 text-primary shrink-0">
                   {activity.type === "lesson_completed" ? (
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    <CheckCircle2 className="h-4 w-4" />
                   ) : (
-                    <Flame className="h-4 w-4 text-primary" />
+                    <Flame className="h-4 w-4" />
                   )}
                 </div>
-                <div className="flex-1 space-y-1 min-w-0">
-                  <p className="text-sm font-medium leading-tight text-foreground truncate">
+                <div className="flex-1 space-y-0.5 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold leading-tight text-foreground truncate">
                     {activity.title}
                   </p>
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="secondary"
-                      className="text-[10px] bg-primary/10 text-primary border-0 font-bold px-2 py-0.5"
+                      className="text-[10px] bg-primary/15 text-primary border-0 font-bold px-2 py-0.5"
                     >
                       +{activity.xp} XP
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[11px] text-muted-foreground">
                       {activity.time}
                     </span>
                   </div>
@@ -461,10 +497,9 @@ export async function ActivityCard({ userId }: { userId: string }) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">
-              Aún no tienes actividad reciente. Comienza una lección para ver tu
-              progreso aquí.
+          <div className="text-center py-6">
+            <p className="text-xs text-muted-foreground">
+              Aún no tienes actividad reciente. ¡Comienza una lección para sumar XP!
             </p>
           </div>
         )}
@@ -473,19 +508,21 @@ export async function ActivityCard({ userId }: { userId: string }) {
   )
 }
 
-// ─── Acciones rápidas (sin datos: se pinta de inmediato) ──────────────────
+// ─── Acciones rápidas ─────────────────────────────────────────────────────
 
 export function QuickActions() {
   const linkClass =
-    "justify-start border-border/50 hover:bg-primary/5 hover:border-primary/30 h-11 text-sm font-medium px-4"
+    "justify-start border-border/60 bg-card/60 hover:bg-primary/10 hover:border-primary/40 h-11 text-xs sm:text-sm font-semibold px-4 rounded-xl shadow-sm transition-all"
 
   return (
-    <Card className="w-full border-border/50 bg-card/50 backdrop-blur-sm">
+    <Card className="w-full border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium">Acciones Rápidas</CardTitle>
+        <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          Herramientas & Atajos
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2.5">
           <Button variant="outline" className={linkClass} asChild>
             <Link href="/library">
               <BookOpen className="mr-2.5 h-4 w-4 text-primary shrink-0" />
@@ -493,15 +530,15 @@ export function QuickActions() {
             </Link>
           </Button>
           <Button variant="outline" className={linkClass} asChild>
-            <Link href="/reflexion">
-              <NotebookPen className="mr-2.5 h-4 w-4 text-primary shrink-0" />
-              Reflexión Diaria
+            <Link href="/taberna">
+              <MessageSquare className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+              Comunidad La Taberna
             </Link>
           </Button>
           <Button variant="outline" className={linkClass} asChild>
-            <Link href="/mentorship">
-              <Clock className="mr-2.5 h-4 w-4 text-primary shrink-0" />
-              Agendar Mentoría
+            <Link href="/assistant">
+              <Bot className="mr-2.5 h-4 w-4 text-primary shrink-0" />
+              Asistente de Aprendizaje IA
             </Link>
           </Button>
         </div>

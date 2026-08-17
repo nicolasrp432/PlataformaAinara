@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Clock,
   Sparkles,
@@ -47,7 +46,6 @@ export default async function MentorshipPage() {
   const dbMentor = dbMentors && dbMentors.length > 0 ? dbMentors[0] : null
   const mentor = dbMentor ?? defaultMentor
   const mentorName = mentor.name ?? mentor.full_name ?? "Mentor"
-  const isPlaceholder = !dbMentor
 
   return (
     <div className="space-y-12 max-w-5xl mx-auto pb-16 relative animation-fade-in">
@@ -122,17 +120,7 @@ export default async function MentorshipPage() {
               )}
             </div>
 
-            {isPlaceholder ? (
-              <Button
-                className="w-full mt-2 h-12 text-base"
-                disabled
-                title="Aún no hay disponibilidad publicada"
-              >
-                Próximamente
-              </Button>
-            ) : (
-              <MentorshipBookingDialog mentor={mentor} />
-            )}
+            <MentorshipBookingDialog mentor={mentor} />
           </CardContent>
         </div>
       </Card>

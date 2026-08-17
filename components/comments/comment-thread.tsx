@@ -129,7 +129,7 @@ function CommentItem({ comment, currentUserId, lessonId, slug, isReply }: Commen
       </Avatar>
 
       <div className="flex-1 min-w-0">
-        <div className="bg-muted/30 p-3.5 sm:p-4 rounded-2xl rounded-tl-none border border-border/30">
+        <div className="bg-muted/30 p-3.5 sm:p-4 rounded-xl rounded-tl-none border border-border/40">
           <div className="flex items-center justify-between gap-2 mb-1">
             <Link
               href={`/u/${comment.user_id}`}
@@ -190,7 +190,7 @@ function CommentItem({ comment, currentUserId, lessonId, slug, isReply }: Commen
                 placeholder={`Responder a ${comment.profiles?.full_name || "este comentario"}...`}
                 rows={2}
                 disabled={isReplying}
-                className="resize-none bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/30 text-sm"
+                className="resize-none bg-background rounded-lg border-border px-3 py-2 text-xs sm:text-sm"
                 autoFocus
               />
               <div className="flex justify-end gap-2">
@@ -200,6 +200,7 @@ function CommentItem({ comment, currentUserId, lessonId, slug, isReply }: Commen
                   size="sm"
                   onClick={() => { setShowReply(false); setReplyText("") }}
                   disabled={isReplying}
+                  className="rounded-lg h-8 text-xs"
                 >
                   Cancelar
                 </Button>
@@ -207,9 +208,9 @@ function CommentItem({ comment, currentUserId, lessonId, slug, isReply }: Commen
                   type="submit"
                   size="sm"
                   disabled={isReplying || !replyText.trim()}
-                  className="rounded-full"
+                  className="rounded-lg h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 >
-                  <Send className="w-3.5 h-3.5 mr-1.5" />
+                  <Send className="w-3.5 h-3.5 mr-1" />
                   {isReplying ? "Enviando..." : "Responder"}
                 </Button>
               </div>
