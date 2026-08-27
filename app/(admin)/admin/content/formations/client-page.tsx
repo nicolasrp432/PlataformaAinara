@@ -109,7 +109,7 @@ export default function FormationsClientPage({ initialData }: { initialData: For
             Gestiona las formaciones de la plataforma
           </p>
         </div>
-        <Button asChild className="w-full sm:w-auto justify-center bg-primary hover:bg-primary/90 text-white shrink-0">
+        <Button asChild className="w-full sm:w-auto justify-center bg-primary hover:bg-primary/90 text-primary-foreground shrink-0">
           <Link href="/admin/content/formations/new">
             <Plus className="mr-2 h-4 w-4 shrink-0" />
             Nueva Formación

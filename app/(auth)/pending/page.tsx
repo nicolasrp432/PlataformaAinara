@@ -40,8 +40,8 @@ export default async function PendingPage() {
         <CardContent className="flex flex-col items-center px-8 py-10 text-center">
           {isSuspended ? (
             <>
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-rose-500/10">
-                <Mail className="h-10 w-10 text-rose-600" />
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-danger-soft">
+                <Mail className="h-10 w-10 text-danger-strong" />
               </div>
               <h1 className="mb-3 text-2xl font-light">Acceso suspendido</h1>
               <p className="mb-6 text-muted-foreground leading-relaxed">
@@ -57,8 +57,8 @@ export default async function PendingPage() {
             </>
           ) : (
             <>
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10">
-                <Clock className="h-10 w-10 text-amber-600" />
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-warning-soft">
+                <Clock className="h-10 w-10 text-warning-strong" />
               </div>
               <h1 className="mb-3 text-2xl font-light">
                 Tu cuenta está en revisión

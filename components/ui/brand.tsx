@@ -26,7 +26,7 @@ export function BrandMark({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center gold-gradient shadow-sm text-white",
+        "flex shrink-0 items-center justify-center gold-gradient shadow-sm text-primary-foreground",
         s.tile,
         className
       )}
@@ -77,7 +77,7 @@ export function BrandLockup({
       <div className="min-w-0 flex flex-col justify-center">
         <Wordmark size={size} className="block" />
         {withTagline && (
-          <span className="text-[10px] text-primary tracking-widest uppercase font-medium leading-none mt-0.5">
+          <span className="text-3xs text-primary tracking-widest uppercase font-medium leading-none mt-0.5">
             Desde la raíz
           </span>
         )}

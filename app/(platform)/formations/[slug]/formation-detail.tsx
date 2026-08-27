@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { DIFFICULTY_STYLES } from "@/lib/status-styles"
 
 interface Lesson {
   id: string
@@ -68,11 +69,7 @@ const difficultyLabels: Record<string, string> = {
   advanced: "Avanzado",
 }
 
-const difficultyColors: Record<string, string> = {
-  beginner: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
-  intermediate: "bg-amber-500/10 text-amber-700 border-amber-200",
-  advanced: "bg-rose-500/10 text-rose-700 border-rose-200",
-}
+const difficultyColors = DIFFICULTY_STYLES
 
 export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps) {
   const router = useRouter()
@@ -325,7 +322,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                 )}
                 {!nextLesson && formation.progress === 100 && (
                   <div className="text-center py-2">
-                    <Badge className="bg-emerald-500 text-white border-0">
+                    <Badge className="bg-success text-white border-0">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       Formacion completada
                     </Badge>
@@ -379,7 +376,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                               </span>
                               <span className="truncate">{module.title}</span>
                               {isModuleComplete && (
-                                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500 shrink-0" />
+                                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-success shrink-0" />
                               )}
                             </CardTitle>
                             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -426,7 +423,7 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                                 className={cn(
                                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
                                   isCompleted
-                                    ? "bg-emerald-500/10 text-emerald-600"
+                                    ? "bg-success-soft text-success-strong"
                                     : "bg-muted text-muted-foreground"
                                 )}
                               >

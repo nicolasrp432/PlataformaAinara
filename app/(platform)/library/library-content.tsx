@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { DIFFICULTY_STYLES } from "@/lib/status-styles"
 
 interface Formation {
   id: string
@@ -59,11 +60,7 @@ const difficulties = [
   { value: "advanced", label: "Avanzado" },
 ]
 
-const difficultyColors: Record<string, string> = {
-  beginner: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
-  intermediate: "bg-amber-500/10 text-amber-700 border-amber-200",
-  advanced: "bg-rose-500/10 text-rose-700 border-rose-200",
-}
+const difficultyColors = DIFFICULTY_STYLES
 
 const difficultyLabels: Record<string, string> = {
   beginner: "Principiante",
@@ -196,10 +193,10 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
               href={`/formations/${formation.slug}`}
               className="group"
             >
-              <Card className="overflow-hidden h-full border-border/50 bg-card/40 backdrop-blur-xl hover:border-primary/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-1.5 transition-all duration-500 group-hover:bg-card/60">
+              <Card className="overflow-hidden h-full border-border/50 bg-card/40 backdrop-blur-xl hover:border-primary/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-1.5 transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-300 ease-out group-hover:bg-card/60">
                 {/* Thumbnail */}
                 <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/5 overflow-hidden">
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300 ease-out z-10" />
                   <MediaImage
                     src={formation.thumbnailUrl}
                     alt={formation.title}
@@ -208,7 +205,7 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     // Las primeras portadas son el LCP de la biblioteca.
                     priority={index < 3}
-                    className="object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                    className="object-cover transform group-hover:scale-105 transition-transform duration-300 ease-out"
                   />
                   
                   {/* Progress Overlay */}
@@ -230,7 +227,7 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
                       </Badge>
                     )}
                     {formation.isCompleted && (
-                      <Badge className="bg-emerald-500 text-white border-0">
+                      <Badge className="bg-success text-white border-0">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Completado
                       </Badge>
@@ -239,7 +236,7 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
 
                   {/* Play Button */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                    <div className="w-16 h-16 rounded-full bg-background/80 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl transform scale-90 group-hover:scale-110 transition-all duration-500 hover:bg-primary text-foreground hover:border-primary group/play">
+                    <div className="w-16 h-16 rounded-full bg-background/80 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl transform scale-90 group-hover:scale-110 transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-300 ease-out hover:bg-primary text-foreground hover:border-primary group/play">
                       {formation.isPremium && !formation.isEnrolled && !isLoggedIn ? (
                         <Lock className="h-6 w-6 text-muted-foreground group-hover/play:text-primary-foreground transition-colors" />
                       ) : (

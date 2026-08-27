@@ -167,7 +167,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
               message.type === 'error' 
                 ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
-                : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                : 'bg-success-soft text-success border border-success'
             }`}>
               {message.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
               <p>{message.text}</p>
@@ -178,7 +178,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             <Button 
               type="submit" 
               disabled={isPending} 
-              className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[140px] shadow-sm transition-all"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[140px] shadow-sm transition-[transform,background-color,border-color,color,box-shadow,opacity]"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {isPending ? "Guardando..." : "Guardar Cambios"}

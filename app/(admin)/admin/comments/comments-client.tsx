@@ -158,7 +158,7 @@ export function CommentsClient({ initialComments }: { initialComments: Comment[]
             return (
               <Card
                 key={comment.id}
-                className="border-border/50 bg-card/60 backdrop-blur-md shadow-sm transition-all hover:border-primary/20 hover:shadow-md"
+                className="border-border/50 bg-card/60 backdrop-blur-md shadow-sm transition-[transform,background-color,border-color,color,box-shadow,opacity] hover:border-primary/20 hover:shadow-md"
               >
                 <CardContent className="p-5 flex flex-col md:flex-row md:items-start gap-4">
                   {/* Avatar and metadata */}
@@ -173,7 +173,7 @@ export function CommentsClient({ initialComments }: { initialComments: Comment[]
                       <p className="font-semibold text-sm text-foreground truncate w-full" title={authorName}>
                         {authorName}
                       </p>
-                      <Badge variant="secondary" className="mt-1 bg-primary/15 text-primary text-[10px] uppercase font-bold tracking-wider px-2 py-0">
+                      <Badge variant="secondary" className="mt-1 bg-primary/15 text-primary text-3xs uppercase font-bold tracking-wider px-2 py-0">
                         {authorRole === "admin" ? "Admin" : authorRole === "mentor" ? "Mentor" : "Alumno"}
                       </Badge>
                     </div>
@@ -185,7 +185,7 @@ export function CommentsClient({ initialComments }: { initialComments: Comment[]
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {isLessonComment ? (
                         <>
-                          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 text-[10px]">
+                          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 text-3xs">
                             Lección
                           </Badge>
                           <span className="truncate max-w-[200px] font-medium text-foreground" title={lessonTitle}>
@@ -195,7 +195,7 @@ export function CommentsClient({ initialComments }: { initialComments: Comment[]
                           <span className="truncate max-w-[150px] italic">{formationTitle}</span>
                         </>
                       ) : (
-                        <Badge variant="outline" className="text-purple-500 border-purple-500/20 bg-purple-500/5 text-[10px]">
+                        <Badge variant="outline" className="text-purple-500 border-purple-500/20 bg-purple-500/5 text-3xs">
                           Comunidad
                         </Badge>
                       )}
@@ -233,7 +233,7 @@ export function CommentsClient({ initialComments }: { initialComments: Comment[]
                       size="icon"
                       disabled={isPending || deletingId === comment.id}
                       onClick={() => handleDelete(comment.id)}
-                      className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 h-9 w-9 rounded-lg"
+                      className="text-danger-strong hover:text-danger-strong hover:bg-danger-soft h-9 w-9 rounded-lg"
                       title="Eliminar Comentario"
                     >
                       <Trash2 className="h-4.5 w-4.5" />

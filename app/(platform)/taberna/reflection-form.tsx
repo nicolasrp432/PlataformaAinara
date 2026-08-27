@@ -122,7 +122,7 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
                 key={tag.label}
                 type="button"
                 onClick={() => handleApplyTag(tag.prefix)}
-                className="text-[11px] font-semibold px-2 py-1 rounded-md border border-border bg-background/60 hover:bg-primary/10 hover:border-primary/40 text-foreground transition-all active:scale-95 shrink-0"
+                className="text-2xs font-semibold px-2 py-1 rounded-md border border-border bg-background/60 hover:bg-primary/10 hover:border-primary/40 text-foreground transition-[transform,background-color,border-color,color,box-shadow,opacity] active:scale-95 shrink-0"
               >
                 {tag.label}
               </button>
@@ -148,7 +148,7 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
               />
               {error && <p className="text-xs text-destructive">{error}</p>}
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] text-muted-foreground hidden sm:block">
+                <p className="text-2xs text-muted-foreground hidden sm:block">
                   Las reflexiones auténticas crean puentes de crecimiento mutuo.
                 </p>
                 <Button

@@ -31,7 +31,7 @@ export function NotificationsBell({ userId, isCollapsed, placement = "top" }: No
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white leading-none">
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-3xs font-bold text-white leading-none">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -59,7 +59,7 @@ export function NotificationsBell({ userId, isCollapsed, placement = "top" }: No
         <Bell className="h-4 w-4 text-muted-foreground shrink-0" />
         <span className="flex-1 text-left">Notificaciones</span>
         {unreadCount > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-3xs font-bold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

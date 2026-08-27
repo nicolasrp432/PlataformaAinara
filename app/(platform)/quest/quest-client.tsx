@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
+import { SPRING_UI } from "@/lib/motion"
 import { CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -42,11 +43,8 @@ const itemVariants = {
   show: { 
     opacity: 1, 
     y: 0,
-    transition: {
-      type: "spring" as const,
-      stiffness: 260,
-      damping: 25,
-    }
+    // Entrada de lista: nada la ha empujado, así que no rebota (§4).
+    transition: SPRING_UI
   },
 }
 
@@ -123,11 +121,11 @@ export function QuestClient({ questData }: QuestClientProps) {
 
         {/* Circular Progress Gauge */}
         <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-background/80 border border-border/50 w-full md:w-72 shadow-xl shrink-0 group relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
           
           <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-secondary border border-border/60 shadow-lg">
             <Trophy className="w-10 h-10 text-primary drop-shadow-md transition-transform duration-300 group-hover:scale-110" />
-            <div className="absolute -bottom-2 bg-foreground text-background text-[10px] font-bold px-2 py-0.5 rounded-md border border-background shadow-md">
+            <div className="absolute -bottom-2 bg-foreground text-background text-3xs font-bold px-2 py-0.5 rounded-md border border-background shadow-md">
               NIVEL {level}
             </div>
             
@@ -156,7 +154,7 @@ export function QuestClient({ questData }: QuestClientProps) {
               <span>{xpNeeded} XP</span>
             </div>
             <Progress value={progressPercent} className="h-2 bg-primary/20" />
-            <p className="text-[10px] text-center text-muted-foreground pt-1">
+            <p className="text-3xs text-center text-muted-foreground pt-1">
               Faltan {xpNeeded - xpInLevel} XP para el nivel {level + 1}
             </p>
           </div>
@@ -166,10 +164,10 @@ export function QuestClient({ questData }: QuestClientProps) {
       {/* ── INTERACTIVE TAB SELECTOR ───────────────────────────────────── */}
       <Tabs defaultValue="quests" className="space-y-8">
         <TabsList className="bg-muted/50 p-1.5 rounded-2xl h-auto w-full max-w-md mx-auto flex">
-          <TabsTrigger value="quests" className="rounded-xl py-2.5 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all font-semibold text-sm gap-2">
+          <TabsTrigger value="quests" className="rounded-xl py-2.5 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-md transition-[transform,background-color,border-color,color,box-shadow,opacity] font-semibold text-sm gap-2">
             <Compass className="w-4 h-4" /> Misiones ({completedQuestsCount}/{quests.length})
           </TabsTrigger>
-          <TabsTrigger value="badges" className="rounded-xl py-2.5 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all font-semibold text-sm gap-2">
+          <TabsTrigger value="badges" className="rounded-xl py-2.5 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-md transition-[transform,background-color,border-color,color,box-shadow,opacity] font-semibold text-sm gap-2">
             <Award className="w-4 h-4" /> Insignias ({unlockedCount}/{achievements.length})
           </TabsTrigger>
         </TabsList>
@@ -189,7 +187,7 @@ export function QuestClient({ questData }: QuestClientProps) {
                   variants={itemVariants}
                   whileHover={{ scale: 1.01 }}
                   className={cn(
-                    "relative border rounded-2xl transition-all duration-300 shadow-sm overflow-hidden",
+                    "relative border rounded-2xl transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-300 shadow-sm overflow-hidden",
                     quest.completed
                       ? "bg-muted/20 border-border/40 opacity-70"
                       : "bg-card/70 backdrop-blur-md border-border hover:border-primary/45 hover:shadow-lg"
@@ -198,8 +196,8 @@ export function QuestClient({ questData }: QuestClientProps) {
                   <CardContent className="p-5 sm:p-6 flex items-start gap-4 sm:gap-6">
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-4 border-background shadow-md transition-all",
-                        quest.completed ? "bg-emerald-500 text-white" : "bg-primary/10 text-primary"
+                        "w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-4 border-background shadow-md transition-[transform,background-color,border-color,color,box-shadow,opacity]",
+                        quest.completed ? "bg-success-solid text-white" : "bg-primary/10 text-primary"
                       )}
                     >
                       {quest.completed ? <CheckCircle2 className="w-5 h-5" /> : <quest.icon className="w-5 h-5" />}
@@ -211,7 +209,7 @@ export function QuestClient({ questData }: QuestClientProps) {
                           className={cn(
                             "text-base sm:text-lg font-semibold truncate leading-none",
                             quest.completed
-                              ? "text-muted-foreground line-through decoration-emerald-500/50"
+                              ? "text-muted-foreground line-through decoration-success/50"
                               : "text-foreground"
                           )}
                         >
@@ -221,7 +219,7 @@ export function QuestClient({ questData }: QuestClientProps) {
                           className={cn(
                             "w-fit border-none font-bold text-xs px-2.5 py-0.5 transition-colors",
                             quest.completed
-                              ? "bg-emerald-500/10 text-emerald-600"
+                              ? "bg-success-soft text-success-strong"
                               : "bg-primary/10 text-primary"
                           )}
                         >
@@ -232,7 +230,7 @@ export function QuestClient({ questData }: QuestClientProps) {
                         {quest.description}
                       </p>
                       {!quest.completed && (
-                        <p className="text-[10px] text-primary/80 font-medium mt-2 flex items-center gap-1">
+                        <p className="text-3xs text-primary/80 font-medium mt-2 flex items-center gap-1">
                           <Star className="w-3 h-3 fill-current" /> {quest.hint}
                         </p>
                       )}

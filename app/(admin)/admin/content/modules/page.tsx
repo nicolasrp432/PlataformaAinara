@@ -324,7 +324,7 @@ export default function ModulesPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {lesson.video_url ? (
-                                    <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-200">
+                                    <Badge variant="outline" className="text-xs bg-success-soft text-success-strong border-success-border">
                                       Video OK
                                     </Badge>
                                   ) : (

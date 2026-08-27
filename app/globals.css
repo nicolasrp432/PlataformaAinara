@@ -55,6 +55,37 @@
   --color-info: #6D9EEB;
   --color-info-foreground: #FFFFFF;
 
+  /* —— RAMPAS SEMÁNTICAS ——————————————————————————————————————
+     Los tokens semánticos de arriba dan un único color sólido, pero
+     los estados (badges, avisos, píldoras) necesitan tres valores:
+     fondo suave, texto legible sobre él y borde. Sin esa rampa cada
+     pantalla acababa inventando `bg-emerald-500/15 text-emerald-700
+     border-emerald-300/40`, y la paleta cruda de Tailwind convivía con
+     los tokens sin que ninguna ganara.
+
+     Contraste texto/fondo verificado ≥ 4.5:1 en los cuatro estados.
+     —————————————————————————————————————————————————————————— */
+
+  /* Verde sólido pensado para texto blanco encima: el
+     --color-success de arriba (#7BBF6A) sólo da 2.2:1 con blanco. */
+  --color-success-solid: #377A2B;
+
+  --color-success-soft: #E8F3E4;
+  --color-success-strong: #2F6B23;
+  --color-success-border: #B9DCB0;
+
+  --color-warning-soft: #FBF0D8;
+  --color-warning-strong: #7A5610;
+  --color-warning-border: #EAD5A0;
+
+  --color-danger-soft: #FBE9E9;
+  --color-danger-strong: #8F2F2F;
+  --color-danger-border: #EFC2C2;
+
+  --color-info-soft: #E6EEFB;
+  --color-info-strong: #2A4E8C;
+  --color-info-border: #BBD0F0;
+
   /* —— SIDEBAR — White sidebar with subtle warm border —— */
   --color-sidebar: #FFFFFF;
   --color-sidebar-foreground: #434343;
@@ -90,6 +121,73 @@
   --radius-full: 9999px;
   /* pills, chips, badges */
 
+  /* —— ESCALA TIPOGRÁFICA —————————————————————————————————————
+     Cada peldaño lleva su propio interlineado y su propio tracking,
+     porque ambos dependen del tamaño (skill apple-design §15):
+
+       · El tracking es específico del tamaño. El texto grande se lee
+         con las letras demasiado separadas conforme crece, así que va
+         en negativo; el texto pequeño necesita algo de aire positivo
+         para no empastarse. Un letter-spacing único está mal en algún
+         sitio por definición.
+       · El interlineado va al revés que el tamaño: apretado en
+         titulares, holgado en texto corrido.
+
+     Todo en rem: así el ajuste de tamaño de texto del sistema
+     operativo escala la interfaz en lugar de romperla.
+     —————————————————————————————————————————————————————————— */
+
+  /* Micro-etiquetas: contadores, badges, pies. Tracking positivo. */
+  --text-3xs: 0.625rem;
+  --text-3xs--line-height: 1.4;
+  --text-3xs--letter-spacing: 0.02em;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.45;
+  --text-2xs--letter-spacing: 0.01em;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.4;
+  --text-xs--letter-spacing: 0.005em;
+
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5;
+  --text-sm--letter-spacing: 0em;
+
+  /* Texto corrido: tracking neutro, interlineado cómodo. */
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-base--letter-spacing: 0em;
+
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5;
+  --text-lg--letter-spacing: -0.005em;
+
+  /* A partir de aquí el tracking se cierra conforme crece el cuerpo. */
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.4;
+  --text-xl--letter-spacing: -0.01em;
+
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.3;
+  --text-2xl--letter-spacing: -0.015em;
+
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.2;
+  --text-3xl--letter-spacing: -0.02em;
+
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 1.15;
+  --text-4xl--letter-spacing: -0.025em;
+
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.05;
+  --text-5xl--letter-spacing: -0.03em;
+
+  --text-6xl: 3.75rem;
+  --text-6xl--line-height: 1;
+  --text-6xl--letter-spacing: -0.035em;
+
   /* —— TYPOGRAPHY — Inter (body) + Cormorant Garamond (display) —— */
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-display: var(--font-display), "Cormorant Garamond", Georgia, serif;
@@ -115,13 +213,19 @@
   --color-text-tertiary: #6B6B6B;
   --color-text-disabled: #A1A1A1;
   --color-primary-soft: #FFECA6;
+  /* Oro legible como texto sobre fondos claros (5.37:1 sobre #F5F1E8).
+     El oro de marca sólo sirve como fondo, no como tinta. */
+  --color-primary-strong: #7A5F0C;
   --color-divider: #C5BEAE;
   --color-icon-secondary: #9E9585;
 }
 
 /* ============================================================
-   CSS CUSTOM PROPERTIES — shadcn/ui compatibility layer
-   Mirrors @theme inline tokens for :root and .dark contexts
+   CSS CUSTOM PROPERTIES — capa de compatibilidad con shadcn/ui
+   Espeja los tokens de @theme inline en :root.
+   NOTA: no hay tema oscuro. Si se añade, va aquí como bloque
+   `.dark` y hay que revisar los tokens de sombra, que están
+   tintados en oro sobre fondo claro.
    ============================================================ */
 
 :root {
@@ -173,13 +277,6 @@
 
 .font-display {
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-}
-
-.text-gold-gradient {
-  background: linear-gradient(135deg, #F6D25C 0%, #E8A020 60%, #F6D25C 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 /* Floating animation for hero orbs */
@@ -235,39 +332,68 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-display: swap;
     line-height: 1.6;
   }
 
-  /* Heading hierarchy — Inter (sans-serif geometric) only */
+  /* Jerarquía de cabeceras.
+     Antes h1, h2 y h3 compartían -0.02em pese a medir 2.25rem, 1.5rem
+     y lo que tocara: el mismo tracking en tres tamaños distintos está
+     mal en al menos dos de ellos. Ahora cada nivel toma el suyo de la
+     escala, y la jerarquía se construye con peso + tamaño +
+     interlineado como conjunto, no sólo con el tamaño (§15). */
   h1,
   h2,
-  h3 {
-    font-family: var(--font-sans);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-    color: var(--color-foreground);
-  }
-
-  h1 {
-    font-size: 2.25rem;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-
+  h3,
   h4,
   h5,
   h6 {
     font-family: var(--font-sans);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    color: var(--color-foreground);
+    text-wrap: balance;
   }
 
-  /* Performance: Only animate composited properties */
+  h1 {
+    font-size: var(--text-4xl);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: var(--text-2xl);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: var(--text-xl);
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    font-weight: 600;
+  }
+
+  h5,
+  h6 {
+    font-size: var(--text-base);
+    line-height: 1.5;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+
+  /* Transición por defecto de enlaces y botones.
+     Ojo: color y background-color NO son propiedades compositadas, se
+     pintan en el hilo principal. Se transicionan igualmente porque
+     sobre superficies pequeñas cuesta poco, pero la duración se
+     mantiene corta y no se añade nada más a la lista. Los componentes
+     que necesiten transformar declaran su propia transición. */
   a,
   button {
     transition: color var(--transition-fast),
@@ -374,8 +500,7 @@
     border: 1px solid rgba(246, 210, 92, 0.20);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow), inset 0 1px 0 rgba(246, 210, 92, 0.15);
-    transition: box-shadow var(--transition-base), transform var(--transition-spring);
-    will-change: transform;
+    transition: box-shadow var(--transition-base), transform var(--transition-base);
   }
 
   .premium-card:hover {
@@ -408,22 +533,18 @@
     box-shadow: 0 0 0 1px rgba(246, 210, 92, 0.30);
   }
 
-  /* ---- GLASS SURFACE (light version) ---- */
-  .glass-surface {
-    background: rgba(255, 255, 255, 0.80);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    border: 1px solid rgba(246, 210, 92, 0.15);
-  }
 
   /* ---- SECTION HEADINGS ---- */
+  /* Mismo cuerpo que h2, así que mismo tracking y mismo interlineado.
+     Antes eran -0.025em / 1.2 frente a -0.02em / 1.2: dos ajustes
+     ópticos distintos para el mismo tamaño. */
   .section-title {
     font-family: var(--font-sans);
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     font-weight: 600;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
     color: var(--color-foreground);
-    line-height: 1.2;
   }
 
   .section-subtitle {
@@ -451,14 +572,28 @@
     box-shadow: 0 0 18px -6px rgba(246, 210, 92, 0.22);
   }
 
-  .luxury-glass {
-    background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(246, 210, 92, 0.22);
+  /* ---- MATERIAL TRANSLÚCIDO ----
+     Una sola superficie de cristal. El peso del material codifica
+     jerarquía (§12): las superficies grandes se leen más gruesas, así
+     que `.glass-thick` sube el desenfoque y la sombra en lugar de
+     existir como una utilidad casi idéntica a la anterior.
+     El borde superior claro es la luz cogiéndose al canto del material. */
+  .glass {
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
   }
 
-  .luxury-glass-dark {
+  .glass-thick {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .glass-dark {
     background: rgba(23, 23, 23, 0.85);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -592,11 +727,6 @@
     contain-intrinsic-size: 0 300px;
   }
 
-  .gpu {
-    transform: translateZ(0);
-    will-change: transform;
-  }
-
   .isolate-layer {
     isolation: isolate;
   }
@@ -625,44 +755,125 @@
     display: none;
   }
 
-  /* ---- BOTTOM SHEET / SHEET ANIMATIONS ----
-     Tailwind v4 here ships without tailwindcss-animate, so we drive the
-     enter/exit transitions from Radix's data-state with real keyframes. */
-  @keyframes sheet-in-bottom {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
-  }
-  @keyframes sheet-out-bottom {
-    from { transform: translateY(0); }
-    to   { transform: translateY(100%); }
-  }
-  @keyframes sheet-fade-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes sheet-fade-out {
-    from { opacity: 1; }
-    to   { opacity: 0; }
+}
+
+/* ============================================================
+   ACCESIBILIDAD — PREFERENCIAS DEL SISTEMA
+   Skill apple-design §14. Movimiento reducido no significa "sin
+   feedback": significa un equivalente no vestibular. Se conservan
+   los cambios de opacidad y color que ayudan a comprender; se
+   eliminan desplazamientos, rebotes, parallax y bucles lentos.
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  html {
+    scroll-behavior: auto;
   }
 
-  .sheet-overlay[data-state="open"] {
-    animation: sheet-fade-in 0.3s ease both;
+  /* Bucles infinitos: son los que más molestan (oscilación lenta
+     cerca de 0,2 Hz). Se congelan en su estado de reposo. */
+  .animate-float,
+  .animate-float-slow,
+  .animate-float-delay {
+    animation: none;
+    transform: none;
   }
-  .sheet-overlay[data-state="closed"] {
-    animation: sheet-fade-out 0.2s ease both;
+
+  /* El shimmer del esqueleto se sustituye por un pulso de opacidad
+     suave: sigue comunicando "cargando" sin barrido lateral. */
+  .shimmer {
+    animation: reduced-pulse 2s ease-in-out infinite;
+    background: var(--color-muted);
   }
-  .sheet-content[data-side="bottom"][data-state="open"] {
-    animation: sheet-in-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+
+  @keyframes reduced-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.65; }
   }
-  .sheet-content[data-side="bottom"][data-state="closed"] {
-    animation: sheet-out-bottom 0.22s ease-in both;
+
+  /* Entradas: se quedan sólo con el fundido, sin desplazamiento. */
+  .animate-slide-up {
+    animation: fade-in 200ms ease both;
   }
-  .sheet-content[data-side="right"][data-state="closed"],
-  .sheet-content[data-side="left"][data-state="closed"] {
-    animation: sheet-fade-out 0.2s ease both;
+
+  /* Los sheets leen la preferencia en JS (useReducedMotion en
+     sheet.tsx) porque Framer los anima con estilos inline: desde CSS
+     no se les alcanza. */
+
+  /* Se elimina el overshoot elástico allí donde estaba tokenizado. */
+  :root {
+    --transition-spring: var(--transition-base);
   }
-  .sheet-content[data-side="right"][data-state="open"],
-  .sheet-content[data-side="left"][data-state="open"] {
-    animation: sheet-fade-in 0.25s ease both;
+
+  /* Elevaciones al hover: se conserva la sombra, se quita el salto. */
+  .premium-card:hover {
+    transform: none;
+  }
+
+  /* Los tokens de transición se acortan en lugar de anularse: los
+     cambios de color y opacidad siguen leyéndose, pero dejan de
+     tener recorrido perceptible. */
+  :root {
+    --transition-fast: 1ms linear;
+    --transition-base: 1ms linear;
+    --transition-slow: 1ms linear;
+  }
+
+  /* Las utilidades de desplazamiento dejan de desplazar. */
+  .touch-scale:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+
+  .glass,
+  .glass-thick {
+    background: var(--color-card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .glass-dark {
+    background: #171717;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* El dock flotante y los sheets dejan de ser translúcidos. */
+  [data-translucent] {
+    background: var(--color-card) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+
+  :root {
+    --color-border: #8A8272;
+    --color-input: #8A8272;
+    --color-muted-foreground: #4A4A4A;
+    --color-text-tertiary: #4A4A4A;
+    --border: #8A8272;
+    --input: #8A8272;
+    --muted-foreground: #4A4A4A;
+  }
+
+  .glass,
+  .glass-thick,
+  [data-translucent] {
+    background: var(--color-card) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid var(--color-border) !important;
+  }
+
+  .luxury-card,
+  .premium-card,
+  .stat-card,
+  .surface-raised {
+    border: 1px solid var(--color-border);
   }
 }

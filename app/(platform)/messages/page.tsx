@@ -75,12 +75,12 @@ export default async function MessagesPage() {
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {conv.unreadCount > 0 && (
-                      <Badge className="h-5 min-w-5 px-1 text-[10px] font-bold rounded-full bg-primary">
+                      <Badge className="h-5 min-w-5 px-1 text-3xs font-bold rounded-full bg-primary">
                         {conv.unreadCount}
                       </Badge>
                     )}
                     {conv.lastMessageAt && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-3xs text-muted-foreground">
                         {formatRelative(conv.lastMessageAt)}
                       </span>
                     )}

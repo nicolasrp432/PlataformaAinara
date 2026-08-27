@@ -149,7 +149,7 @@ export function MessagesThread({ conversationId, currentUserId, otherUser, initi
               {!isOwn && (
                 <Avatar className="h-7 w-7 shrink-0 mt-0.5">
                   <AvatarImage src={msg.profiles?.avatar_url ?? undefined} />
-                  <AvatarFallback className="text-[10px]">
+                  <AvatarFallback className="text-3xs">
                     {getInitials(msg.profiles?.full_name ?? otherUser?.full_name ?? "?")}
                   </AvatarFallback>
                 </Avatar>
@@ -165,7 +165,7 @@ export function MessagesThread({ conversationId, currentUserId, otherUser, initi
                 >
                   {msg.body}
                 </div>
-                <span className="mt-0.5 text-[10px] text-muted-foreground px-1">
+                <span className="mt-0.5 text-3xs text-muted-foreground px-1">
                   {formatTime(msg.created_at)}
                 </span>
               </div>

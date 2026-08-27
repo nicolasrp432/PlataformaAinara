@@ -60,7 +60,7 @@ export function NatalChartSection({
 
   return (
     <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md relative overflow-hidden group">
-      <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-700 pointer-events-none" />
+      <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-300 ease-out pointer-events-none" />
       <CardHeader className="pb-2">
         <CardTitle className="text-xl text-foreground flex items-center gap-2">
           <Star className="w-5 h-5 text-primary" /> Diseño Cósmico
@@ -144,10 +144,10 @@ export function NatalChartSection({
                             <span className="text-sm font-semibold text-foreground">{p.name}</span>
                             <span className="text-xs text-muted-foreground">en {p.sign}</span>
                             {p.retrograde && (
-                              <span className="text-[10px] font-medium text-amber-600" title="Retrógrado">℞</span>
+                              <span className="text-3xs font-medium text-warning-strong" title="Retrógrado">℞</span>
                             )}
                           </div>
-                          <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
+                          <p className="text-2xs text-muted-foreground font-mono tabular-nums">
                             {p.degree}° {p.minutes}&apos; — Casa {p.house}
                           </p>
                         </div>
@@ -165,7 +165,7 @@ export function NatalChartSection({
           <div className="pt-1">
             <div className="flex flex-col sm:flex-row gap-3">
               {chart && (
-                <Button onClick={handleOpenInteractive} className="gap-2 w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white font-semibold shadow-sm hover:shadow active:scale-[0.98]">
+                <Button onClick={handleOpenInteractive} className="gap-2 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm hover:shadow">
                   <Sparkles className="w-4 h-4" />
                   Abrir Carta Interactiva (IA)
                 </Button>
@@ -175,7 +175,7 @@ export function NatalChartSection({
               </Button>
             </div>
             {chart?.calculated_at && (
-              <p className="text-[11px] text-muted-foreground mt-2">
+              <p className="text-2xs text-muted-foreground mt-2">
                 Calculada el{" "}
                 {new Date(chart.calculated_at).toLocaleDateString("es-ES", {
                   day: "numeric", month: "long", year: "numeric",
@@ -208,12 +208,12 @@ function AngleBox({
   return (
     <div className="rounded-lg border border-border/40 bg-background/40 px-4 py-3">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="text-2xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
         <span className="text-lg text-primary leading-none">{getSignSymbol(sign)}</span>
       </div>
       <p className="text-sm font-semibold text-foreground">{sign ?? "—"}</p>
       {degree != null && (
-        <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
+        <p className="text-2xs text-muted-foreground font-mono tabular-nums">
           {degree}° {minutes ?? 0}&apos;
         </p>
       )}

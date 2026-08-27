@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useUserStore } from "@/lib/store/user-store"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { SPRING_UI } from "@/lib/motion"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -95,7 +96,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           "fixed inset-y-0 left-0 z-50 hidden flex-col md:flex",
           "bg-sidebar border-r border-sidebar-border",
           "shadow-sm",
-          "transition-all duration-300 ease-out",
+          "transition-[width] duration-300 ease-out",
           isCollapsed ? "w-16" : "w-64"
         )}
       >
@@ -114,7 +115,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                 <span className="font-display text-xl font-semibold tracking-wide text-foreground leading-none block">
                   Mitra
                 </span>
-                <span className="text-[10px] text-primary tracking-widest uppercase font-medium leading-none">
+                <span className="text-3xs text-primary tracking-widest uppercase font-medium leading-none">
                   Desde la raíz
                 </span>
               </div>
@@ -168,7 +169,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
               </div>
               <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full gold-gradient transition-all duration-700 ease-out"
+                  className="h-full rounded-full gold-gradient transition-[width] duration-500 ease-out"
                   style={{ width: `${Math.round(progress)}%` }}
                 />
               </div>
@@ -190,7 +191,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                   strokeDasharray={`${2 * Math.PI * 13}`}
                   strokeDashoffset={`${2 * Math.PI * 13 * (1 - progress / 100)}`}
                   strokeLinecap="round"
-                  className="text-primary transition-all duration-700"
+                  className="text-primary transition-[stroke-dashoffset] duration-500 ease-out"
                 />
               </svg>
             </div>
@@ -221,8 +222,8 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                   {isActive && (
                     <motion.span
                       layoutId="sidebar-active-pill"
-                      className="absolute inset-0 rounded-lg bg-sidebar-accent ring-1 ring-primary/15 -z-0"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      className="absolute inset-0 rounded-lg bg-sidebar-accent ring-1 ring-primary/15"
+                      transition={SPRING_UI}
                     />
                   )}
                   <item.icon
@@ -335,7 +336,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           </DropdownMenu>
 
           {!isCollapsed && (
-            <div className="pt-2 px-3 text-[10px] text-muted-foreground/70 text-center tracking-widest uppercase">
+            <div className="pt-2 px-3 text-3xs text-muted-foreground/70 text-center tracking-widest uppercase">
               Mitra · v0.3
             </div>
           )}

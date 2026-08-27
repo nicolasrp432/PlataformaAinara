@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
+import { VideoScrubber } from "@/components/video/video-scrubber"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -415,6 +416,7 @@ function NativePlayer({
   const [showControls, setShowControls] = useState(true)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [isBuffering, setIsBuffering] = useState(false)
+  const [buffered, setBuffered] = useState(0)
   const [hasCompleted, setHasCompleted] = useState(false)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -439,8 +441,15 @@ function NativePlayer({
         video.currentTime = initialProgress
       }
     }
+    const onBufferedChange = () => {
+      if (video.buffered.length > 0) {
+        setBuffered(video.buffered.end(video.buffered.length - 1))
+      }
+    }
+
     const onTimeUpdate = () => {
       setCurrentTime(video.currentTime)
+      onBufferedChange()
       if (!hasCompleted && video.duration > 0 && video.currentTime / video.duration >= COMPLETION_THRESHOLD) {
         setHasCompleted(true)
         onComplete?.()
@@ -457,10 +466,12 @@ function NativePlayer({
     video.addEventListener("pause", onPause)
     video.addEventListener("waiting", onWaiting)
     video.addEventListener("canplay", onCanPlay)
+    video.addEventListener("progress", onBufferedChange)
 
     return () => {
       video.removeEventListener("loadedmetadata", onLoaded)
       video.removeEventListener("timeupdate", onTimeUpdate)
+      video.removeEventListener("progress", onBufferedChange)
       video.removeEventListener("play", onPlay)
       video.removeEventListener("pause", onPause)
       video.removeEventListener("waiting", onWaiting)
@@ -563,11 +574,11 @@ function NativePlayer({
     v.currentTime = Math.max(0, Math.min(duration, v.currentTime + seconds))
   }
 
-  const handleSeek = (value: number[]) => {
+  const handleSeek = (time: number) => {
     const v = videoRef.current
     if (!v) return
-    v.currentTime = value[0]
-    setCurrentTime(value[0])
+    v.currentTime = time
+    setCurrentTime(time)
   }
 
   const handleVolumeChange = (value: number[]) => {
@@ -625,7 +636,7 @@ function NativePlayer({
       )}
 
       {hasCompleted && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-emerald-500/90 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-success/20 text-white px-3 py-1.5 rounded-full text-sm font-medium">
           <CheckCircle2 className="h-4 w-4" />
           Completado
         </div>
@@ -645,13 +656,16 @@ function NativePlayer({
           {title && <p className="text-white text-xs truncate opacity-75 ml-2 max-w-[55%]">{title}</p>}
         </div>
 
-        <div className="mb-3 sm:mb-4">
-          <Slider
-            value={[currentTime]}
-            max={duration || 100}
-            step={0.1}
-            onValueChange={handleSeek}
-            className="cursor-pointer"
+        <div className="-my-2 mb-1 sm:mb-2">
+          <VideoScrubber
+            currentTime={currentTime}
+            duration={duration}
+            buffered={buffered}
+            onSeek={handleSeek}
+            // Mientras se arrastra, los controles no se esconden solos.
+            onScrubStart={() => setShowControls(true)}
+            onScrubEnd={showControlsTemporarily}
+            formatTime={formatTime}
           />
         </div>
 
@@ -673,7 +687,7 @@ function NativePlayer({
               <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={toggleMute}>
                 {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
               </Button>
-              <div className="w-0 overflow-hidden group-hover/volume:w-24 transition-all duration-200">
+              <div className="w-0 overflow-hidden transition-[width] duration-200 ease-out group-hover/volume:w-24 group-focus-within/volume:w-24">
                 <Slider
                   value={[isMuted ? 0 : volume]}
                   max={1}

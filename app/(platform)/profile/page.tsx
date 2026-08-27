@@ -113,10 +113,10 @@ export default async function ProfilePage() {
 
   const subscriptionStatus = subscription?.status ?? "inactive"
   const subscriptionLabel: Record<string, { label: string; className: string }> = {
-    active: { label: "Activa", className: "bg-emerald-500/15 text-emerald-700 border-emerald-300/40" },
+    active: { label: "Activa", className: "bg-success-soft text-success-strong border-success-border" },
     trialing: { label: "En prueba", className: "bg-blue-500/15 text-blue-700 border-blue-300/40" },
-    past_due: { label: "Pago pendiente", className: "bg-amber-500/15 text-amber-700 border-amber-300/40" },
-    canceled: { label: "Cancelada", className: "bg-rose-500/15 text-rose-700 border-rose-300/40" },
+    past_due: { label: "Pago pendiente", className: "bg-warning-soft text-warning-strong border-warning-border" },
+    canceled: { label: "Cancelada", className: "bg-danger-soft text-danger-strong border-danger-border" },
     inactive: { label: "Sin suscripción", className: "bg-muted text-muted-foreground border-border/60" },
   }
   const subBadge = subscriptionLabel[subscriptionStatus] ?? subscriptionLabel.inactive
@@ -139,7 +139,7 @@ export default async function ProfilePage() {
         {/* Left Column: Avatar & Main Stats (unchanged) */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg shadow-black/5 overflow-hidden group">
-            <div className="h-28 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent w-full relative transition-all duration-500 group-hover:from-primary/40" />
+            <div className="h-28 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent w-full relative transition-[background-color] duration-300 ease-out group-hover:from-primary/40" />
             <CardContent className="px-6 py-0 pb-6 relative z-10 text-center">
               <div className="flex justify-center -mt-14 mb-5">
                 <Avatar className="h-28 w-28 border-[6px] border-background shadow-xl transition-transform duration-300 hover:scale-105">
@@ -230,7 +230,7 @@ export default async function ProfilePage() {
               <TabsTrigger value="mentorship" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
                 <CalendarDays className="w-4 h-4" /> Mentorías
                 {mentorshipSessions.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+                  <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-3xs">
                     {mentorshipSessions.length}
                   </Badge>
                 )}
@@ -241,7 +241,7 @@ export default async function ProfilePage() {
               <TabsTrigger value="messages" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
                 <MessageSquare className="w-4 h-4" /> Mensajes
                 {conversations.filter((c: Conversation) => c.unreadCount > 0).length > 0 && (
-                  <Badge variant="destructive" className="ml-1 h-4 px-1.5 text-[10px] bg-primary text-primary-foreground font-bold">
+                  <Badge variant="destructive" className="ml-1 h-4 px-1.5 text-3xs bg-primary text-primary-foreground font-bold">
                     {conversations.reduce((acc: number, curr: Conversation) => acc + curr.unreadCount, 0)}
                   </Badge>
                 )}
@@ -330,7 +330,7 @@ export default async function ProfilePage() {
                         className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                          <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
                               {l.title}
@@ -394,10 +394,10 @@ export default async function ProfilePage() {
                   const date = new Date(s.scheduled_at)
                   const isPast = date.getTime() < Date.now()
                   const statusColors: Record<string, string> = {
-                    confirmed: "bg-emerald-500/15 text-emerald-700 border-emerald-300/40",
-                    pending: "bg-amber-500/15 text-amber-700 border-amber-300/40",
+                    confirmed: "bg-success-soft text-success-strong border-success-border",
+                    pending: "bg-warning-soft text-warning-strong border-warning-border",
                     completed: "bg-blue-500/15 text-blue-700 border-blue-300/40",
-                    cancelled: "bg-rose-500/15 text-rose-700 border-rose-300/40",
+                    cancelled: "bg-danger-soft text-danger-strong border-danger-border",
                     no_show: "bg-muted text-muted-foreground border-border/60",
                   }
                   const statusLabels: Record<string, string> = {
@@ -522,12 +522,12 @@ export default async function ProfilePage() {
                               </span>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {conv.unreadCount > 0 && (
-                                  <Badge className="h-5 min-w-5 px-1 text-[10px] font-bold rounded-full bg-primary text-primary-foreground">
+                                  <Badge className="h-5 min-w-5 px-1 text-3xs font-bold rounded-full bg-primary text-primary-foreground">
                                     {conv.unreadCount}
                                   </Badge>
                                 )}
                                 {conv.lastMessageAt && (
-                                  <span className="text-[10px] text-muted-foreground">
+                                  <span className="text-3xs text-muted-foreground">
                                     {formatRelative(conv.lastMessageAt)}
                                   </span>
                                 )}

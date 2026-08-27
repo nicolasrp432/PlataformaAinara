@@ -81,17 +81,17 @@ const accessStatusConfig = {
   approved: {
     label: "Aprobado",
     icon: CheckCircle2,
-    className: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+    className: "bg-success-soft text-success-strong border-success-border",
   },
   pending: {
     label: "Pendiente",
     icon: Clock,
-    className: "bg-amber-500/10 text-amber-700 border-amber-200",
+    className: "bg-warning-soft text-warning-strong border-warning-border",
   },
   suspended: {
     label: "Suspendido",
     icon: XCircle,
-    className: "bg-rose-500/10 text-rose-700 border-rose-200",
+    className: "bg-danger-soft text-danger-strong border-danger-border",
   },
 }
 
@@ -247,13 +247,13 @@ function UserActions({ user }: { user: UserRow }) {
             </SheetHeader>
             <div className="space-y-1">
               <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Acceso</p>
-              <Button variant="ghost" className="w-full justify-start h-12 text-emerald-700" disabled={user.access_status === "approved"} onClick={closeAnd(() => handleAccess("approved"))}>
+              <Button variant="ghost" className="w-full justify-start h-12 text-success-strong" disabled={user.access_status === "approved"} onClick={closeAnd(() => handleAccess("approved"))}>
                 <CheckCircle2 className="mr-3 h-5 w-5" /> Aprobar acceso
               </Button>
               <Button variant="ghost" className="w-full justify-start h-12" disabled={user.access_status === "pending"} onClick={closeAnd(() => handleAccess("pending"))}>
                 <Clock className="mr-3 h-5 w-5" /> Marcar pendiente
               </Button>
-              <Button variant="ghost" className="w-full justify-start h-12 text-rose-600" disabled={user.access_status === "suspended"} onClick={closeAnd(() => handleAccess("suspended"))}>
+              <Button variant="ghost" className="w-full justify-start h-12 text-danger-strong" disabled={user.access_status === "suspended"} onClick={closeAnd(() => handleAccess("suspended"))}>
                 <XCircle className="mr-3 h-5 w-5" /> Suspender acceso
               </Button>
               <p className="px-1 pt-3 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Rol</p>
@@ -288,7 +288,7 @@ function UserActions({ user }: { user: UserRow }) {
         <DropdownMenuItem
           onClick={() => handleAccess("approved")}
           disabled={user.access_status === "approved"}
-          className="text-emerald-700 focus:text-emerald-700"
+          className="text-success-strong focus:text-success-strong"
         >
           <CheckCircle2 className="mr-2 h-4 w-4" />
           Aprobar acceso
@@ -303,7 +303,7 @@ function UserActions({ user }: { user: UserRow }) {
         <DropdownMenuItem
           onClick={() => handleAccess("suspended")}
           disabled={user.access_status === "suspended"}
-          className="text-rose-600 focus:text-rose-600"
+          className="text-danger-strong focus:text-danger-strong"
         >
           <XCircle className="mr-2 h-4 w-4" />
           Suspender acceso
@@ -370,9 +370,9 @@ export function UsersTable({ users }: UsersTableProps) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
           { label: "Total", value: counts.total, color: "text-foreground" },
-          { label: "Aprobados", value: counts.approved, color: "text-emerald-700" },
-          { label: "Pendientes", value: counts.pending, color: "text-amber-700" },
-          { label: "Suspendidos", value: counts.suspended, color: "text-rose-700" },
+          { label: "Aprobados", value: counts.approved, color: "text-success-strong" },
+          { label: "Pendientes", value: counts.pending, color: "text-warning-strong" },
+          { label: "Suspendidos", value: counts.suspended, color: "text-danger-strong" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="pt-4 pb-3">

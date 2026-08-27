@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { SPRING_UI } from "@/lib/motion"
 import {
   Sheet,
   SheetContent,
@@ -73,7 +74,9 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
         )}
         aria-label="Navegación principal"
       >
-        <div className="pointer-events-auto mx-auto max-w-md rounded-2xl border border-border/80 bg-card/90 shadow-[0_8px_32px_rgba(246,210,92,0.12),0_2px_12px_rgba(0,0,0,0.08)] backdrop-blur-2xl px-1.5 py-1">
+        <div
+          data-translucent=""
+          className="pointer-events-auto mx-auto max-w-md rounded-2xl border border-border/80 bg-card/90 shadow-[0_8px_32px_rgba(246,210,92,0.12),0_2px_12px_rgba(0,0,0,0.08)] backdrop-blur-2xl px-1.5 py-1">
           <div className="grid grid-cols-5 items-center">
             {MOBILE_PRIMARY_NAV.map((item) => {
               const isActive = isNavItemActive(pathname, item.href)
@@ -86,15 +89,15 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-xl py-1",
-                    "transition-all duration-200 active:scale-90",
+                    "touch-manipulation transition-[transform,color] duration-100 ease-out active:scale-[0.94]",
                     isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {isActive && (
                     <motion.span
                       layoutId="mobile-nav-pill"
-                      className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20 -z-0"
-                      transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                      className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20"
+                      transition={SPRING_UI}
                     />
                   )}
 
@@ -118,7 +121,7 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
                     />
                   )}
 
-                  <span className="relative z-10 text-[10.5px] tracking-tight leading-none">
+                  <span className="relative z-10 text-3xs tracking-tight leading-none">
                     {item.shortName ?? item.name}
                   </span>
                 </Link>
@@ -132,22 +135,22 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
               aria-label="Más opciones y herramientas"
               className={cn(
                 "relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-xl py-1",
-                "transition-all duration-200 active:scale-90",
+                "touch-manipulation transition-[transform,color] duration-100 ease-out active:scale-[0.94]",
                 isMoreActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {isMoreActive && (
                 <motion.span
                   layoutId="mobile-nav-pill"
-                  className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20 -z-0"
-                  transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                  className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20"
+                  transition={SPRING_UI}
                 />
               )}
               <span className="relative z-10">
                 <MoreHorizontal className="h-5 w-5" />
                 <MessagesUnreadBadge isCollapsed />
               </span>
-              <span className="relative z-10 text-[10.5px] tracking-tight leading-none">
+              <span className="relative z-10 text-3xs tracking-tight leading-none">
                 Más
               </span>
             </button>
@@ -158,10 +161,10 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent
           side="bottom"
-          className="max-h-[88dvh] rounded-t-3xl border-t border-border/80 bg-card/95 backdrop-blur-2xl px-5 pb-8 pt-4"
+          className="max-h-[88dvh] rounded-t-3xl border-t border-border/80 bg-card/95 backdrop-blur-2xl"
+          contentClassName="px-5 pb-8"
         >
           <SheetHeader className="pb-2">
-            <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/20 mb-2" />
             <SheetTitle className="text-left font-display text-lg font-semibold text-foreground flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               Explorar Plataforma
@@ -181,7 +184,7 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
                 <p className="truncate text-sm font-semibold text-foreground">
                   {user.full_name}
                 </p>
-                <span className="shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-bold text-primary">
+                <span className="shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-2xs font-bold text-primary">
                   Nivel {liveLevel}
                 </span>
               </div>
@@ -190,7 +193,7 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
               </p>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
                 <div
-                  className="h-full rounded-full gold-gradient transition-all duration-700"
+                  className="h-full rounded-full gold-gradient transition-[width] duration-500 ease-out"
                   style={{ width: `${Math.round(progress)}%` }}
                 />
               </div>
@@ -207,7 +210,8 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
                   href={item.href}
                   onClick={() => setMoreOpen(false)}
                   className={cn(
-                    "relative flex min-h-[78px] flex-col items-center justify-center gap-2 rounded-2xl border p-2.5 text-center transition-all active:scale-95",
+                    "relative flex min-h-[78px] flex-col items-center justify-center gap-2 rounded-2xl border p-2.5 text-center",
+                    "touch-manipulation transition-[transform,background-color,border-color] duration-100 ease-out active:scale-[0.96]",
                     isActive
                       ? "border-primary/50 bg-primary/10 text-foreground shadow-sm shadow-primary/10"
                       : "border-border/60 bg-background/50 text-muted-foreground hover:bg-background/80 hover:text-foreground"

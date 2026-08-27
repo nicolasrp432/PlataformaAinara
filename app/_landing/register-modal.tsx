@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { SPRING_UI } from "@/lib/motion"
 import { X, Sparkles, Loader2, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -117,7 +118,7 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            transition={SPRING_UI}
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border/50 px-6 py-5">
@@ -146,8 +147,8 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex flex-1 flex-col items-center justify-center text-center"
                 >
-                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
-                    <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success-soft">
+                    <CheckCircle2 className="h-10 w-10 text-success-strong" />
                   </div>
                   <h2 className="font-display mb-3 text-3xl font-light">¡Registro exitoso!</h2>
                   <p className="mb-2 text-muted-foreground leading-relaxed">

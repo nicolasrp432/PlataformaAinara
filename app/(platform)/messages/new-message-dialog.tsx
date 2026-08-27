@@ -148,7 +148,7 @@ export function NewMessageDialog({ currentUserId }: { currentUserId: string }) {
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold truncate">{user.full_name}</p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-2xs text-muted-foreground">
                     Nivel {user.level || 1}
                   </p>
                 </div>

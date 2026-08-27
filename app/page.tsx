@@ -20,9 +20,13 @@ type LandingFormation = {
  * publicado es idéntico para todo el mundo, así que no hace falta leer cookies
  * (que era lo que la forzaba a dinámica y anulaba el `revalidate`).
  *
- * Al pasar a estática, la consulta ocurre en tiempo de build. Si Supabase no
- * responde o falta la configuración, la página se genera igualmente con el
- * escaparate de ejemplo en vez de tumbar el despliegue.
+ * OJO AL DESPLEGAR: al ser estática, esta consulta se ejecuta en la máquina
+ * de build, no en cada visita. Si NEXT_PUBLIC_SUPABASE_URL o
+ * NEXT_PUBLIC_SUPABASE_ANON_KEY no están disponibles durante `next build`,
+ * la portada se publica con el catálogo vacío y así se queda hasta la
+ * primera revalidación (1 h). No tumba el despliegue a propósito: es
+ * preferible una portada incompleta a un deploy fallido. Pero las variables
+ * tienen que estar puestas en el proveedor ANTES de compilar.
  */
 async function getPublishedFormations(): Promise<LandingFormation[]> {
   try {

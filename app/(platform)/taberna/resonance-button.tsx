@@ -41,7 +41,7 @@ export function ResonanceButton({ reflectionId, initialCount }: ResonanceButtonP
     >
       <Heart
         className={cn(
-          "w-4 h-4 transition-all duration-200",
+          "w-4 h-4 transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-200",
           resonated
             ? "fill-primary text-primary scale-110"
             : "fill-transparent group-hover/btn:fill-primary/20"

@@ -42,8 +42,8 @@ export default async function CertificatesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="border-border/50">
           <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-500/10">
-              <Award className="h-5 w-5 text-amber-500" />
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-warning-soft">
+              <Award className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{totalCerts ?? 0}</p>
@@ -86,8 +86,8 @@ export default async function CertificatesPage() {
             <div className="divide-y divide-border/50">
               {(certificates as unknown as CertificateRow[]).map((cert) => (
                 <div key={cert.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 shrink-0">
-                    <Award className="h-4 w-4 text-amber-500" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-warning-soft shrink-0">
+                    <Award className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground text-sm truncate">
@@ -103,7 +103,7 @@ export default async function CertificatesPage() {
                       {new Date(cert.issued_at).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-amber-500 border-amber-500/30 text-xs shrink-0">
+                  <Badge variant="outline" className="text-primary border-primary/30 text-xs shrink-0">
                     Emitido
                   </Badge>
                 </div>

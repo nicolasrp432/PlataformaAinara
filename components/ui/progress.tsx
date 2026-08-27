@@ -19,7 +19,7 @@ const Progress = React.forwardRef<
   >
     <ProgressPrimitive.Indicator
       // Fill: gold gradient with smooth transition
-      className="h-full flex-1 rounded-full gold-gradient transition-all duration-700 ease-out"
+      className="h-full flex-1 rounded-full gold-gradient transition-[width] duration-500 ease-out"
       style={{ width: `${value || 0}%` }}
     />
   </ProgressPrimitive.Root>

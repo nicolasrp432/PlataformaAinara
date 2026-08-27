@@ -12,7 +12,7 @@ import { TIER_LABELS, type ComputedAchievement } from "@/lib/achievements"
 const TIER_DISC: Record<ComputedAchievement["tier"], string> = {
   inicio: "bg-primary/10 text-primary",
   camino: "bg-primary/15 text-primary ring-1 ring-primary/25",
-  cumbre: "gold-gradient text-white shadow-sm",
+  cumbre: "gold-gradient text-primary-foreground shadow-sm",
 }
 
 export function AchievementCard({ achievement }: { achievement: ComputedAchievement }) {
@@ -22,7 +22,7 @@ export function AchievementCard({ achievement }: { achievement: ComputedAchievem
   return (
     <div
       className={cn(
-        "relative border rounded-2xl p-4 sm:p-5 transition-all duration-300 shadow-sm flex flex-col justify-between overflow-hidden h-full",
+        "relative border rounded-2xl p-4 sm:p-5 transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-300 shadow-sm flex flex-col justify-between overflow-hidden h-full",
         unlocked
           ? "bg-card border-border hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30"
           : "bg-muted/20 border-border/50 opacity-60"
@@ -46,14 +46,14 @@ export function AchievementCard({ achievement }: { achievement: ComputedAchievem
           {unlocked ? (
             <Badge
               variant="outline"
-              className="text-[9px] uppercase font-bold tracking-wider text-primary border-primary/25 bg-primary/5"
+              className="text-3xs uppercase font-bold tracking-wider text-primary border-primary/25 bg-primary/5"
             >
               {TIER_LABELS[achievement.tier]}
             </Badge>
           ) : (
             <Badge
               variant="outline"
-              className="text-[9px] uppercase tracking-wider bg-muted/40 text-muted-foreground/70 border-border/50"
+              className="text-3xs uppercase tracking-wider bg-muted/40 text-muted-foreground/70 border-border/50"
             >
               Bloqueado
             </Badge>
@@ -71,7 +71,7 @@ export function AchievementCard({ achievement }: { achievement: ComputedAchievem
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-border/40 text-[10px] text-muted-foreground/80 font-medium">
+      <div className="mt-4 pt-3 border-t border-border/40 text-3xs text-muted-foreground/80 font-medium">
         <span className="block truncate">Requisito: {achievement.requirement}</span>
       </div>
     </div>
@@ -86,7 +86,7 @@ export function AchievementPill({ achievement }: { achievement: ComputedAchievem
     <div
       title={unlocked ? achievement.title : `Bloqueado — ${achievement.requirement}`}
       className={cn(
-        "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all",
+        "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-[transform,background-color,border-color,color,box-shadow,opacity]",
         unlocked
           ? "bg-primary/10 border-primary/25 text-foreground hover:bg-primary/15"
           : "bg-muted/30 border-border/50 text-muted-foreground/60"

@@ -76,7 +76,7 @@ export default async function MentorshipPage() {
                 {mentorName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <Badge className="bg-emerald-500/15 text-emerald-700 border-none px-3 py-1 font-semibold mt-5">
+            <Badge className="bg-success-soft text-success-strong border-none px-3 py-1 font-semibold mt-5">
               Disponible esta semana
             </Badge>
           </div>

@@ -27,27 +27,27 @@ export function CertificateCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-amber-500/30",
-        "bg-gradient-to-br from-amber-950/20 via-background to-amber-950/10",
+        "relative overflow-hidden rounded-2xl border border-primary/30",
+        "bg-gradient-to-br from-primary/15 via-background to-primary/5",
         "p-8 text-center select-none",
         className,
       )}
     >
       {/* Decorative corner ornaments */}
-      <div className="absolute top-3 left-3 w-6 h-6 border-l-2 border-t-2 border-amber-500/40 rounded-tl-sm" />
-      <div className="absolute top-3 right-3 w-6 h-6 border-r-2 border-t-2 border-amber-500/40 rounded-tr-sm" />
-      <div className="absolute bottom-3 left-3 w-6 h-6 border-l-2 border-b-2 border-amber-500/40 rounded-bl-sm" />
-      <div className="absolute bottom-3 right-3 w-6 h-6 border-r-2 border-b-2 border-amber-500/40 rounded-br-sm" />
+      <div className="absolute top-3 left-3 w-6 h-6 border-l-2 border-t-2 border-primary/40 rounded-tl-sm" />
+      <div className="absolute top-3 right-3 w-6 h-6 border-r-2 border-t-2 border-primary/40 rounded-tr-sm" />
+      <div className="absolute bottom-3 left-3 w-6 h-6 border-l-2 border-b-2 border-primary/40 rounded-bl-sm" />
+      <div className="absolute bottom-3 right-3 w-6 h-6 border-r-2 border-b-2 border-primary/40 rounded-br-sm" />
 
       {/* Icon */}
       <div className="flex justify-center mb-5">
-        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30">
-          <Award className="h-8 w-8 text-amber-500" />
+        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-warning-soft border border-primary/30">
+          <Award className="h-8 w-8 text-primary" />
         </div>
       </div>
 
       {/* Header */}
-      <p className="text-xs uppercase tracking-[0.25em] text-amber-500/70 font-medium mb-3">
+      <p className="text-xs uppercase tracking-[0.25em] text-primary/70 font-medium mb-3">
         Certificado de Finalización
       </p>
 
@@ -62,26 +62,26 @@ export function CertificateCard({
       <p className="text-sm text-muted-foreground mb-2">ha completado satisfactoriamente</p>
 
       {/* Formation name */}
-      <h3 className="font-display text-xl font-medium text-amber-500 mb-5 leading-tight">
+      <h3 className="font-display text-xl font-medium text-primary mb-5 leading-tight">
         {formationTitle}
       </h3>
 
       {/* Divider */}
       <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-px bg-amber-500/20" />
-        <Sparkles className="h-3.5 w-3.5 text-amber-500/60" />
-        <div className="flex-1 h-px bg-amber-500/20" />
+        <div className="flex-1 h-px bg-warning-soft" />
+        <Sparkles className="h-3.5 w-3.5 text-primary/60" />
+        <div className="flex-1 h-px bg-warning-soft" />
       </div>
 
       {/* Date and number */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <div className="text-left">
-          <p className="text-[10px] uppercase tracking-wider mb-0.5 text-muted-foreground/60">Fecha</p>
+          <p className="text-3xs uppercase tracking-wider mb-0.5 text-muted-foreground/60">Fecha</p>
           <p>{formattedDate}</p>
         </div>
-        <CheckCircle2 className="h-5 w-5 text-amber-500/60" />
+        <CheckCircle2 className="h-5 w-5 text-primary/60" />
         <div className="text-right">
-          <p className="text-[10px] uppercase tracking-wider mb-0.5 text-muted-foreground/60">Certificado Nº</p>
+          <p className="text-3xs uppercase tracking-wider mb-0.5 text-muted-foreground/60">Certificado Nº</p>
           <p className="font-mono">{certificateNumber}</p>
         </div>
       </div>

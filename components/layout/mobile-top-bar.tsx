@@ -60,7 +60,7 @@ export function MobileTopBar({ user, streak }: MobileTopBarProps) {
           >
             <Avatar className="h-8 w-8 ring-2 ring-primary/20">
               <AvatarImage src={user.avatarUrl || undefined} alt={user.full_name} />
-              <AvatarFallback className="bg-primary/10 text-[11px] font-semibold text-primary">
+              <AvatarFallback className="bg-primary/10 text-2xs font-semibold text-primary">
                 {getInitials(user.full_name)}
               </AvatarFallback>
             </Avatar>

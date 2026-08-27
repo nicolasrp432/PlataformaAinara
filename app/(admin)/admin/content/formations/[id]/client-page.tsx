@@ -361,7 +361,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
               </Link>
             </Button>
           )}
-          <Button onClick={handleSave} disabled={isPending} className="flex-1 md:flex-initial justify-center bg-primary hover:bg-primary/90 text-white">
+          <Button onClick={handleSave} disabled={isPending} className="flex-1 md:flex-initial justify-center bg-primary hover:bg-primary/90 text-primary-foreground">
             {isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -391,8 +391,8 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-amber-500/10 shrink-0">
-                  <Clock className="h-4 w-4 text-amber-600" />
+                <div className="p-2.5 rounded-lg bg-warning-soft shrink-0">
+                  <Clock className="h-4 w-4 text-warning-strong" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Duración</p>

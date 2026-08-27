@@ -234,7 +234,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
                 <div key={r.id} className="rounded-lg border border-border/40 p-3 bg-background/30">
                   <p className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">{r.content}</p>
                   {lesson && (
-                    <p className="mt-1.5 text-[11px] text-muted-foreground flex items-center gap-1">
+                    <p className="mt-1.5 text-2xs text-muted-foreground flex items-center gap-1">
                       <BookOpen className="w-3 h-3" /> En: {lesson.title}
                     </p>
                   )}

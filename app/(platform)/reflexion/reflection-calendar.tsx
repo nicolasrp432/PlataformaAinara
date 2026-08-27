@@ -143,7 +143,7 @@ export function ReflectionCalendar({
         {WEEKDAYS.map((d, i) => (
           <span
             key={`${d}-${i}`}
-            className="pb-1 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60"
+            className="pb-1 text-center text-2xs font-medium uppercase tracking-wide text-muted-foreground/60"
           >
             {d}
           </span>
@@ -192,7 +192,7 @@ export function ReflectionCalendar({
               </span>
               <span
                 className={cn(
-                  "text-[10px] leading-none",
+                  "text-3xs leading-none",
                   isToday ? "font-bold text-primary" : "text-muted-foreground/70"
                 )}
               >

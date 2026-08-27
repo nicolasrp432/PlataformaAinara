@@ -552,7 +552,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                       "Revisión manual por el equipo",
                     ].map((item) => (
                       <li key={item} className="flex items-center gap-3 text-sm">
-                        <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <Check className="h-4 w-4 text-success-strong shrink-0" />
                         {item}
                       </li>
                     ))}

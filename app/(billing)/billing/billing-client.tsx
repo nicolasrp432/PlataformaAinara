@@ -19,10 +19,10 @@ interface BillingClientProps {
 }
 
 const statusConfig = {
-  active: { label: "Activa", color: "bg-emerald-500/20 text-emerald-700 border-emerald-300/50", icon: CheckCircle2 },
+  active: { label: "Activa", color: "bg-success-soft text-success-strong border-success-border", icon: CheckCircle2 },
   trialing: { label: "En prueba", color: "bg-blue-500/20 text-blue-700 border-blue-300/50", icon: CheckCircle2 },
-  past_due: { label: "Pago pendiente", color: "bg-amber-500/20 text-amber-700 border-amber-300/50", icon: AlertCircle },
-  canceled: { label: "Cancelada", color: "bg-rose-500/20 text-rose-700 border-rose-300/50", icon: XCircle },
+  past_due: { label: "Pago pendiente", color: "bg-warning-soft text-warning-strong border-warning-border", icon: AlertCircle },
+  canceled: { label: "Cancelada", color: "bg-danger-soft text-danger-strong border-danger-border", icon: XCircle },
   inactive: { label: "Sin suscripción", color: "bg-muted text-muted-foreground border-border/60", icon: XCircle },
 }
 
@@ -89,7 +89,7 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
               </div>
             )}
             {subscription?.cancel_at_period_end && (
-              <div className="flex items-start gap-2 rounded-xl border border-amber-300/40 bg-amber-500/10 p-4 text-sm text-amber-800">
+              <div className="flex items-start gap-2 rounded-xl border border-warning-border bg-warning-soft p-4 text-sm text-warning-strong">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>Tu suscripción se cancelará al final del período actual. Puedes reactivarla desde el portal.</span>
               </div>
@@ -117,7 +117,7 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
                 "Certificados verificables",
               ].map((item) => (
                 <div key={item} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-success-strong shrink-0" />
                   {item}
                 </div>
               ))}

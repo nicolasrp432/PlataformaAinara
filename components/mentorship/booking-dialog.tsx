@@ -147,7 +147,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
   const trigger = (
     <Button
       onClick={() => setOpen(true)}
-      className={triggerClassName ?? "w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-all h-11 text-sm rounded-lg shadow-sm"}
+      className={triggerClassName ?? "w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-[transform,background-color,border-color,color,box-shadow,opacity] h-11 text-sm rounded-lg shadow-sm"}
     >
       <CalendarDays className="w-4 h-4 mr-2" />
       {triggerLabel ?? "Reservar Sesión 1 a 1"}
@@ -216,7 +216,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
 
       {requestSent && (
         <div className="text-center py-10 px-4 space-y-3">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-full bg-success-soft text-success-strong flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <h3 className="text-base font-bold text-foreground">¡Solicitud recibida!</h3>
@@ -252,7 +252,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
                       setSelectedSlot(null)
                     }}
                     className={cn(
-                      "px-3 py-2.5 rounded-lg border text-left transition-all",
+                      "px-3 py-2.5 rounded-lg border text-left transition-[transform,background-color,border-color,color,box-shadow,opacity]",
                       isActive
                         ? "border-primary bg-primary/10 shadow-sm"
                         : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
@@ -261,7 +261,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
                     <p className="text-xs font-semibold text-foreground capitalize">
                       {formatDateLabel(date)}
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-3xs text-muted-foreground mt-0.5">
                       {daySlots.length} horario{daySlots.length === 1 ? "" : "s"}
                     </p>
                   </button>
@@ -285,7 +285,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
                       type="button"
                       onClick={() => setSelectedSlot(slot.startsAt)}
                       className={cn(
-                        "px-2.5 py-2 rounded-lg border text-xs font-medium transition-all",
+                        "px-2.5 py-2 rounded-lg border text-xs font-medium transition-[transform,background-color,border-color,color,box-shadow,opacity]",
                         isActive
                           ? "border-primary bg-primary text-primary-foreground shadow-sm font-semibold"
                           : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
@@ -323,7 +323,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
                 <p className="font-semibold text-foreground">
                   {formatDateLabel(selectedDate!)} · {slotsForSelectedDate.find(s => s.startsAt === selectedSlot)?.label}
                 </p>
-                <p className="text-muted-foreground text-[11px]">
+                <p className="text-muted-foreground text-2xs">
                   {mentor.session_duration_minutes ?? 60} min
                 </p>
               </div>
@@ -351,7 +351,8 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
       <>
         {trigger}
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="bottom" className="max-h-[88vh] rounded-t-2xl px-4 pb-6">
+          <SheetContent side="bottom" className="max-h-[88vh] rounded-t-2xl"
+            contentClassName="px-4 pb-6">
             <SheetHeader className="pb-1">
               <SheetTitle className="text-base font-bold text-foreground">{title}</SheetTitle>
               <SheetDescription className="text-xs">{description}</SheetDescription>

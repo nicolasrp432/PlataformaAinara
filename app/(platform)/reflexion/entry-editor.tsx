@@ -255,7 +255,7 @@ export function EntryEditor({
       <div className="flex gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3.5 shadow-sm">
         <Quote className="h-4 w-4 shrink-0 text-primary mt-0.5" />
         <div className="space-y-0.5">
-          <span className="text-[10px] uppercase tracking-wider font-bold text-primary">
+          <span className="text-3xs uppercase tracking-wider font-bold text-primary">
             Oráculo del Día
           </span>
           <p className="font-display text-sm sm:text-base italic leading-relaxed text-foreground/90">
@@ -270,14 +270,14 @@ export function EntryEditor({
           <p className="text-xs sm:text-sm font-semibold text-foreground">
             {isToday ? "¿Cómo está tu energía hoy?" : "¿Cómo te sentías?"}
           </p>
-          <span className="text-[11px] text-muted-foreground">Clima interior</span>
+          <span className="text-2xs text-muted-foreground">Clima interior</span>
         </div>
         <MoodPicker value={mood} onChange={setMood} disabled={isPending} />
       </div>
 
       {/* Prompts Guiados tipo Toolbar Iconos */}
       <div className="space-y-1.5">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 text-2xs font-semibold text-muted-foreground uppercase tracking-wider">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           <span>Guías rápidas</span>
         </div>
@@ -287,7 +287,7 @@ export function EntryEditor({
               key={p.id}
               type="button"
               onClick={() => handleApplyPrompt(p.prompt)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card/60 hover:border-primary/40 hover:bg-primary/10 text-xs font-medium text-foreground transition-all active:scale-95 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card/60 hover:border-primary/40 hover:bg-primary/10 text-xs font-medium text-foreground transition-[transform,background-color,border-color,color,box-shadow,opacity] active:scale-95 shadow-sm"
             >
               <p.icon className="h-3.5 w-3.5 text-primary" />
               <span>{p.label}</span>
@@ -320,7 +320,7 @@ export function EntryEditor({
             "transition-colors shadow-sm"
           )}
         />
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between text-2xs text-muted-foreground">
           <span>{content.length > 0 ? `${content.split(/\s+/).filter(Boolean).length} palabras` : "Espacio privado"}</span>
           <span>{content.length}/2000</span>
         </div>

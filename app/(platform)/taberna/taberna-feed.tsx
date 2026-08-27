@@ -250,7 +250,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                   key={filter.id}
                   onClick={() => setActiveFilter(filter.id)}
                   className={cn(
-                    "text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all active:scale-95 shrink-0",
+                    "text-xs font-semibold px-2.5 py-1 rounded-lg border transition-[transform,background-color,border-color,color,box-shadow,opacity] active:scale-95 shrink-0",
                     isSelected
                       ? "border-primary bg-primary/15 text-primary shadow-sm"
                       : "border-border bg-card/40 text-muted-foreground hover:bg-card/80 hover:text-foreground"
@@ -288,7 +288,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
               return (
                 <Card
                   key={reflection.id}
-                  className={`border-border bg-card/70 backdrop-blur-md rounded-xl shadow-sm overflow-hidden transition-all ${
+                  className={`border-border bg-card/70 backdrop-blur-md rounded-xl shadow-sm overflow-hidden transition-[transform,background-color,border-color,color,box-shadow,opacity] ${
                     isTemp ? "opacity-70 animate-pulse" : "hover:border-primary/40"
                   }`}
                 >
@@ -310,7 +310,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                             {isAuthorAdmin && (
                               <Badge
                                 variant="secondary"
-                                className="bg-primary/20 text-primary border-none cursor-default py-0 px-1.5 h-4 text-[9px] uppercase font-bold tracking-wider rounded"
+                                className="bg-primary/20 text-primary border-none cursor-default py-0 px-1.5 h-4 text-3xs uppercase font-bold tracking-wider rounded"
                               >
                                 Guía
                               </Badge>
@@ -318,16 +318,16 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                             {isAuthorMentor && !isAuthorAdmin && (
                               <Badge
                                 variant="secondary"
-                                className="bg-emerald-500/15 text-emerald-600 border-none cursor-default py-0 px-1.5 h-4 text-[9px] uppercase font-bold tracking-wider rounded"
+                                className="bg-success-soft text-success-strong border-none cursor-default py-0 px-1.5 h-4 text-3xs uppercase font-bold tracking-wider rounded"
                               >
                                 Mentor
                               </Badge>
                             )}
-                            <span className="text-muted-foreground text-[11px] hidden sm:inline">
+                            <span className="text-muted-foreground text-2xs hidden sm:inline">
                               &bull; {formatTimeAgo(reflection.created_at)}
                             </span>
                           </div>
-                          <span className="text-muted-foreground text-[10px] sm:hidden">
+                          <span className="text-muted-foreground text-3xs sm:hidden">
                             {formatTimeAgo(reflection.created_at)}
                           </span>
                         </div>
@@ -336,7 +336,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                           <div className="mb-2">
                             <Badge
                               variant="secondary"
-                              className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium rounded-md"
+                              className="bg-primary/10 text-primary border border-primary/20 text-3xs font-medium rounded-md"
                             >
                               Lección: {reflection.lessons.title}
                             </Badge>
@@ -393,14 +393,14 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                 >
                                   <Avatar className="h-6 w-6 shrink-0 ring-1 ring-primary/20 mt-0.5">
                                     <AvatarImage src={rAvatar} className="object-cover" />
-                                    <AvatarFallback className="bg-primary/15 text-primary text-[9px] font-bold">
+                                    <AvatarFallback className="bg-primary/15 text-primary text-3xs font-bold">
                                       {rName.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 text-xs mb-0.5">
                                       <span className="font-semibold text-foreground text-xs">{rName}</span>
-                                      <span className="text-muted-foreground text-[10px]">
+                                      <span className="text-muted-foreground text-3xs">
                                         &bull; {formatTimeAgo(reply.created_at)}
                                       </span>
                                     </div>

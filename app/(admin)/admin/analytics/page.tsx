@@ -176,19 +176,19 @@ export default async function AdminAnalyticsPage() {
             value={data.users.approved}
             description={`${data.users.total > 0 ? Math.round((data.users.approved / data.users.total) * 100) : 0}% del total`}
             icon={CheckCircle2}
-            accent="bg-emerald-500/10"
+            accent="bg-success-soft"
           />
           <StatCard
             title="Pendientes de aprobación"
             value={data.users.pending}
             icon={Clock}
-            accent="bg-amber-500/10"
+            accent="bg-warning-soft"
           />
           <StatCard
             title="Suspendidos"
             value={data.users.suspended}
             icon={XCircle}
-            accent="bg-rose-500/10"
+            accent="bg-danger-soft"
           />
         </div>
       </div>
@@ -231,14 +231,14 @@ export default async function AdminAnalyticsPage() {
             title="Lecciones completadas"
             value={data.engagement.completedLessons.toLocaleString()}
             icon={Trophy}
-            accent="bg-amber-500/10"
+            accent="bg-warning-soft"
           />
           <StatCard
             title="Tasa de finalización"
             value={`${data.engagement.completionRate}%`}
             description="lecciones completadas / inscripciones"
             icon={CheckCircle2}
-            accent="bg-emerald-500/10"
+            accent="bg-success-soft"
           />
         </div>
       </div>

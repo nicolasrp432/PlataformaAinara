@@ -143,7 +143,7 @@ export default async function AdminDashboardPage() {
               Ver Contenido
             </Link>
           </Button>
-          <Button asChild className="flex-1 sm:flex-initial justify-center bg-primary hover:bg-primary/90 text-white">
+          <Button asChild className="flex-1 sm:flex-initial justify-center bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href="/admin/content/formations/new">
               <Plus className="mr-2 h-4 w-4 shrink-0" />
               Nueva Formación

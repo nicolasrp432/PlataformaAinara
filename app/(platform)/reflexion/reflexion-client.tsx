@@ -86,7 +86,7 @@ export function ReflexionClient({
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <Badge className="mb-2 border border-primary/25 bg-primary/15 px-3 py-1 text-[10px] uppercase tracking-widest text-primary hover:bg-primary/20">
+            <Badge className="mb-2 border border-primary/25 bg-primary/15 px-3 py-1 text-3xs uppercase tracking-widest text-primary hover:bg-primary/20">
               Diario privado
             </Badge>
             <h1 className="text-2xl font-light tracking-tight text-foreground sm:text-4xl">
@@ -102,7 +102,7 @@ export function ReflexionClient({
             <span className="text-xl font-bold leading-none text-foreground">
               {streak}
             </span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="text-3xs uppercase tracking-wider text-muted-foreground">
               {streak === 1 ? "día" : "días"} de racha
             </span>
           </div>
@@ -193,7 +193,8 @@ export function ReflexionClient({
 
       {/* Hoja inferior móvil para un día concreto */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" className="max-h-[92dvh] px-4 pb-4">
+        <SheetContent side="bottom" className="max-h-[92dvh]"
+          contentClassName="px-4 pb-4">
           <SheetHeader>
             <SheetTitle className="text-base capitalize">
               {new Date(`${selected}T12:00:00`).toLocaleDateString("es-ES", {

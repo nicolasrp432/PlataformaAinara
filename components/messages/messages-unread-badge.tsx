@@ -24,7 +24,7 @@ export function MessagesUnreadBadge({ isCollapsed }: { isCollapsed?: boolean }) 
     <span
       className={cn(
         "relative z-10 ml-auto flex h-5 min-w-5 items-center justify-center",
-        "rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground"
+        "rounded-full bg-primary px-1.5 text-3xs font-bold text-primary-foreground"
       )}
     >
       {count > 9 ? "9+" : count}

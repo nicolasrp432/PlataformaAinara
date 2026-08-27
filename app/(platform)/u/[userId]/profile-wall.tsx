@@ -118,7 +118,7 @@ export function ProfileWall({ profileId, initialComments, currentUserId }: Profi
                     {comment.profiles?.full_name ?? "Usuario"}
                   </span>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-3xs text-muted-foreground">
                       {formatDate(comment.created_at)}
                     </span>
                     {currentUserId === comment.author_id && (

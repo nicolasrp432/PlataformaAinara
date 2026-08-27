@@ -113,11 +113,11 @@ export function ExerciseViewer({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-primary border-primary/40 text-[10px] font-semibold tracking-wider rounded">
+              <Badge variant="outline" className="text-primary border-primary/40 text-3xs font-semibold tracking-wider rounded">
                 PRÁCTICA & INTEGRACIÓN
               </Badge>
               {lastSaved && (
-                <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                <span className="text-2xs text-muted-foreground hidden sm:inline">
                   ✓ {lastSaved}
                 </span>
               )}
@@ -133,11 +133,11 @@ export function ExerciseViewer({
 
       {/* Completion badge */}
       {isCompleted && (
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-medium">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-success-soft border border-success rounded-xl text-success-strong dark:text-success text-xs sm:text-sm font-medium">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <div>
             <p className="font-semibold">¡Ejercicio completado e integrado!</p>
-            <p className="text-[11px] text-muted-foreground">Tus notas quedan guardadas en tu cuaderno personal para que las consultes cuando desees.</p>
+            <p className="text-2xs text-muted-foreground">Tus notas quedan guardadas en tu cuaderno personal para que las consultes cuando desees.</p>
           </div>
         </div>
       )}
@@ -172,7 +172,7 @@ export function ExerciseViewer({
                 href={res.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-background/50 hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-background/50 hover:border-primary/40 hover:bg-primary/5 transition-[transform,background-color,border-color,color,box-shadow,opacity] group"
               >
                 <FileText className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
                 <span className="text-xs sm:text-sm font-medium text-foreground flex-1">{res.title}</span>
@@ -192,7 +192,7 @@ export function ExerciseViewer({
                 <Pencil className="h-4 w-4 text-primary" />
                 Tu Cuaderno de Práctica Personal
               </CardTitle>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-2xs text-muted-foreground mt-0.5">
                 Tómate un momento de silencio para reflexionar y plasmar tus respuestas.
               </p>
             </div>
@@ -230,7 +230,7 @@ export function ExerciseViewer({
           />
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-2xs text-muted-foreground">
               {response.length > 0 ? `${response.split(/\s+/).filter(Boolean).length} palabras escritas` : "Cuaderno privado y seguro"}
             </span>
 

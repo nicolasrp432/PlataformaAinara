@@ -194,17 +194,17 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
             <p className="text-xl sm:text-2xl font-bold text-foreground">{quiz.questions.length}</p>
-            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-tight">Preguntas</p>
+            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">Preguntas</p>
           </Card>
           <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
             <p className="text-xl sm:text-2xl font-bold text-foreground">{quiz.passing_score}%</p>
-            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-tight">Para aprobar</p>
+            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">Para aprobar</p>
           </Card>
           <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
             <p className="text-xl sm:text-2xl font-bold text-primary">
               {bestScore !== null ? `${bestScore}%` : "—"}
             </p>
-            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-tight">Mejor intento</p>
+            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">Mejor intento</p>
           </Card>
         </div>
 
@@ -244,7 +244,7 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
                 key={option.id}
                 onClick={() => handleOptionSelect(option.id)}
                 className={cn(
-                  "w-full text-left p-3.5 rounded-xl border text-sm transition-all",
+                  "w-full text-left p-3.5 rounded-xl border text-sm transition-[transform,background-color,border-color,color,box-shadow,opacity]",
                   selectedOption === option.id
                     ? "border-primary bg-primary/10 text-foreground font-medium"
                     : "border-border/50 hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-foreground",
@@ -283,18 +283,18 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
         <div className={cn(
           "text-center p-6 rounded-2xl border",
           passed
-            ? "bg-emerald-500/10 border-emerald-500/30"
+            ? "bg-success-soft border-success"
             : "bg-destructive/10 border-destructive/30",
         )}>
           <div className="flex justify-center mb-3">
             {passed
-              ? <Trophy className="h-10 w-10 text-emerald-500" />
+              ? <Trophy className="h-10 w-10 text-success" />
               : <XCircle className="h-10 w-10 text-destructive/70" />}
           </div>
           <p className="text-4xl font-bold text-foreground">{result.score}%</p>
           <p className={cn(
             "text-sm font-medium mt-1",
-            passed ? "text-emerald-600" : "text-destructive/80",
+            passed ? "text-success-strong" : "text-destructive/80",
           )}>
             {passed ? "¡Aprobado!" : `No aprobado (mínimo ${result.passingScore}%)`}
           </p>
@@ -318,19 +318,19 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
             return (
               <Card key={q.id} className={cn(
                 "border",
-                isCorrect ? "border-emerald-500/30 bg-emerald-500/5" : "border-destructive/20 bg-destructive/5",
+                isCorrect ? "border-success bg-success-soft" : "border-destructive/20 bg-destructive/5",
               )}>
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start gap-2">
                     {isCorrect
-                      ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                      ? <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                       : <XCircle className="h-4 w-4 text-destructive/70 shrink-0 mt-0.5" />}
                     <p className="text-sm font-medium text-foreground">{q.question}</p>
                   </div>
                   {!isCorrect && (
                     <div className="ml-6 space-y-1 text-xs text-muted-foreground">
                       <p>Tu respuesta: <span className="text-destructive/80">{selectedOption?.option_text ?? "—"}</span></p>
-                      <p>Correcta: <span className="text-emerald-600">{correctOption?.option_text ?? "—"}</span></p>
+                      <p>Correcta: <span className="text-success-strong">{correctOption?.option_text ?? "—"}</span></p>
                     </div>
                   )}
                   {q.explanation && (

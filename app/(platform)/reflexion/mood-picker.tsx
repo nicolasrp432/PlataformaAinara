@@ -28,7 +28,7 @@ export function MoodPicker({ value, onChange, disabled }: MoodPickerProps) {
             disabled={disabled}
             aria-pressed={selected}
             className={cn(
-              "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2.5 transition-all",
+              "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2.5 transition-[transform,background-color,border-color,color,box-shadow,opacity]",
               "disabled:opacity-50",
               selected
                 ? "border-primary bg-primary/15 ring-2 ring-primary/30 shadow-sm"
@@ -43,7 +43,7 @@ export function MoodPicker({ value, onChange, disabled }: MoodPickerProps) {
             />
             <span
               className={cn(
-                "text-[11px] leading-none",
+                "text-2xs leading-none",
                 selected ? "font-semibold text-foreground" : "text-muted-foreground"
               )}
             >

@@ -125,7 +125,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
           <button
             onClick={() => setIsOpen(true)}
             className={cn(
-              "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition-all",
+              "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition-[transform,background-color,border-color,color,box-shadow,opacity]",
               "bg-muted/40 border border-border/40 hover:bg-muted/70 hover:border-primary/20",
               "text-muted-foreground hover:text-foreground group shadow-inner"
             )}
@@ -134,7 +134,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
               <Search className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <span className="text-xs font-medium">Buscar exploradores...</span>
             </div>
-            <kbd className="pointer-events-none hidden select-none rounded border border-border/60 bg-muted px-1.5 py-0.5 text-[10px] font-mono font-medium text-muted-foreground/80 shadow-sm sm:inline-block">
+            <kbd className="pointer-events-none hidden select-none rounded border border-border/60 bg-muted px-1.5 py-0.5 text-3xs font-mono font-medium text-muted-foreground/80 shadow-sm sm:inline-block">
               ⌘K
             </kbd>
           </button>
@@ -189,7 +189,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
                   <div className="text-center py-12 text-muted-foreground space-y-1">
                     <User className="h-8 w-8 mx-auto opacity-30 text-primary" />
                     <p className="text-xs font-semibold">Busca exploradores de la comunidad</p>
-                    <p className="text-[10px] opacity-60">Escribe el nombre de algún usuario para ver su perfil cósmico.</p>
+                    <p className="text-3xs opacity-60">Escribe el nombre de algún usuario para ver su perfil cósmico.</p>
                   </div>
                 )}
 
@@ -197,13 +197,13 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
                   <div className="text-center py-12 text-muted-foreground space-y-1">
                     <Search className="h-8 w-8 mx-auto opacity-30 text-primary" />
                     <p className="text-xs font-semibold">No se encontraron resultados</p>
-                    <p className="text-[10px] opacity-60">Prueba con otra palabra o verifica la ortografía.</p>
+                    <p className="text-3xs opacity-60">Prueba con otra palabra o verifica la ortografía.</p>
                   </div>
                 )}
 
                 {results.length > 0 && (
                   <div className="space-y-0.5">
-                    <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground/80 tracking-widest uppercase">
+                    <div className="px-3 py-1.5 text-3xs font-bold text-muted-foreground/80 tracking-widest uppercase">
                       Exploradores coincidentes
                     </div>
                     
@@ -215,7 +215,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
                           onClick={() => handleSelectUser(user.id)}
                           onMouseEnter={() => setSelectedIndex(index)}
                           className={cn(
-                            "flex items-center justify-between gap-3 p-3 rounded-xl cursor-pointer transition-all duration-150",
+                            "flex items-center justify-between gap-3 p-3 rounded-xl cursor-pointer transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-150",
                             isSelected 
                               ? "bg-primary/10 border border-primary/20 shadow-sm" 
                               : "border border-transparent hover:bg-muted/40"
@@ -240,7 +240,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
                                 {user.full_name}
                               </p>
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-muted-foreground font-medium">
+                                <span className="text-3xs text-muted-foreground font-medium">
                                   Nivel {user.level || 1}
                                 </span>
                               </div>
@@ -250,7 +250,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
                           <Badge
                             variant="outline"
                             className={cn(
-                              "text-[10px] px-2 py-0.5 border-none font-bold gap-1 transition-colors duration-200",
+                              "text-3xs px-2 py-0.5 border-none font-bold gap-1 transition-colors duration-200",
                               isSelected 
                                 ? "bg-primary/20 text-primary" 
                                 : "bg-muted text-muted-foreground"
@@ -267,7 +267,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
               </div>
 
               {/* Footer hint */}
-              <div className="bg-muted/40 border-t border-border/50 px-4 py-2 flex items-center justify-between text-[10px] text-muted-foreground shrink-0 rounded-b-2xl">
+              <div className="bg-muted/40 border-t border-border/50 px-4 py-2 flex items-center justify-between text-3xs text-muted-foreground shrink-0 rounded-b-2xl">
                 <span className="flex items-center gap-1">
                   <span>↑↓ para navegar</span>
                   <span className="opacity-40">·</span>

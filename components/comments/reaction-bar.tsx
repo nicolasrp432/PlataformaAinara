@@ -67,7 +67,7 @@ export function ReactionBar({ reflectionId, reactions, lessonId, slug }: Reactio
             aria-label={meta.label}
             aria-pressed={isActive}
             className={cn(
-              "group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-all",
+              "group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-[transform,background-color,border-color,color,box-shadow,opacity]",
               "hover:scale-[1.05] active:scale-95",
               isActive
                 ? "bg-primary/15 border-primary/40 text-foreground shadow-sm"

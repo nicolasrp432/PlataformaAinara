@@ -94,7 +94,7 @@ export async function StatsSection({ userId }: { userId: string }) {
   const { stats } = await getDashboardData(userId)
 
   const cardClass =
-    "min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm hover:border-primary/30 transition-all"
+    "min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm hover:border-primary/30 transition-[transform,background-color,border-color,color,box-shadow,opacity]"
 
   return (
     <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
@@ -104,7 +104,7 @@ export async function StatsSection({ userId }: { userId: string }) {
           <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Racha Actual
           </CardTitle>
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-500">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-warning-soft text-warning-strong">
             <Flame className="h-4 w-4" />
           </div>
         </CardHeader>
@@ -131,7 +131,7 @@ export async function StatsSection({ userId }: { userId: string }) {
             {stats.totalXp.toLocaleString()} <span className="text-xs font-semibold text-primary uppercase">XP</span>
           </div>
           <div className="mt-2 space-y-1">
-            <div className="flex justify-between text-[11px]">
+            <div className="flex justify-between text-2xs">
               <span className="font-semibold text-muted-foreground">Nivel {stats.level}</span>
               <span className="font-bold text-primary">{stats.nextLevelProgress}%</span>
             </div>
@@ -146,7 +146,7 @@ export async function StatsSection({ userId }: { userId: string }) {
           <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Lecciones
           </CardTitle>
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-success-soft text-success-strong">
             <CheckCircle2 className="h-4 w-4" />
           </div>
         </CardHeader>
@@ -232,7 +232,7 @@ export async function ContinueLearningSection({ userId }: { userId: string }) {
       {formationsIP.map((formation) => (
         <Card
           key={formation.id}
-          className="border-border/60 bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm hover:border-primary/40 hover:shadow-md transition-all overflow-hidden"
+          className="border-border/60 bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm hover:border-primary/40 hover:shadow-md transition-[transform,background-color,border-color,color,box-shadow,opacity] overflow-hidden"
         >
           <CardContent className="p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -307,7 +307,7 @@ export async function ReflexionCard({ userId }: { userId: string }) {
       <CardContent className="p-5 space-y-4">
         {/* Oráculo / Frase Semilla */}
         <div className="space-y-1.5 border-b border-border/40 pb-3.5">
-          <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-widest font-bold text-primary">
+          <div className="flex items-center gap-1.5 text-3xs uppercase tracking-widest font-bold text-primary">
             <Quote className="h-3.5 w-3.5" />
             <span>Semilla de Sabiduría de Hoy</span>
           </div>
@@ -320,7 +320,7 @@ export async function ReflexionCard({ userId }: { userId: string }) {
         {reflexion.todayEntry ? (
           <div className="flex items-center justify-between gap-3 pt-1">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success-soft text-success-strong">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div className="min-w-0">
@@ -397,11 +397,11 @@ export async function ActivityCard({ userId }: { userId: string }) {
               Evolución de XP Semanal
             </p>
             {isXpActive ? (
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/15 px-2.5 py-0.5 rounded-full">
+              <span className="text-3xs text-success-strong dark:text-success font-bold bg-success-soft px-2.5 py-0.5 rounded-full">
                 +{totalWeeklyXp} XP esta semana
               </span>
             ) : (
-              <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+              <span className="text-3xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
                 Sin actividad
               </span>
             )}
@@ -446,7 +446,7 @@ export async function ActivityCard({ userId }: { userId: string }) {
               )}
             </svg>
 
-            <div className="flex justify-between text-[9px] text-muted-foreground font-semibold px-1">
+            <div className="flex justify-between text-3xs text-muted-foreground font-semibold px-1">
               <span>Lun</span>
               <span>Mar</span>
               <span>Mié</span>
@@ -484,11 +484,11 @@ export async function ActivityCard({ userId }: { userId: string }) {
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="secondary"
-                      className="text-[10px] bg-primary/15 text-primary border-0 font-bold px-2 py-0.5"
+                      className="text-3xs bg-primary/15 text-primary border-0 font-bold px-2 py-0.5"
                     >
                       +{activity.xp} XP
                     </Badge>
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-2xs text-muted-foreground">
                       {activity.time}
                     </span>
                   </div>
@@ -512,7 +512,7 @@ export async function ActivityCard({ userId }: { userId: string }) {
 
 export function QuickActions() {
   const linkClass =
-    "justify-start border-border/60 bg-card/60 hover:bg-primary/10 hover:border-primary/40 h-11 text-xs sm:text-sm font-semibold px-4 rounded-xl shadow-sm transition-all"
+    "justify-start border-border/60 bg-card/60 hover:bg-primary/10 hover:border-primary/40 h-11 text-xs sm:text-sm font-semibold px-4 rounded-xl shadow-sm transition-[transform,background-color,border-color,color,box-shadow,opacity]"
 
   return (
     <Card className="w-full border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm">

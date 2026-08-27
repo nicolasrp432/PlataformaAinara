@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter, Cormorant_Garamond } from "next/font/google"
 import { AppToaster } from "@/components/ui/app-toaster"
 import { CookieNotice } from "@/components/legal/cookie-notice"
+import { MotionProvider } from "@/components/providers/motion-provider"
 import "./globals.css"
 
 const inter = Inter({
@@ -84,9 +85,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${cormorant.variable} font-sans antialiased`}
       >
-        {children}
-        <AppToaster />
-        <CookieNotice />
+        <MotionProvider>
+          {children}
+          <AppToaster />
+          <CookieNotice />
+        </MotionProvider>
       </body>
     </html>
   )

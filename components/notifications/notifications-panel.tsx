@@ -167,7 +167,7 @@ export function NotificationsPanel({ userId, onClose, onRead, onReadAll, placeme
                       {item.body && (
                         <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{item.body}</p>
                       )}
-                      <p className="mt-1 text-[10px] text-muted-foreground/70">
+                      <p className="mt-1 text-3xs text-muted-foreground/70">
                         {formatRelative(item.created_at)}
                       </p>
                     </div>

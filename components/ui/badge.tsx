@@ -38,7 +38,7 @@ const badgeVariants = cva(
 
         // Premium: gold gradient
         premium:
-          "border-transparent gold-gradient text-white shadow-sm font-bold tracking-wide",
+          "border-transparent gold-gradient text-primary-foreground shadow-sm font-bold tracking-wide",
 
         // Muted
         muted:
