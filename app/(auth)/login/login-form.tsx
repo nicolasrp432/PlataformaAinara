@@ -23,6 +23,14 @@ export function LoginForm() {
     const password = formData.get("password") as string
 
     try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+      if (!url || url.includes("placeholder") || url.includes("your-project")) {
+        setError(
+          "Entorno local: las credenciales de Supabase en .env.local son de plantilla. Añade tus claves reales en .env.local para autenticar en local o pruébalo en el hosting de producción donde ya están configuradas."
+        )
+        return
+      }
+
       const supabase = createClient()
       
       const { data, error: authError } = await supabase.auth.signInWithPassword({
@@ -53,7 +61,9 @@ export function LoginForm() {
         router.refresh()
       }
     } catch {
-      setError("Ha ocurrido un error. Intenta de nuevo.")
+      setError(
+        "No se pudo conectar con el servidor de autenticación. Verifica tu conexión o configuración de Supabase."
+      )
     } finally {
       setIsLoading(false)
     }

@@ -30,6 +30,13 @@ type LandingFormation = {
  */
 async function getPublishedFormations(): Promise<LandingFormation[]> {
   try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!url || !key || url.includes("placeholder") || url.includes("your-project")) {
+      return []
+    }
+
     const supabase = createPublicClient()
     const { data, error } = await supabase
       .from("formations")
@@ -43,7 +50,9 @@ async function getPublishedFormations(): Promise<LandingFormation[]> {
     if (error) throw error
     return (data ?? []) as LandingFormation[]
   } catch (err) {
-    console.error("Portada: no se pudo cargar el catálogo publicado.", err)
+    if (process.env.NODE_ENV === "production") {
+      console.error("Portada: no se pudo cargar el catálogo publicado.", err)
+    }
     return []
   }
 }

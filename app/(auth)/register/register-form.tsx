@@ -40,6 +40,14 @@ export function RegisterForm() {
     }
 
     try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+      if (!url || url.includes("placeholder") || url.includes("your-project")) {
+        setError(
+          "Entorno local: las credenciales de Supabase en .env.local son de plantilla. Añade tus claves reales en .env.local para registrarte en local o pruébalo en el hosting de producción donde ya están configuradas."
+        )
+        return
+      }
+
       const supabase = createClient()
       
       const { data, error: authError } = await supabase.auth.signUp({
@@ -51,9 +59,6 @@ export function RegisterForm() {
             full_name: name,
             avatar_url: null,
             role: "student",
-            // Prueba del consentimiento: el formulario ya obliga a aceptar los
-            // términos y la privacidad, pero hasta ahora no quedaba constancia
-            // de cuándo. Se guarda con la cuenta, en auth.users.
             terms_accepted_at: new Date().toISOString(),
             privacy_accepted_at: new Date().toISOString(),
           },
@@ -74,12 +79,13 @@ export function RegisterForm() {
         // Email confirmation required
         setSuccess(true)
       } else if (data.session) {
-        // Auto-confirmed (for development): go to pending since access isn't approved yet
         router.push("/pending")
         router.refresh()
       }
     } catch {
-      setError("Ha ocurrido un error. Intenta de nuevo.")
+      setError(
+        "No se pudo conectar con el servidor de autenticación. Verifica tu conexión o configuración de Supabase."
+      )
     } finally {
       setIsLoading(false)
     }
