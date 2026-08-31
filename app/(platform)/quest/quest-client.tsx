@@ -93,10 +93,10 @@ export function QuestClient({ questData }: QuestClientProps) {
   const unlockedCount = achievements.filter((a) => a.unlocked).length
 
   return (
-    <div className="space-y-10 max-w-5xl mx-auto pb-16 relative">
-      {/* Background ambient glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
-      <div className="absolute bottom-10 right-10 w-80 h-80 bg-primary/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+    <div className="space-y-10 max-w-5xl mx-auto pb-16 relative overflow-x-clip">
+      {/* Background ambient glows — acotados al ancho del contenedor. */}
+      <div className="absolute top-0 left-1/4 w-[min(24rem,100%)] h-96 bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+      <div className="absolute bottom-10 right-0 w-[min(20rem,100%)] h-80 bg-primary/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
       {/* ── TOP HEADER HERO ──────────────────────────────────────────────── */}
       <motion.div 

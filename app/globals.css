@@ -335,6 +335,32 @@
     line-height: 1.6;
   }
 
+  /* —— SIN DESPLAZAMIENTO HORIZONTAL ——
+     La página solo hace scroll vertical. Si algún elemento decorativo o un
+     bloque ancho se sale del viewport, se recorta en lugar de generar una
+     barra horizontal que descoloca toda la interfaz en móvil.
+
+     Se usa `clip` y no `hidden` a propósito: `overflow: hidden` convertiría
+     el elemento en contenedor de scroll y rompería los `position: sticky`
+     (cabecera móvil, barra de acciones del editor). `clip` recorta sin crear
+     contexto de scroll. El fallback con `hidden` solo entra en navegadores
+     antiguos que no soportan `clip`. */
+  html {
+    overflow-x: clip;
+  }
+
+  body {
+    overflow-x: clip;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  @supports not (overflow: clip) {
+    body {
+      overflow-x: hidden;
+    }
+  }
+
   /* Jerarquía de cabeceras.
      Antes h1, h2 y h3 compartían -0.02em pese a medir 2.25rem, 1.5rem
      y lo que tocara: el mismo tracking en tres tamaños distintos está

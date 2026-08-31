@@ -74,8 +74,9 @@ export function ReflexionClient({
 
   return (
     <div className="relative mx-auto max-w-3xl space-y-6">
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute left-1/3 top-0 -z-10 h-96 w-96 rounded-full bg-primary/5 blur-[120px]" />
+      {/* Ambient glow — se centra y nunca supera el ancho disponible, para no
+          empujar el layout hacia los lados en pantallas estrechas. */}
+      <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-96 w-[min(24rem,100%)] -translate-x-1/2 rounded-full bg-primary/5 blur-[120px]" />
 
       {/* Header */}
       <motion.div

@@ -26,6 +26,7 @@ import {
   getDailyReflectionData,
 } from "@/lib/data-access"
 import { phraseForDate } from "@/lib/daily-phrases"
+import { cn } from "@/lib/utils"
 
 type RecentActivityItem = {
   type: "lesson_completed" | string
@@ -70,20 +71,46 @@ export async function UpsellBanner({ userId }: { userId: string }) {
 
 // ─── Tarjetas de estadísticas ─────────────────────────────────────────────
 
+/**
+ * Carril del carrusel de estadísticas (solo móvil; desde `md` es rejilla).
+ *
+ * Las tres reglas que lo mantienen dentro de su sitio:
+ *
+ *  1. `-mx-4 px-4` — el carril sangra hasta los bordes de la pantalla pero su
+ *     contenido sigue alineado con el resto de la página. El recorte de la
+ *     tarjeta siguiente ocurre en el borde del móvil, que es donde se lee como
+ *     "hay más a la derecha" y no como un fallo de maquetación.
+ *  2. `overscroll-x-contain` — al llegar al final, el gesto muere aquí: no se
+ *     encadena al documento ni dispara el "atrás" del navegador. Es lo que
+ *     evita que el carrusel arrastre la página entera de lado.
+ *  3. `scroll-px-4` + `snap-start` — el imán de scroll respeta el mismo margen
+ *     de 16px, así que cada tarjeta encaja alineada con el título de la página.
+ */
+const STATS_RAIL =
+  "-mx-4 flex snap-x snap-mandatory gap-3.5 overflow-x-auto overscroll-x-contain " +
+  "scroll-px-4 px-4 pb-2 scrollbar-hide " +
+  "md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-4"
+
+/** Ancho de cada tarjeta dentro del carril: deja asomar la siguiente. */
+const STATS_ITEM = "w-[72%] shrink-0 snap-start sm:w-[46%] md:w-auto"
+
 export function StatsSkeleton() {
   return (
-    <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
+    <div className={STATS_RAIL}>
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="min-w-[72%] shrink-0 space-y-3 rounded-2xl border border-border/40 bg-card/40 p-5 backdrop-blur-sm sm:min-w-[45%] md:min-w-0"
+          className={cn(
+            STATS_ITEM,
+            "space-y-3 rounded-2xl border border-border/40 bg-card/40 p-5 backdrop-blur-sm"
+          )}
         >
-          <div className="flex items-center justify-between">
-            <div className="h-4 w-24 shimmer rounded-md" />
-            <div className="h-4 w-4 shimmer rounded-full" />
+          <div className="flex items-center justify-between gap-2">
+            <div className="h-4 w-full max-w-24 shimmer rounded-md" />
+            <div className="h-4 w-4 shrink-0 shimmer rounded-full" />
           </div>
-          <div className="h-7 w-20 shimmer rounded-md" />
-          <div className="h-3 w-32 shimmer rounded-md" />
+          <div className="h-7 w-20 max-w-full shimmer rounded-md" />
+          <div className="h-3 w-32 max-w-full shimmer rounded-md" />
         </div>
       ))}
     </div>
@@ -93,18 +120,24 @@ export function StatsSkeleton() {
 export async function StatsSection({ userId }: { userId: string }) {
   const { stats } = await getDashboardData(userId)
 
-  const cardClass =
-    "min-w-[72%] sm:min-w-[45%] snap-start shrink-0 md:min-w-0 border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm hover:border-primary/30 transition-[transform,background-color,border-color,color,box-shadow,opacity]"
+  const cardClass = cn(
+    STATS_ITEM,
+    "border-border/60 bg-card/60 backdrop-blur-md rounded-2xl shadow-sm hover:border-primary/30 transition-[transform,background-color,border-color,color,box-shadow,opacity]"
+  )
+  const titleClass =
+    "min-w-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
 
   return (
-    <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0">
+    <div
+      className={STATS_RAIL}
+      role="group"
+      aria-label="Resumen de tu progreso"
+    >
       {/* Racha */}
       <Card className={cardClass}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Racha Actual
-          </CardTitle>
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-warning-soft text-warning-strong">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className={titleClass}>Racha Actual</CardTitle>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-warning-soft text-warning-strong">
             <Flame className="h-4 w-4" />
           </div>
         </CardHeader>
@@ -118,11 +151,9 @@ export async function StatsSection({ userId }: { userId: string }) {
 
       {/* XP & Nivel */}
       <Card className={cardClass}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Experiencia & Nivel
-          </CardTitle>
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-primary">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className={titleClass}>Experiencia & Nivel</CardTitle>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary">
             <Star className="h-4 w-4" />
           </div>
         </CardHeader>
@@ -142,11 +173,9 @@ export async function StatsSection({ userId }: { userId: string }) {
 
       {/* Lecciones */}
       <Card className={cardClass}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Lecciones
-          </CardTitle>
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-success-soft text-success-strong">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className={titleClass}>Lecciones</CardTitle>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-success-soft text-success-strong">
             <CheckCircle2 className="h-4 w-4" />
           </div>
         </CardHeader>
@@ -160,11 +189,9 @@ export async function StatsSection({ userId }: { userId: string }) {
 
       {/* Formaciones */}
       <Card className={cardClass}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Formaciones
-          </CardTitle>
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-primary">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className={titleClass}>Formaciones</CardTitle>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary">
             <Trophy className="h-4 w-4" />
           </div>
         </CardHeader>

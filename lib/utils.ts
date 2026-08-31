@@ -1,5 +1,22 @@
 import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { extendTailwindMerge } from "tailwind-merge"
+
+/**
+ * `text-3xs` y `text-2xs` son escalones propios del tema (ver `@theme` en
+ * app/globals.css). tailwind-merge no los trae de serie, así que no los
+ * reconocía como parte del grupo "font-size": al pasar `text-2xs` a un
+ * componente que ya define un tamaño (CardTitle trae `text-xl`, Badge trae
+ * `text-xs`…) el tamaño base no se eliminaba y ganaba el del componente,
+ * porque en el CSS generado `.text-2xs` se ordena antes que `.text-xl`.
+ * Declarándolos aquí, el override funciona como en el resto de la escala.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [{ text: ["3xs", "2xs"] }],
+    },
+  },
+})
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

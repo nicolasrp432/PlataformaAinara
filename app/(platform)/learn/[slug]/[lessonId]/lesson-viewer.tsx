@@ -656,23 +656,33 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
         </aside>
       </div>
 
-      {/* ── Mobile Sticky Navigation Dock ──────────────────── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 md:hidden bg-card/95 backdrop-blur-2xl border-t border-border safe-bottom">
-        <div className="flex items-center justify-between gap-1 px-3 py-1.5">
+      {/* ── Mobile Floating Dock ───────────────────────────────
+          Mismo lenguaje visual que la barra global de móvil
+          (`components/layout/mobile-bottom-nav.tsx`): dock flotante
+          redondeado, acristalado y centrado, en lugar de una barra
+          pegada de borde a borde. */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 md:hidden pointer-events-none px-3 pb-2 pt-1 safe-bottom"
+        aria-label="Navegación de la lección"
+      >
+        <div
+          data-translucent=""
+          className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-1 rounded-2xl border border-border/80 bg-card/90 px-1.5 py-1 shadow-[0_8px_32px_rgba(246,210,92,0.12),0_2px_12px_rgba(0,0,0,0.08)] backdrop-blur-2xl"
+        >
           <button
             onClick={() => setOpenContenido(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-muted-foreground hover:text-foreground active:scale-95 transition-[transform,background-color,border-color,color,box-shadow,opacity]"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-muted-foreground touch-manipulation hover:text-foreground active:scale-[0.94] transition-[transform,color] duration-100 ease-out"
           >
             <List className="h-4.5 w-4.5" />
-            <span className="text-3xs font-medium">Temario</span>
+            <span className="text-3xs font-medium leading-none">Temario</span>
           </button>
 
           <button
             onClick={() => setOpenComentarios(true)}
-            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-muted-foreground hover:text-foreground active:scale-95 transition-[transform,background-color,border-color,color,box-shadow,opacity]"
+            className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-muted-foreground touch-manipulation hover:text-foreground active:scale-[0.94] transition-[transform,color] duration-100 ease-out"
           >
             <MessageSquare className="h-4.5 w-4.5" />
-            <span className="text-3xs font-medium">Comunidad</span>
+            <span className="text-3xs font-medium leading-none">Comunidad</span>
             {totalCommentCount > 0 && (
               <span className="absolute top-0 right-1/4 translate-x-1/2 min-w-3.5 h-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-3xs font-bold flex items-center justify-center">
                 {totalCommentCount > 99 ? "99+" : totalCommentCount}
@@ -682,40 +692,40 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
 
           <button
             onClick={() => setOpenIA(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-muted-foreground hover:text-foreground active:scale-95 transition-[transform,background-color,border-color,color,box-shadow,opacity]"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-muted-foreground touch-manipulation hover:text-foreground active:scale-[0.94] transition-[transform,color] duration-100 ease-out"
           >
             <Bot className="h-4.5 w-4.5 text-primary" />
-            <span className="text-3xs font-medium">IA Guía</span>
+            <span className="text-3xs font-medium leading-none">IA Guía</span>
           </button>
 
-          {/* Primary Action Button */}
+          {/* Acción principal */}
           {canMarkComplete ? (
             <Button
               onClick={handleMarkComplete}
               disabled={isSaving}
               size="sm"
-              className="flex-[1.3] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-lg flex items-center justify-center gap-1"
+              className="min-w-0 flex-[1.25] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-xl flex items-center justify-center gap-1 px-2"
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span className="text-2xs font-semibold">{isSaving ? "..." : "Completar"}</span>
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate text-2xs font-semibold">{isSaving ? "..." : "Completar"}</span>
             </Button>
           ) : nextLesson ? (
             <Button
               onClick={() => router.push(`/learn/${formation.slug}/${nextLesson.id}`)}
               size="sm"
-              className="flex-[1.3] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-lg flex items-center justify-center gap-1"
+              className="min-w-0 flex-[1.25] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-xl flex items-center justify-center gap-1 px-2"
             >
-              <span className="text-2xs font-semibold">Siguiente</span>
-              <ChevronRight className="h-3.5 w-3.5" />
+              <span className="truncate text-2xs font-semibold">Siguiente</span>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
             </Button>
           ) : (
             <Button
               onClick={() => router.push(`/formations/${formation.slug}`)}
               size="sm"
-              className="flex-[1.3] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-lg flex items-center justify-center gap-1"
+              className="min-w-0 flex-[1.25] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-xl flex items-center justify-center gap-1 px-2"
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span className="text-2xs font-semibold">Finalizar</span>
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate text-2xs font-semibold">Finalizar</span>
             </Button>
           )}
         </div>
