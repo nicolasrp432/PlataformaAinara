@@ -191,7 +191,7 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
             <Link
               key={formation.id}
               href={`/formations/${formation.slug}`}
-              className="group"
+              className="group min-w-0"
             >
               <Card className="overflow-hidden h-full border-border/50 bg-card/40 backdrop-blur-xl hover:border-primary/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-1.5 transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-300 ease-out group-hover:bg-card/60">
                 {/* Thumbnail */}

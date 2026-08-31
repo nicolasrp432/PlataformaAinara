@@ -58,9 +58,16 @@ export default async function DashboardPage() {
         <StatsSection userId={user.id} />
       </Suspense>
 
+      {/* `min-w-0` en los items no es decorativo: el mínimo automático de un
+          item de rejilla es su `min-content`, así que sin él una sola palabra
+          larga (el título de una formación, una etiqueta sin espacios) estira
+          la pista `1fr` por encima del contenedor y arrastra consigo a toda la
+          columna. En móvil, donde la rejilla es de una sola columna, eso es
+          exactamente lo que hacía que la tarjeta de "Continuar Aprendiendo"
+          sobresaliera de la pantalla. */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Continuar aprendiendo */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="min-w-0 lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-medium">Continuar Aprendiendo</h2>
             <Button
@@ -82,7 +89,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Actividad reciente */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <h2 className="text-xl font-medium">Actividad Reciente</h2>
 
           <div className="flex flex-col gap-6">
