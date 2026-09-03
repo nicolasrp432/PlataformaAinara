@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import Link from "next/link"
 import { LoginForm } from "./login-form"
 import { BrandMark, Wordmark } from "@/components/ui/brand"
+import { AuthFormSkeleton } from "@/components/auth/auth-form-skeleton"
 
 export const metadata: Metadata = {
   title: "Iniciar Sesión",
@@ -46,11 +48,13 @@ export default function LoginPage() {
               Bienvenido de nuevo
             </h1>
             <p className="text-sm text-muted-foreground">
-              Ingresa tus credenciales para acceder a tu cuenta
+              Entra y sigue donde lo dejaste
             </p>
           </div>
 
-          <LoginForm />
+          <Suspense fallback={<AuthFormSkeleton fields={2} />}>
+            <LoginForm />
+          </Suspense>
 
           <p className="px-8 text-center text-sm text-muted-foreground">
             ¿No tienes cuenta?{" "}

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
+import Image from "next/image"
 import { MediaImage } from "@/components/media/media-image"
 import { 
   ArrowLeft, 
@@ -23,6 +24,8 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { DIFFICULTY_STYLES } from "@/lib/status-styles"
+import { UpgradeButton } from "@/components/access/upgrade-button"
+import { MENTOR_PROFILE } from "@/lib/mentor"
 
 interface Lesson {
   id: string
@@ -56,6 +59,10 @@ interface Formation {
   isEnrolled: boolean
   progress: number
   completedLessons: string[]
+  /** true cuando la suscripción está activa (o es admin/mentor). */
+  hasFullAccess: boolean
+  /** ids de las lecciones que este usuario puede abrir ahora mismo. */
+  unlockedLessons: string[]
 }
 
 interface FormationDetailProps {
@@ -96,16 +103,24 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
     )
   }
 
-  // Find next lesson to continue
+  const unlocked = new Set(formation.unlockedLessons)
+  const { hasFullAccess } = formation
+
+  // Siguiente lección a la que ir. Para un usuario gratuito no tiene sentido
+  // apuntar a una lección con candado: el botón principal debe llevar siempre
+  // a algo que se pueda abrir, o desaparecer.
   const findNextLesson = () => {
+    let firstIncomplete: { module: Module; lesson: Lesson } | null = null
+
     for (const moduleItem of formation.modules) {
       for (const lesson of moduleItem.lessons) {
-        if (!formation.completedLessons.includes(lesson.id)) {
-          return { module: moduleItem, lesson }
-        }
+        if (formation.completedLessons.includes(lesson.id)) continue
+        if (!firstIncomplete) firstIncomplete = { module: moduleItem, lesson }
+        if (unlocked.has(lesson.id)) return { module: moduleItem, lesson }
       }
     }
-    return null
+
+    return hasFullAccess ? firstIncomplete : null
   }
 
   const nextLesson = findNextLesson()
@@ -205,50 +220,64 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                 </>
               ) : (
                 <>
-                  <div className="text-center py-2">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {formation.is_premium ? "Formacion Premium" : "Formacion Gratuita"}
+                  <div className="py-2 text-center">
+                    <p className="mb-1 text-sm text-muted-foreground">
+                      {hasFullAccess ? "Incluida en tu suscripción" : "Empieza gratis"}
                     </p>
-                    <div className="flex items-center justify-center gap-2 mt-2">
+                    <div className="mt-2 flex items-center justify-center gap-2">
                       <Sparkles className="h-5 w-5 text-primary" />
                       <span className="text-lg font-medium text-foreground">
                         +{formation.xp_reward || 500} XP al completar
                       </span>
                     </div>
                   </div>
-                  <Button 
-                    className="w-full bg-primary hover:bg-primary/90" 
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90"
                     size="lg"
                     onClick={handleEnroll}
                     disabled={isEnrolling}
                   >
                     {isEnrolling ? (
                       "Inscribiendo..."
-                    ) : formation.is_premium && !isLoggedIn ? (
-                      <>
-                        <Lock className="h-5 w-5 mr-2" />
-                        Iniciar sesion
-                      </>
                     ) : (
                       <>
                         <Play className="h-5 w-5 mr-2" />
-                        {formation.is_premium ? "Inscribirse" : "Comenzar Gratis"}
+                        {hasFullAccess ? "Comenzar formación" : "Ver la primera clase"}
                       </>
                     )}
                   </Button>
                 </>
               )}
 
+              {/* Puente al pago. Va después del botón principal a propósito:
+                  primero se deja probar, después se propone pagar. */}
+              {!hasFullAccess && (
+                <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Con el plan gratuito ves la primera clase de esta formación.
+                    Las {Math.max(totalLessons - 1, 0)} restantes se abren con la
+                    suscripción.
+                  </p>
+                  <UpgradeButton size="default" label="Desbloquear todas las clases" />
+                </div>
+              )}
+
               <Separator className="bg-border/50" />
 
               {/* Instructor */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-primary">A</span>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Ainara</p>
-                  <p className="text-sm text-muted-foreground">Instructora</p>
+                <Image
+                  src={MENTOR_PROFILE.portrait}
+                  alt={MENTOR_PROFILE.name}
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 shrink-0 rounded-full object-cover object-top ring-1 ring-primary/20"
+                />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{MENTOR_PROFILE.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {MENTOR_PROFILE.title}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -398,33 +427,43 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                       <div className="space-y-1 border-t border-border/50 pt-4">
                         {module.lessons.map((lesson, lessonIndex) => {
                           const isCompleted = formation.completedLessons.includes(lesson.id)
-                          const canAccess = isEnrolledOptimistic || lesson.is_free
-                          
+                          // El acceso ya no lo da la inscripción, lo da la
+                          // suscripción: el servidor manda la lista de
+                          // lecciones abiertas y aquí solo se pinta.
+                          const canAccess = unlocked.has(lesson.id)
+
                           return (
                             <Link
                               key={lesson.id}
                               href={canAccess ? `/learn/${formation.slug}/${lesson.id}` : "#"}
+                              aria-disabled={!canAccess}
                               className={cn(
-                                "flex items-center gap-3 p-3 rounded-lg transition-colors",
+                                "flex items-center gap-3 rounded-lg p-3 transition-colors",
                                 canAccess
                                   ? "hover:bg-primary/5"
-                                  : "cursor-not-allowed opacity-60"
+                                  : "cursor-not-allowed opacity-70"
                               )}
                               onClick={(e) => {
-                                if (!canAccess) {
-                                  e.preventDefault()
-                                  if (!isLoggedIn) {
-                                    router.push("/login")
-                                  }
+                                if (canAccess) return
+                                e.preventDefault()
+                                if (!isLoggedIn) {
+                                  router.push("/login")
+                                  return
                                 }
+                                toast("Esta clase está en la suscripción", {
+                                  description:
+                                    "Desbloquea la formación completa desde el botón dorado.",
+                                })
                               }}
                             >
                               <div
                                 className={cn(
-                                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium",
                                   isCompleted
                                     ? "bg-success-soft text-success-strong"
-                                    : "bg-muted text-muted-foreground"
+                                    : canAccess
+                                    ? "bg-muted text-muted-foreground"
+                                    : "bg-muted/60 text-muted-foreground/70"
                                 )}
                               >
                                 {isCompleted ? (
@@ -452,14 +491,20 @@ export function FormationDetail({ formation, isLoggedIn }: FormationDetailProps)
                                   </p>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
-                                {lesson.is_free && !formation.isEnrolled && (
-                                  <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                              <div className="flex shrink-0 items-center gap-2">
+                                {canAccess && !hasFullAccess && (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-primary/30 text-xs text-primary"
+                                  >
                                     Gratis
                                   </Badge>
                                 )}
                                 {!canAccess && (
-                                  <Lock className="h-4 w-4 text-muted-foreground" />
+                                  <Lock
+                                    className="h-4 w-4 text-muted-foreground"
+                                    aria-label="Requiere suscripción"
+                                  />
                                 )}
                               </div>
                             </Link>

@@ -23,7 +23,11 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .single()
 
-  const isAdmin = user.user_metadata?.role === "admin" || profile?.role === "admin"
+  // El rol se lee SOLO de `profiles`. `user_metadata` lo puede escribir el
+  // propio usuario desde el cliente (`supabase.auth.updateUser`), así que
+  // aceptarlo aquí permitía que cualquiera se concediera el panel de
+  // administración.
+  const isAdmin = profile?.role === "admin"
 
   // Redirect if not admin
   if (!isAdmin) {

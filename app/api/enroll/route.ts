@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { enrollSchema } from "@/lib/validations/enroll"
 import { rateLimit, rateLimitResponse, maybeSweep } from "@/lib/rate-limit"
+import { canEnterPlatform, resolveAccessTier } from "@/lib/access"
 
 // POST - Enroll user in a formation
 export async function POST(request: NextRequest) {
@@ -61,21 +62,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Already enrolled", enrollment: existing })
   }
   
-  // Check that the user has approved access to the platform
+  // Inscribirse es gratis: solo abre el seguimiento de progreso. Lo que la
+  // suscripción compra es el acceso a las lecciones, y eso se comprueba
+  // lección a lección en `getLessonPageData`, no aquí. Un usuario gratuito
+  // debe poder inscribirse para que su avance en la clase de muestra quede
+  // guardado y aparezca en «Continuar aprendiendo».
+  //
+  // Una cuenta suspendida sí queda fuera.
   const { data: profile } = await supabase
     .from("profiles")
     .select("access_status, role")
     .eq("id", user.id)
     .single()
 
-  const accessStatus = profile?.access_status ?? "pending"
-  const role = profile?.role ?? "student"
-  const hasAccess =
-    accessStatus === "approved" || role === "admin" || role === "mentor"
+  const tier = resolveAccessTier(profile?.role, profile?.access_status)
 
-  if (!hasAccess) {
+  if (!canEnterPlatform(tier)) {
     return NextResponse.json(
-      { error: "Acceso no autorizado. Tu cuenta está pendiente de aprobación." },
+      { error: "Tu acceso está suspendido. Reactiva tu suscripción para continuar." },
       { status: 403 }
     )
   }

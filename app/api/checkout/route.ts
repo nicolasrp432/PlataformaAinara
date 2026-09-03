@@ -16,6 +16,16 @@ export async function POST(req: NextRequest) {
   const rlResp = rateLimitResponse(rl)
   if (rlResp) return rlResp
 
+  // Sin precio configurado el checkout de Stripe falla con un error opaco.
+  // Mejor decirlo claro: es un fallo de configuración, no del usuario.
+  if (!STRIPE_PRICE_ID) {
+    console.error("[checkout] STRIPE_PRICE_ID no está configurado")
+    return NextResponse.json(
+      { error: "El pago no está configurado todavía. Escríbenos y lo resolvemos." },
+      { status: 503 },
+    )
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, stripe_customer_id")
@@ -49,8 +59,11 @@ export async function POST(req: NextRequest) {
       customer: customerId,
       mode: "subscription",
       line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
-      success_url: `${baseUrl}/auth/callback?next=/dashboard&checkout=success`,
-      cancel_url: `${baseUrl}/?checkout=canceled`,
+      // Ruta propia que verifica la sesión y concede el acceso al instante.
+      // `/auth/callback` esperaba un `?code=` de Supabase que aquí nunca
+      // llega, así que el usuario acababa en la pantalla de error tras pagar.
+      success_url: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/billing?checkout=canceled`,
       metadata: { supabase_user_id: user.id },
       subscription_data: {
         metadata: { supabase_user_id: user.id },

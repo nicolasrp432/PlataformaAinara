@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Lock,
 } from "lucide-react"
 import { getInitials, progressToNextLevel } from "@/lib/utils"
 import { BrandMark } from "@/components/ui/brand"
@@ -48,11 +49,13 @@ interface SidebarUser {
 interface PlatformSidebarProps {
   user: SidebarUser
   streak: number
+  /** false → plan gratuito: las secciones de pago se marcan con candado. */
+  hasFullAccess: boolean
 }
 
 const SIDEBAR_COLLAPSED_KEY = "sendero:sidebar:collapsed"
 
-export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
+export function PlatformSidebar({ user, streak, hasFullAccess }: PlatformSidebarProps) {
   const pathname = usePathname()
   const { state: storeState } = useUserStore()
   // Use live store values if available (updated optimistically on lesson completion)
@@ -203,6 +206,7 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
           <div className="space-y-0.5">
             {PLATFORM_NAV.map((item) => {
               const isActive = isNavItemActive(pathname, item.href)
+              const isLocked = Boolean(item.requiresMembership) && !hasFullAccess
 
               return (
                 <Link
@@ -233,9 +237,15 @@ export function PlatformSidebar({ user, streak }: PlatformSidebarProps) {
                     )}
                   />
                   {!isCollapsed && (
-                    <span className="relative z-10">{item.name}</span>
+                    <span className="relative z-10 flex-1">{item.name}</span>
                   )}
-                  {item.href === "/messages" && (
+                  {isLocked && !isCollapsed && (
+                    <Lock
+                      className="relative z-10 h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+                      aria-label="Requiere suscripción"
+                    />
+                  )}
+                  {item.href === "/messages" && !isLocked && (
                     <MessagesUnreadBadge isCollapsed={isCollapsed} />
                   )}
                 </Link>

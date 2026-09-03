@@ -36,7 +36,7 @@ import {
   createModuleAction,
   deleteModuleAction
 } from "../actions"
-import { uploadThumbnailAction } from "../upload-action"
+import { uploadImage, ACCEPTED_IMAGE_TYPES } from "@/lib/image-upload"
 
 type DifficultyLevel = "beginner" | "intermediate" | "advanced"
 
@@ -128,6 +128,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
   })
   const [modules, setModules] = useState<Module[]>(initialData?.modules || [])
   const [loading] = useState(false)
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState("details")
 
@@ -558,33 +559,42 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                 <div className="flex gap-2">
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept={ACCEPTED_IMAGE_TYPES}
+                    disabled={isUploadingCover}
                     className="rounded-md"
                     onChange={async (e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0]
-                        const formData = new FormData()
-                        formData.append("file", file)
-                        const toastId = toast.loading("Subiendo imagen...")
-                        const res = await uploadThumbnailAction(formData)
-                        if (res.success && res.url) {
-                          setFormation((prev) => ({ ...prev, thumbnail_url: res.url }))
-                          toast.dismiss(toastId)
-                          // Auto-guardar thumbnail en DB si la formación ya existe
-                          if (!isNew && formation?.id) {
-                            const saveRes = await updateFormationAction(formation.id, { thumbnail_url: res.url })
-                            if (saveRes.success) {
-                              toast.success("Imagen guardada correctamente")
-                            } else {
-                              toast.error("Imagen subida pero no guardada — haz clic en Guardar")
-                            }
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      // Permite reintentar con el mismo fichero: sin esto, el
+                      // input no vuelve a disparar `change` tras un fallo.
+                      e.target.value = ""
+
+                      setIsUploadingCover(true)
+                      const toastId = toast.loading("Subiendo imagen…")
+                      try {
+                        const url = await uploadImage(file, "thumbnails/formations")
+                        setFormation((prev) => ({ ...prev, thumbnail_url: url }))
+                        toast.dismiss(toastId)
+
+                        if (!isNew && formation?.id) {
+                          const saveRes = await updateFormationAction(formation.id, { thumbnail_url: url })
+                          if (saveRes.success) {
+                            toast.success("Imagen guardada correctamente")
                           } else {
-                            toast.success("Imagen lista — recuerda guardar la formación")
+                            toast.error("Imagen subida pero no guardada — pulsa Guardar")
                           }
                         } else {
-                          toast.dismiss(toastId)
-                          toast.error(res.error || "Error al subir la imagen")
+                          toast.success("Imagen lista — recuerda guardar la formación")
                         }
+                      } catch (error) {
+                        toast.dismiss(toastId)
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : "No se pudo subir la imagen.",
+                        )
+                      } finally {
+                        setIsUploadingCover(false)
                       }
                     }}
                   />

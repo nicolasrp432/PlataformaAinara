@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { getAuthUser, getUserProfile, getFormationBySlug } from "@/lib/data-access"
+import { getAuthUser, getFormationBySlug } from "@/lib/data-access"
 import { FormationDetail } from "./formation-detail"
 
 interface PageProps {
@@ -35,28 +35,14 @@ export default async function FormationDetailPage({ params }: PageProps) {
 
   if (!user) redirect("/login")
 
-  // Segunda capa de seguridad: solo suscriptores acceden a formaciones individuales
-  const profile = await getUserProfile(user.id)
-  const hasAccess =
-    profile?.access_status === "approved" ||
-    profile?.role === "admin" ||
-    profile?.role === "mentor"
+  // El temario es visible para todo el mundo con sesión: se ve el mapa
+  // completo de la formación y qué lección está abierta. El candado lo aplica
+  // `getFormationBySlug`, que devuelve `unlockedLessons` y `hasFullAccess`.
+  const formation = await getFormationBySlug(slug, user.id)
 
-  if (!hasAccess) {
-    redirect("/billing?reason=subscription")
-  }
-
-  // Función centralizada con queries paralelas
-  const formation = await getFormationBySlug(slug, user?.id || null)
-  
   if (!formation) {
     notFound()
   }
 
-  return (
-    <FormationDetail 
-      formation={formation}
-      isLoggedIn={!!user}
-    />
-  )
+  return <FormationDetail formation={formation} isLoggedIn />
 }

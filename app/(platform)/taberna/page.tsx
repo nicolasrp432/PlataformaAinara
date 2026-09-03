@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { getAuthUser, getUserProfile, getReflections } from "@/lib/data-access"
+import { hasFullAccess, resolveAccessTier } from "@/lib/access"
 import { TabernaFeed } from "./taberna-feed"
 
 /**
@@ -42,14 +43,10 @@ export default async function TabernaPage() {
 
   const profile = await getUserProfile(user.id)
 
-  // Segunda capa de seguridad: solo suscriptores acceden a la comunidad
-  const hasAccess =
-    profile?.access_status === "approved" ||
-    profile?.role === "admin" ||
-    profile?.role === "mentor"
-
-  if (!hasAccess) {
-    redirect("/billing?reason=subscription")
+  // Segunda capa de seguridad tras el middleware. Usa el mismo helper que el
+  // resto de la app para que no pueda divergir de `lib/access.ts`.
+  if (!hasFullAccess(resolveAccessTier(profile?.role, profile?.access_status))) {
+    redirect("/billing?reason=subscription&from=/taberna")
   }
 
   const currentUser = {

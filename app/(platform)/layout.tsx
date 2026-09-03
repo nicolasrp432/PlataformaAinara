@@ -3,7 +3,8 @@ import { Suspense } from "react"
 import { PlatformSidebar } from "@/components/layout/platform-sidebar"
 import { MobileTopBar } from "@/components/layout/mobile-top-bar"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
-import { getAuthUser, getUserProfile } from "@/lib/data-access"
+import { getAuthUser, getUserProfile, getAccessTier } from "@/lib/data-access"
+import { hasFullAccess } from "@/lib/access"
 import { UserStoreProvider } from "@/lib/store/user-store"
 import { HydrateStore } from "@/lib/store/hydrate-store"
 import { NotificationsProvider } from "@/components/notifications/notifications-provider"
@@ -38,8 +39,14 @@ export default async function PlatformLayout({
     redirect("/login")
   }
 
-  // Fetch profile data (deduplicada via React.cache si una page la pide también)
-  const profile = await getUserProfile(user.id)
+  // Ambas van deduplicadas por React.cache: si una página pide lo mismo en
+  // este request, no se repite la consulta.
+  const [profile, tier] = await Promise.all([
+    getUserProfile(user.id),
+    getAccessTier(user.id),
+  ])
+
+  const isMember = hasFullAccess(tier)
 
   // El middleware ya maneja la protección de rutas por nivel de acceso.
   // El layout solo se encarga de componer la UI para todos los usuarios autenticados.
@@ -70,7 +77,7 @@ export default async function PlatformLayout({
           sidebar y navegación móvil. */}
       <NotificationsProvider userId={user.id}>
         <div className="min-h-screen bg-background">
-          <PlatformSidebar user={userData} streak={streak} />
+          <PlatformSidebar user={userData} streak={streak} hasFullAccess={isMember} />
           <MobileTopBar user={userData} streak={streak} />
           {/* --sidebar-w lo escribe el sidebar al colapsar; en móvil siempre 0 */}
           <main className="transition-[padding] duration-300 md:pl-[var(--sidebar-w,16rem)]">
@@ -80,7 +87,7 @@ export default async function PlatformLayout({
               <Suspense fallback={<PageFallback />}>{children}</Suspense>
             </div>
           </main>
-          <MobileBottomNav user={userData} streak={streak} />
+          <MobileBottomNav user={userData} streak={streak} hasFullAccess={isMember} />
         </div>
       </NotificationsProvider>
     </UserStoreProvider>

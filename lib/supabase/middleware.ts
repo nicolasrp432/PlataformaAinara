@@ -1,31 +1,37 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import {
+  canEnterPlatform,
+  getRouteAccess,
+  hasFullAccess,
+  isAuthEntryRoute,
+  resolveAccessTier,
+  safeRedirectTarget,
+} from "@/lib/access"
 
-// ── Routes that NEVER need auth ──────────────────────────────────────
-const PUBLIC_ROUTES = ["/", "/re-conectate", "/evaluacion", "/herramientas"]
+/**
+ * Cookie de caché del perfil. Guarda `<userId>|<role>|<accessStatus>` en vez
+ * de solo el valor: si en el mismo navegador entra otra cuenta, el id no
+ * coincide y la caché se descarta en lugar de heredar los permisos de la
+ * sesión anterior.
+ */
+const PROFILE_CACHE_COOKIE = "x-user-access"
+const PROFILE_CACHE_MAX_AGE = 60 // segundos
 
-// ── Routes that need auth but NO subscription ─────────────────────────
-// Usuarios registrados (sin suscripción) pueden acceder aquí
-const FREE_PROTECTED_ROUTES = ["/dashboard", "/profile", "/pending", "/billing", "/logout", "/reflexion"]
-
-// ── Routes that need auth + approved subscription ─────────────────────
-const PREMIUM_ROUTES = [
-  "/library",
-  "/formations",
-  "/learn",
-  "/quest",
-  "/taberna",
-  "/mentorship",
-  "/u",
-  "/messages",
-  "/assistant",
-]
+function parseProfileCache(raw: string | undefined, userId: string) {
+  if (!raw) return null
+  const [cachedId, role, accessStatus] = raw.split("|")
+  if (cachedId !== userId || !role || !accessStatus) return null
+  return { role, accessStatus }
+}
 
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const routeAccess = getRouteAccess(pathname)
 
-  // Fast-path: skip auth entirely for known public routes (~100ms saved)
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  // Atajo: en rutas públicas no hace falta resolver la sesión, salvo en
+  // /login y /register, donde sí queremos expulsar a quien ya ha entrado.
+  if (routeAccess === "public" && !isAuthEntryRoute(pathname)) {
     return NextResponse.next({ request })
   }
 
@@ -36,121 +42,118 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        )
+        supabaseResponse = NextResponse.next({ request })
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        )
+      },
+    },
   })
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
+  // No introducir código entre createServerClient y supabase.auth.getUser():
+  // un fallo aquí provoca cierres de sesión aleatorios muy difíciles de depurar.
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const adminRoutes = ["/admin"]
-  const authRoutes = ["/login", "/register"]
+  // Ya autenticado en /login o /register → a la plataforma.
+  if (user && isAuthEntryRoute(pathname)) {
+    const url = request.nextUrl.clone()
+    url.pathname = safeRedirectTarget(request.nextUrl.searchParams.get("redirect"))
+    url.search = ""
+    return NextResponse.redirect(url)
+  }
 
-  const isFreeRoute = FREE_PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
-  const isPremiumRoute = PREMIUM_ROUTES.some((route) => pathname.startsWith(route))
-  const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route))
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))
-  const isProtectedRoute = isFreeRoute || isPremiumRoute || isAdminRoute
+  if (routeAccess === "public") {
+    return supabaseResponse
+  }
 
-  // Redirect unauthenticated users to login
-  if (!user && isProtectedRoute) {
+  // Sin sesión en zona privada → login, recordando a dónde iba.
+  if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
+    url.search = ""
     url.searchParams.set("redirect", pathname)
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/dashboard"
-    return NextResponse.redirect(url)
+  // ── Resolver rol + estado de acceso (cacheado 60s en cookie) ───────────
+  const cached = parseProfileCache(
+    request.cookies.get(PROFILE_CACHE_COOKIE)?.value,
+    user.id
+  )
+
+  let role = cached?.role ?? ""
+  let accessStatus = cached?.accessStatus ?? ""
+
+  if (!cached) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, access_status")
+      .eq("id", user.id)
+      .single()
+
+    role = profile?.role ?? "student"
+    accessStatus = profile?.access_status ?? "pending"
+
+    supabaseResponse.cookies.set(
+      PROFILE_CACHE_COOKIE,
+      `${user.id}|${role}|${accessStatus}`,
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: PROFILE_CACHE_MAX_AGE,
+      }
+    )
   }
 
-  // Rutas que no requieren ningún chequeo adicional
-  if (!isPremiumRoute && !isAdminRoute) {
+  const tier = resolveAccessTier(role, accessStatus)
+
+  // Cuenta suspendida: solo puede ver el aviso, facturación y salir.
+  if (!canEnterPlatform(tier)) {
+    const allowedWhileSuspended = ["/pending", "/billing", "/logout", "/profile"]
+    const isAllowed = allowedWhileSuspended.some(
+      (p) => pathname === p || pathname.startsWith(p + "/")
+    )
+    if (!isAllowed) {
+      const url = request.nextUrl.clone()
+      url.pathname = "/pending"
+      url.search = ""
+      return NextResponse.redirect(url)
+    }
     return supabaseResponse
   }
 
-  // ── Check role + access_status via cookie cache (TTL 5 min) ──────────
-  if (user && (isPremiumRoute || isAdminRoute)) {
-    const cachedRole = request.cookies.get("x-user-role")?.value
-    const cachedAccess = request.cookies.get("x-user-access")?.value
-
-    let role: string = cachedRole ?? ""
-    let accessStatus: string = cachedAccess ?? ""
-
-    if (!role || !accessStatus) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, access_status")
-        .eq("id", user.id)
-        .single()
-
-      role = profile?.role ?? "student"
-      accessStatus = profile?.access_status ?? "pending"
-
-      const baseCookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
-        path: "/",
-      }
-      // Rol: cache 5 min (cambios de rol son muy infrecuentes, solo via SQL)
-      supabaseResponse.cookies.set("x-user-role", role, { ...baseCookieOptions, maxAge: 60 * 5 })
-      // Access status: cache 60 seg para que aprobaciones del admin sean efectivas rápido
-      supabaseResponse.cookies.set("x-user-access", accessStatus, { ...baseCookieOptions, maxAge: 60 })
-    }
-
-    const hasFullAccess =
-      accessStatus === "approved" || role === "admin" || role === "mentor"
-
-    // Verificar acceso a rutas de admin
-    if (isAdminRoute) {
-      if (role !== "admin" && role !== "mentor") {
-        const url = request.nextUrl.clone()
-        url.pathname = "/dashboard"
-        return NextResponse.redirect(url)
-      }
-      return supabaseResponse
-    }
-
-    // Verificar acceso a rutas premium
-    if (isPremiumRoute && !hasFullAccess) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/billing"
-      url.searchParams.set("reason", "subscription")
-      return NextResponse.redirect(url)
-    }
+  if (routeAccess === "staff" && tier !== "staff") {
+    const url = request.nextUrl.clone()
+    url.pathname = "/dashboard"
+    url.search = ""
+    return NextResponse.redirect(url)
   }
 
+  if (routeAccess === "member" && !hasFullAccess(tier)) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/billing"
+    url.search = ""
+    url.searchParams.set("reason", "subscription")
+    url.searchParams.set("from", pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // `authenticated`: el catálogo y las formaciones se abren para todos.
+  // El candado por lección lo aplica la capa de datos, no el middleware.
   return supabaseResponse
 }

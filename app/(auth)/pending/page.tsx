@@ -4,114 +4,79 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { getAuthUser, getUserProfile } from "@/lib/data-access"
-import { Clock, Sparkles, LogOut, Mail, ArrowRight } from "lucide-react"
+import { resolveAccessTier } from "@/lib/access"
+import { ShieldAlert, LogOut, Mail, ArrowRight, CreditCard } from "lucide-react"
 import { BrandMark, Wordmark } from "@/components/ui/brand"
 import { CONTROLLER } from "@/components/legal/legal-doc"
 
 export const metadata: Metadata = {
-  title: "Acceso pendiente",
+  title: "Acceso suspendido",
 }
 
+/**
+ * Antes esta página era la sala de espera obligatoria de todo registro nuevo.
+ * Ya no: una cuenta recién creada entra directa a la plataforma. Aquí solo
+ * llega quien tiene el acceso suspendido (una suscripción impagada o una
+ * cuenta bloqueada), y siempre con una salida clara.
+ */
 export default async function PendingPage() {
   const user = await getAuthUser()
-
-  if (!user) {
-    redirect("/login")
-  }
+  if (!user) redirect("/login")
 
   const profile = await getUserProfile(user.id)
+  const tier = resolveAccessTier(profile?.role, profile?.access_status)
 
-  // If already approved, redirect to dashboard
-  if (profile?.access_status === "approved") {
-    redirect("/dashboard")
-  }
+  if (tier !== "suspended") redirect("/dashboard")
 
-  const isSuspended = profile?.access_status === "suspended"
+  const firstName = profile?.full_name?.split(" ")[0]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      {/* Logo */}
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10">
       <Link href="/" className="mb-10 flex items-center gap-3">
         <BrandMark size="md" />
         <Wordmark size="md" />
       </Link>
 
       <Card className="w-full max-w-md border-border/50 shadow-lg">
-        <CardContent className="flex flex-col items-center px-8 py-10 text-center">
-          {isSuspended ? (
-            <>
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-danger-soft">
-                <Mail className="h-10 w-10 text-danger-strong" />
-              </div>
-              <h1 className="mb-3 text-2xl font-light">Acceso suspendido</h1>
-              <p className="mb-6 text-muted-foreground leading-relaxed">
-                Tu acceso a la plataforma ha sido suspendido. Si crees que esto es
-                un error, por favor contacta con el equipo de soporte.
-              </p>
-              <Button variant="outline" asChild>
-                <a href={`mailto:${CONTROLLER.email}`}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Contactar soporte
-                </a>
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-warning-soft">
-                <Clock className="h-10 w-10 text-warning-strong" />
-              </div>
-              <h1 className="mb-3 text-2xl font-light">
-                Tu cuenta está en revisión
-              </h1>
-              <p className="mb-2 text-muted-foreground leading-relaxed">
-                Hola{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}. Hemos
-                recibido tu registro y nuestro equipo está revisando tu solicitud de
-                acceso.
-              </p>
-              <p className="mb-8 text-sm text-muted-foreground">
-                Recibirás una notificación cuando tu acceso sea aprobado. Este proceso
-                suele tardar menos de 24 horas.
-              </p>
+        <CardContent className="flex flex-col items-center px-6 py-10 text-center sm:px-8">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-warning-soft">
+            <ShieldAlert className="h-10 w-10 text-warning-strong" aria-hidden />
+          </div>
 
-              <div className="w-full space-y-3">
-                <Button
-                  className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
-                  size="lg"
-                  asChild
-                >
-                  <Link href="/billing">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Activar acceso con suscripción
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <div className="rounded-xl border border-border/50 bg-muted/30 p-4 text-left">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">
-                    ¿Qué ocurre mientras esperas?
-                  </p>
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                      El equipo revisa tu perfil y solicitud
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                      Si realizaste un pago, se verificará automáticamente
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                      Cuando sea aprobado, tendrás acceso completo
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </>
-          )}
+          <h1 className="mb-3 text-2xl font-light">
+            Tu acceso está en pausa
+          </h1>
+          <p className="mb-8 leading-relaxed text-muted-foreground">
+            Hola{firstName ? `, ${firstName}` : ""}. Tu suscripción no está
+            activa ahora mismo, así que el contenido está en pausa. Se reactiva
+            en cuanto se regularice el pago — tu progreso sigue guardado.
+          </p>
+
+          <div className="w-full space-y-3">
+            <Button
+              className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
+              size="lg"
+              asChild
+            >
+              <Link href="/billing">
+                <CreditCard className="mr-2 h-4 w-4" aria-hidden />
+                Reactivar mi suscripción
+                <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+              </Link>
+            </Button>
+
+            <Button variant="outline" className="w-full" asChild>
+              <a href={`mailto:${CONTROLLER.email}`}>
+                <Mail className="mr-2 h-4 w-4" aria-hidden />
+                Escribir a soporte
+              </a>
+            </Button>
+          </div>
 
           <div className="mt-8 w-full border-t border-border/50 pt-6">
             <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
               <Link href="/logout">
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOut className="mr-2 h-4 w-4" aria-hidden />
                 Cerrar sesión
               </Link>
             </Button>

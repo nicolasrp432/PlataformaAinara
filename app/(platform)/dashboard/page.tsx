@@ -16,6 +16,7 @@ import {
   CardSkeleton,
   QuickActions,
 } from "./sections"
+import { CheckoutResultToast } from "@/components/access/checkout-result-toast"
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -40,6 +41,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Aviso del resultado del pago al volver de Stripe. */}
+      <Suspense fallback={null}>
+        <CheckoutResultToast />
+      </Suspense>
+
       <Suspense fallback={null}>
         <UpsellBanner userId={user.id} />
       </Suspense>

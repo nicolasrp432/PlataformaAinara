@@ -4,11 +4,18 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { SPRING_UI } from "@/lib/motion"
-import { X, Sparkles, Loader2, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react"
+import { X, Sparkles, Loader2, AlertCircle, MailCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/auth/password-input"
 import { createClient } from "@/lib/supabase/client"
+import {
+  describeAuthError,
+  normalizeEmail,
+  supabaseEnvIsPlaceholder,
+  SUPABASE_ENV_MESSAGE,
+} from "@/lib/auth-errors"
 import Link from "next/link"
 
 interface RegisterModalProps {
@@ -19,20 +26,10 @@ interface RegisterModalProps {
 export function RegisterModal({ open, onClose }: RegisterModalProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(false)
-  const [isCheckingOut, setIsCheckingOut] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState(false)
-
-  async function startCheckout() {
-    setIsCheckingOut(true)
-    try {
-      const res = await fetch("/api/checkout", { method: "POST" })
-      const data = await res.json()
-      if (data.url) window.location.href = data.url
-    } catch {
-      setIsCheckingOut(false)
-    }
-  }
+  const [pendingEmail, setPendingEmail] = React.useState("")
+  const [resendState, setResendState] = React.useState<"idle" | "sending" | "sent">("idle")
 
   // Reset state when modal opens
   React.useEffect(() => {
@@ -40,6 +37,7 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
       setError(null)
       setSuccess(false)
       setIsLoading(false)
+      setResendState("idle")
     }
   }, [open])
 
@@ -49,18 +47,23 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
     setError(null)
 
     const data = new FormData(e.currentTarget)
-    const name = data.get("name") as string
-    const email = data.get("email") as string
+    const name = (data.get("name") as string).trim()
+    const email = normalizeEmail(data.get("email") as string)
     const password = data.get("password") as string
     const confirm = data.get("confirm") as string
 
     if (password !== confirm) {
-      setError("Las contraseñas no coinciden")
+      setError("Las dos contraseñas no coinciden.")
       setIsLoading(false)
       return
     }
     if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres")
+      setError("La contraseña debe tener al menos 8 caracteres.")
+      setIsLoading(false)
+      return
+    }
+    if (supabaseEnvIsPlaceholder()) {
+      setError(SUPABASE_ENV_MESSAGE)
       setIsLoading(false)
       return
     }
@@ -71,31 +74,57 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/pending`,
-          data: { full_name: name, avatar_url: null, role: "student" },
+          // Al confirmar, el usuario entra directo a la plataforma.
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          data: {
+            full_name: name,
+            avatar_url: null,
+            role: "student",
+            terms_accepted_at: new Date().toISOString(),
+            privacy_accepted_at: new Date().toISOString(),
+          },
         },
       })
 
       if (authError) {
-        setError(
-          authError.message.includes("already registered")
-            ? "Este email ya está registrado. Inicia sesión."
-            : authError.message
-        )
+        setError(describeAuthError(authError).message)
         return
       }
 
-      if (authData.user && !authData.session) {
-        setSuccess(true)
-      } else if (authData.session) {
-        router.push("/pending")
+      if (authData.session) {
+        // Sin confirmación de email: dentro en el acto.
+        router.push("/dashboard")
         router.refresh()
         onClose()
+        return
       }
-    } catch {
-      setError("Ocurrió un error. Inténtalo de nuevo.")
+
+      if (authData.user) {
+        setPendingEmail(email)
+        setSuccess(true)
+      }
+    } catch (err) {
+      setError(describeAuthError(err as { message?: string }).message)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function resendConfirmation() {
+    if (!pendingEmail) return
+    setResendState("sending")
+    try {
+      const supabase = createClient()
+      await supabase.auth.resend({
+        type: "signup",
+        email: pendingEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        },
+      })
+      setResendState("sent")
+    } catch {
+      setResendState("idle")
     }
   }
 
@@ -147,32 +176,39 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex flex-1 flex-col items-center justify-center text-center"
                 >
-                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success-soft">
-                    <CheckCircle2 className="h-10 w-10 text-success-strong" />
+                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
+                    <MailCheck className="h-10 w-10 text-primary" aria-hidden />
                   </div>
-                  <h2 className="font-display mb-3 text-3xl font-light">¡Registro exitoso!</h2>
-                  <p className="mb-2 text-muted-foreground leading-relaxed">
-                    Hemos enviado un enlace de confirmación a tu email.
+                  <h2 className="font-display mb-3 text-3xl font-light">
+                    Confirma tu email
+                  </h2>
+                  <p className="mb-2 leading-relaxed text-muted-foreground">
+                    Te hemos enviado un enlace a{" "}
+                    <span className="font-medium text-foreground break-all">
+                      {pendingEmail}
+                    </span>
+                    .
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Una vez confirmada tu cuenta, activa tu acceso pagando la suscripción o espera la aprobación manual.
+                    Ábrelo y entrarás directamente. Tu cuenta gratuita ya incluye
+                    la primera clase de cada formación.
                   </p>
                   <div className="mt-8 w-full space-y-3">
                     <Button
-                      className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
-                      onClick={startCheckout}
-                      disabled={isCheckingOut}
+                      variant="outline"
+                      className="w-full"
+                      disabled={resendState !== "idle"}
+                      onClick={resendConfirmation}
                     >
-                      {isCheckingOut ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="mr-2 h-4 w-4" />
+                      {resendState === "sending" && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                       )}
-                      Activar acceso ahora — €97/mes
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      {resendState === "sent"
+                        ? "Enlace reenviado"
+                        : "Reenviar enlace"}
                     </Button>
-                    <Button variant="outline" className="w-full" onClick={onClose}>
-                      Confirmaré mi email después
+                    <Button variant="ghost" className="w-full" onClick={onClose}>
+                      Cerrar
                     </Button>
                   </div>
                 </motion.div>
@@ -182,23 +218,27 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
                     <h2 className="font-display mb-2 text-4xl font-light tracking-tight">
                       Crea tu cuenta
                     </h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Regístrate y solicita acceso a la plataforma. El equipo revisará tu solicitud.
+                    <p className="leading-relaxed text-muted-foreground">
+                      Entras al momento, sin tarjeta y sin lista de espera.
                     </p>
                   </div>
 
-                  {/* Access notice */}
+                  {/* Qué incluye la cuenta gratuita */}
                   <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                    <p className="text-sm font-medium text-foreground/80">¿Cómo obtener acceso?</p>
+                    <p className="text-sm font-medium text-foreground/80">
+                      Gratis desde el primer minuto
+                    </p>
                     <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        Completa el pago de suscripción, o
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        Espera la aprobación manual del equipo
-                      </li>
+                      {[
+                        "La primera clase de cada formación, completa",
+                        "Tu diario de reflexión y tu progreso",
+                        "Suscríbete cuando quieras abrir el resto",
+                      ].map((item) => (
+                        <li key={item} className="flex items-start gap-2">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -217,17 +257,17 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
 
                     <div className="space-y-1.5">
                       <Label htmlFor="reg-email">Email</Label>
-                      <Input id="reg-email" name="email" type="email" placeholder="tu@email.com" autoComplete="email" disabled={isLoading} required />
+                      <Input id="reg-email" name="email" type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="tu@email.com" autoComplete="email" disabled={isLoading} required />
                     </div>
 
                     <div className="space-y-1.5">
                       <Label htmlFor="reg-password">Contraseña</Label>
-                      <Input id="reg-password" name="password" type="password" placeholder="Mínimo 8 caracteres" autoComplete="new-password" disabled={isLoading} required minLength={8} />
+                      <PasswordInput id="reg-password" name="password" placeholder="Mínimo 8 caracteres" autoComplete="new-password" disabled={isLoading} required minLength={8} />
                     </div>
 
                     <div className="space-y-1.5">
                       <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
-                      <Input id="reg-confirm" name="confirm" type="password" placeholder="Repite tu contraseña" autoComplete="new-password" disabled={isLoading} required />
+                      <PasswordInput id="reg-confirm" name="confirm" placeholder="Repite tu contraseña" autoComplete="new-password" disabled={isLoading} required />
                     </div>
 
                     <Button
@@ -237,7 +277,7 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
                       className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
                     >
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Crear cuenta
+                      Crear cuenta gratis
                     </Button>
                   </form>
 

@@ -17,6 +17,7 @@ import {
   Bot,
   Share2,
   Lightbulb,
+  Lock,
 } from "lucide-react"
 import type { ContentType } from "@/types"
 import { Button } from "@/components/ui/button"
@@ -99,12 +100,15 @@ interface LessonViewerProps {
         title: string
         isCompleted: boolean
         isCurrent: boolean
+        /** Requiere suscripción: se pinta con candado y no navega. */
+        isLocked: boolean
       }>
     }>
     previousLesson: { id: string; title: string } | null
-    nextLesson: { id: string; title: string } | null
+    nextLesson: { id: string; title: string; isLocked: boolean } | null
     completedCount: number
     totalCount: number
+    hasFullAccess: boolean
     comments?: ThreadedComment[]
   }
   currentUserId: string
@@ -145,11 +149,17 @@ function CurriculumPanel({
               {mod.lessons.map((l, lessonIndex) => (
                 <Link
                   key={l.id}
+                  // Una lección bloqueada sigue enlazando a su URL: la página
+                  // responde con el muro de pago, que nombra la clase. Es más
+                  // útil que un enlace muerto, y el servidor sigue siendo
+                  // quien decide, así que no se puede colar nadie.
                   href={`/learn/${formationSlug}/${l.id}`}
                   className={cn(
                     "flex items-center gap-2.5 p-2 rounded-lg text-sm font-medium transition-[transform,background-color,border-color,color,box-shadow,opacity]",
                     l.isCurrent
                       ? "bg-primary text-primary-foreground shadow-sm"
+                      : l.isLocked
+                      ? "text-muted-foreground hover:bg-primary/5"
                       : "hover:bg-primary/5 text-foreground hover:text-primary"
                   )}
                 >
@@ -171,10 +181,17 @@ function CurriculumPanel({
                   </div>
                   <span className={cn(
                     "truncate flex-1 text-xs",
-                    l.isCurrent ? "text-primary-foreground font-semibold" : "text-foreground"
+                    l.isCurrent ? "text-primary-foreground font-semibold" : "text-foreground",
+                    l.isLocked && !l.isCurrent && "text-muted-foreground"
                   )}>
                     {l.title}
                   </span>
+                  {l.isLocked && !l.isCurrent && (
+                    <Lock
+                      className="h-3 w-3 shrink-0 text-muted-foreground"
+                      aria-label="Requiere suscripción"
+                    />
+                  )}
                 </Link>
               ))}
             </div>
@@ -626,7 +643,12 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               {nextLesson ? (
                 <Link href={`/learn/${formation.slug}/${nextLesson.id}`}>
                   <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs h-8">
-                    <span className="hidden sm:inline">{nextLesson.title}</span>
+                    {nextLesson.isLocked && (
+                      <Lock className="h-3.5 w-3.5 mr-1 shrink-0" aria-hidden />
+                    )}
+                    <span className="hidden sm:inline">
+                      {nextLesson.isLocked ? "Desbloquear siguiente" : nextLesson.title}
+                    </span>
                     <span className="sm:hidden">Siguiente</span>
                     <ChevronRight className="h-3.5 w-3.5 ml-1" />
                   </Button>

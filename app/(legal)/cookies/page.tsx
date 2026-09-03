@@ -40,16 +40,12 @@ export default function CookiesPage() {
             <td>Sesión / hasta cierre de sesión</td>
           </tr>
           <tr>
-            <td><code>x-user-role</code></td>
-            <td>
-              Recuerda tu rol para no consultar la base de datos en cada
-              navegación. Hace la plataforma más rápida.
-            </td>
-            <td>5 minutos</td>
-          </tr>
-          <tr>
             <td><code>x-user-access</code></td>
-            <td>Recuerda el estado de tu suscripción para dar acceso al contenido.</td>
+            <td>
+              Recuerda tu rol y el estado de tu suscripción para no consultar la
+              base de datos en cada navegación. Hace la plataforma más rápida y
+              da acceso al contenido que te corresponde.
+            </td>
             <td>60 segundos</td>
           </tr>
         </tbody>

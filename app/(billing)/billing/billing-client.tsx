@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { CreditCard, CheckCircle2, XCircle, AlertCircle, ExternalLink, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { CheckoutResultToast } from "@/components/access/checkout-result-toast"
 
 interface Subscription {
   status: string
@@ -52,10 +54,18 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-10">
+      <Suspense fallback={null}>
+        <CheckoutResultToast />
+      </Suspense>
+
       <div>
         <h1 className="text-3xl font-light">Suscripción</h1>
         <p className="mt-1 text-muted-foreground">Gestiona tu acceso y facturación</p>
       </div>
+
+      <Suspense fallback={null}>
+        <RedirectReason />
+      </Suspense>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -105,15 +115,16 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Activa tu suscripción para obtener acceso completo a todas las formaciones,
-              la comunidad y los recursos exclusivos.
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Con tu cuenta gratuita ves la primera clase de cada formación.
+              La suscripción abre todo lo demás, desde hoy mismo.
             </p>
             <div className="space-y-2">
               {[
-                "Todas las formaciones completas",
-                "Comunidad privada de evolución",
-                "Sesiones de mentoría grupal",
+                "Todas las lecciones de todas las formaciones",
+                "Comunidad privada y mensajes directos",
+                "Mentoría 1 a 1 con Ainara",
+                "Asistente IA y retos de progreso",
                 "Certificados verificables",
               ].map((item) => (
                 <div key={item} className="flex items-center gap-2 text-sm">
@@ -138,6 +149,44 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
           </div>
         )}
       </motion.div>
+    </div>
+  )
+}
+
+/** Etiquetas legibles de las secciones que exigen suscripción. */
+const SECTION_LABELS: Record<string, string> = {
+  "/quest": "los logros",
+  "/taberna": "la comunidad",
+  "/mentorship": "la mentoría",
+  "/messages": "los mensajes",
+  "/assistant": "el asistente",
+  "/u": "los perfiles de la comunidad",
+}
+
+/**
+ * Explica por qué se ha llegado aquí. El middleware redirige a esta página
+ * desde las secciones de pago; sin este aviso el usuario aparecía en
+ * facturación sin saber qué había pasado con el clic que acababa de dar.
+ */
+function RedirectReason() {
+  const searchParams = useSearchParams()
+  if (searchParams.get("reason") !== "subscription") return null
+
+  const from = searchParams.get("from") ?? ""
+  const key = Object.keys(SECTION_LABELS).find(
+    (prefix) => from === prefix || from.startsWith(prefix + "/")
+  )
+  const label = key ? SECTION_LABELS[key] : "esa sección"
+
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+      <p className="text-muted-foreground">
+        Para entrar en{" "}
+        <span className="font-medium text-foreground">{label}</span> necesitas
+        la suscripción activa. Las formaciones siguen abiertas: puedes ver la
+        primera clase de cada una sin pagar.
+      </p>
     </div>
   )
 }

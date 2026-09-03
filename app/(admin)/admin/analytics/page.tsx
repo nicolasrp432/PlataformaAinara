@@ -172,14 +172,14 @@ export default async function AdminAnalyticsPage() {
             accent="bg-primary/10"
           />
           <StatCard
-            title="Con acceso aprobado"
+            title="Con suscripción"
             value={data.users.approved}
             description={`${data.users.total > 0 ? Math.round((data.users.approved / data.users.total) * 100) : 0}% del total`}
             icon={CheckCircle2}
             accent="bg-success-soft"
           />
           <StatCard
-            title="Pendientes de aprobación"
+            title="En plan gratuito"
             value={data.users.pending}
             icon={Clock}
             accent="bg-warning-soft"
