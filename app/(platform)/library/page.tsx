@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
-import { getAuthUser, getUserProfile, getLibraryFormations, getCategories } from "@/lib/data-access"
+import { getAuthUser, getLibraryFormations, getCategories, getAccessTier } from "@/lib/data-access"
+import { hasFullAccess } from "@/lib/access"
 import { LibraryContent } from "./library-content"
 
 export const metadata = {
@@ -13,21 +14,13 @@ export default async function LibraryPage() {
 
   if (!user) redirect("/login")
 
-  // Verificación de acceso: segunda capa de seguridad después del middleware
-  const profile = await getUserProfile(user.id)
-  const hasAccess =
-    profile?.access_status === "approved" ||
-    profile?.role === "admin" ||
-    profile?.role === "mentor"
-
-  if (!hasAccess) {
-    redirect("/billing?reason=subscription")
-  }
-
-  // 2 queries paralelas, sin N+1
-  const [formations, categories] = await Promise.all([
-    getLibraryFormations(user?.id || null),
+  // El catálogo se navega entero también sin suscripción: el candado va por
+  // lección, no en la puerta. Un usuario que no puede ni ver qué hay dentro
+  // no tiene ningún motivo para suscribirse.
+  const [formations, categories, tier] = await Promise.all([
+    getLibraryFormations(user.id),
     getCategories(),
+    getAccessTier(user.id),
   ])
 
   return (
@@ -35,7 +28,8 @@ export default async function LibraryPage() {
       <LibraryContent
         formations={formations}
         categories={categories}
-        isLoggedIn={!!user}
+        isLoggedIn
+        hasFullAccess={hasFullAccess(tier)}
       />
     </Suspense>
   )

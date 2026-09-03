@@ -1,6 +1,6 @@
 import { Metadata } from "next"
-import { redirect } from "next/navigation"
-import { getAuthUser, getQuestData } from "@/lib/data-access"
+import { getQuestData } from "@/lib/data-access"
+import { requireMembership } from "@/lib/guards"
 import { QuestClient } from "./quest-client"
 
 export const metadata: Metadata = {
@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 }
 
 export default async function QuestPage() {
-  const user = await getAuthUser()
-  if (!user) redirect("/login")
+  // Sesión + suscripción activa. Segunda capa junto al middleware.
+  const user = await requireMembership("/quest")
 
   const questData = await getQuestData(user.id)
 

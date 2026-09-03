@@ -12,19 +12,20 @@ import {
   Play,
   ArrowRight,
   CheckCircle2,
-  Sparkles,
   NotebookPen,
   Quote,
   MessageSquare,
   Bot,
 } from "lucide-react"
 import {
-  getUserProfile,
   getDashboardData,
   getFormationsInProgress,
   getRecentActivity,
   getDailyReflectionData,
+  getAccessTier,
 } from "@/lib/data-access"
+import { hasFullAccess } from "@/lib/access"
+import { FreeTierBanner } from "@/components/access/free-tier-banner"
 import { phraseForDate } from "@/lib/daily-phrases"
 import { cn } from "@/lib/utils"
 
@@ -38,34 +39,16 @@ type RecentActivityItem = {
 // ─── Banner de suscripción ────────────────────────────────────────────────
 
 export async function UpsellBanner({ userId }: { userId: string }) {
-  const profile = await getUserProfile(userId)
+  const tier = await getAccessTier(userId)
+  if (hasFullAccess(tier)) return null
 
-  const accessStatus = profile?.access_status ?? "pending"
-  const role = profile?.role ?? "student"
-  const hasFullAccess =
-    accessStatus === "approved" || role === "admin" || role === "mentor"
-
-  if (hasFullAccess) return null
-
+  // Un único componente para el aviso del plan gratuito en toda la app, de
+  // modo que el mensaje y el botón de pago no se dupliquen ni diverjan.
   return (
-    <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-      <div className="flex items-center gap-3.5">
-        <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 text-primary">
-          <Sparkles className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="font-semibold text-foreground text-sm sm:text-base">
-            Activa tu membresía para desbloquear todo el camino
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Formaciones en video, comunidad, cuaderno de autoconocimiento y mentoría personalizada.
-          </p>
-        </div>
-      </div>
-      <Button size="sm" className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-5 rounded-xl shadow-sm" asChild>
-        <Link href="/billing">Activar acceso completo</Link>
-      </Button>
-    </div>
+    <FreeTierBanner
+      headline="Estás en el plan gratuito"
+      description="Ves la primera clase de cada formación. Suscríbete y se abre el resto, más la comunidad y la mentoría."
+    />
   )
 }
 

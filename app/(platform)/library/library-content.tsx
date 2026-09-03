@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { DIFFICULTY_STYLES } from "@/lib/status-styles"
+import { FreeTierBanner } from "@/components/access/free-tier-banner"
 
 interface Formation {
   id: string
@@ -51,6 +52,8 @@ interface LibraryContentProps {
   formations: Formation[]
   categories: Category[]
   isLoggedIn: boolean
+  /** false → plan gratuito: solo la primera clase de cada formación. */
+  hasFullAccess: boolean
 }
 
 const difficulties = [
@@ -68,7 +71,12 @@ const difficultyLabels: Record<string, string> = {
   advanced: "Avanzado",
 }
 
-export function LibraryContent({ formations, categories, isLoggedIn }: LibraryContentProps) {
+export function LibraryContent({
+  formations,
+  categories,
+  isLoggedIn,
+  hasFullAccess,
+}: LibraryContentProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [difficulty, setDifficulty] = useState("all")
   const [view, setView] = useState<"all" | "enrolled" | "completed">("all")
@@ -107,6 +115,8 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
           Explora conocimiento profundo, forja nuevas habilidades y comienza tu viaje de transformación definitiva.
         </p>
       </div>
+
+      {!hasFullAccess && <FreeTierBanner />}
 
       {/* Filters */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-card/40 backdrop-blur-md p-4 rounded-2xl border border-border/50 shadow-sm">
@@ -221,10 +231,18 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
 
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex gap-2">
-                    {formation.isPremium && (
-                      <Badge className="bg-primary/90 text-primary-foreground border-0">
-                        Premium
+                    {/* Al usuario gratuito le sirve más saber qué puede abrir
+                        hoy que saber que la formación es de pago. */}
+                    {!hasFullAccess ? (
+                      <Badge className="border-0 bg-background/85 font-semibold text-primary backdrop-blur-md">
+                        1ª clase gratis
                       </Badge>
+                    ) : (
+                      formation.isPremium && (
+                        <Badge className="bg-primary/90 text-primary-foreground border-0">
+                          Premium
+                        </Badge>
+                      )
                     )}
                     {formation.isCompleted && (
                       <Badge className="bg-success text-white border-0">
@@ -237,7 +255,7 @@ export function LibraryContent({ formations, categories, isLoggedIn }: LibraryCo
                   {/* Play Button */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                     <div className="w-16 h-16 rounded-full bg-background/80 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl transform scale-90 group-hover:scale-110 transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-300 ease-out hover:bg-primary text-foreground hover:border-primary group/play">
-                      {formation.isPremium && !formation.isEnrolled && !isLoggedIn ? (
+                      {!isLoggedIn ? (
                         <Lock className="h-6 w-6 text-muted-foreground group-hover/play:text-primary-foreground transition-colors" />
                       ) : (
                         <Play className="h-7 w-7 text-primary ml-1 group-hover/play:text-primary-foreground transition-colors" />

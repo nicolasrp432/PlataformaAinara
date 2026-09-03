@@ -5,6 +5,12 @@ import { unstable_cache } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { cacheServiceClient, CACHE_TAGS } from "@/lib/cache"
 import { progressToNextLevel } from "@/lib/utils"
+import {
+  hasFullAccess,
+  isLessonUnlocked,
+  resolveAccessTier,
+  type AccessTier,
+} from "@/lib/access"
 import type { ContentType } from "@/types"
 
 // ─── Auth & Profile (deduplicadas por React.cache) ─────────────────────
@@ -35,6 +41,27 @@ export const getUserProfile = cache(async (userId: string) => {
     .single()
   return data
 })
+
+/**
+ * Nivel de acceso del usuario (free / member / suspended / staff).
+ *
+ * Consulta solo las dos columnas que deciden, no el perfil entero, y va
+ * deduplicada por request: páginas, layout y capa de datos comparten la misma
+ * respuesta. Es la lectura que deben usar todas las pantallas para decidir
+ * qué muestran bajo candado.
+ */
+export const getAccessTier = cache(
+  async (userId: string | null): Promise<AccessTier> => {
+    if (!userId) return "free"
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, access_status")
+      .eq("id", userId)
+      .single()
+    return resolveAccessTier(data?.role, data?.access_status)
+  }
+)
 
 // ─── Dashboard Data (1 batch en vez de ~8 queries) ─────────────────────
 
@@ -442,14 +469,41 @@ export const getFormationBySlug = cache(
           ) || [],
       })) || []
 
+    // Índice global de cada lección dentro de la formación aplanada: el
+    // candado se decide por la posición en el temario completo.
+    const flatLessons: any[] = formation.modules.flatMap(
+      (mod: any) => mod.lessons ?? []
+    )
+    const indexByLessonId = new Map<string, number>(
+      flatLessons.map((les: any, i: number) => [les.id, i])
+    )
+
+    const tier = await getAccessTier(userId)
+
+    const withLocks = <T extends object>(base: T) => ({
+      ...base,
+      tier,
+      hasFullAccess: hasFullAccess(tier),
+      /** ids de las lecciones que este usuario puede abrir ahora mismo. */
+      unlockedLessons: flatLessons
+        .filter((les: any) =>
+          isLessonUnlocked({
+            tier,
+            lessonIndex: indexByLessonId.get(les.id) ?? 0,
+            isFree: les.is_free,
+          })
+        )
+        .map((les: any) => les.id as string),
+    })
+
     // If no user, return formation without enrollment data
     if (!userId) {
-      return {
+      return withLocks({
         ...formation,
         isEnrolled: false,
         progress: 0,
         completedLessons: [] as string[],
-      }
+      })
     }
 
     // Parallel: enrollment + progress in 1 batch
@@ -484,16 +538,24 @@ export const getFormationBySlug = cache(
         ? Math.round((completedLessons.length / totalLessons) * 100)
         : 0
 
-    return {
+    return withLocks({
       ...formation,
       isEnrolled,
       progress,
       completedLessons,
-    }
+    })
   }
 )
 
 // ─── Lesson Page Data (replaces inline getLessonData) ──────────────────
+
+/** Lección de pago a la que el usuario aún no tiene acceso. */
+export interface LockedLessonPayload {
+  locked: true
+  formationSlug: string
+  formationTitle: string
+  lessonTitle: string
+}
 
 export const getLessonPageData = cache(
   async (slug: string, lessonId: string, userId: string) => {
@@ -541,10 +603,13 @@ export const getLessonPageData = cache(
     let previousLesson: any = null
     let nextLesson: any = null
 
+    let currentIndex = -1
+
     for (let i = 0; i < allLessons.length; i++) {
       if (allLessons[i].id === lessonId) {
         currentLesson = allLessons[i]
         currentModule = allLessons[i].module
+        currentIndex = i
         if (i > 0) previousLesson = allLessons[i - 1]
         if (i < allLessons.length - 1) nextLesson = allLessons[i + 1]
         break
@@ -647,11 +712,31 @@ export const getLessonPageData = cache(
 
     const comments = rootComments
 
-    const isEnrolled = !!enrollment
+    // La inscripción ya no decide el acceso (ver el bloque siguiente); se
+    // conserva la consulta porque `enrollment` marca el progreso del usuario.
+    void enrollment
 
-    // If not enrolled and lesson is not free, signal redirect
-    if (!isEnrolled && !currentLesson.is_free) {
-      return { notEnrolled: true, formationSlug: formation.slug }
+    // ── Candado de la lección ──────────────────────────────────────────
+    // La inscripción ya no da acceso al contenido: la da la suscripción.
+    // Un usuario gratuito abre la primera lección de cualquier formación
+    // (más las marcadas explícitamente como `is_free`); el resto queda
+    // bloqueado hasta que pague. Es la misma regla que aplica la interfaz,
+    // resuelta aquí, en el servidor, para que no se pueda saltar entrando
+    // por la URL.
+    const tier = await getAccessTier(userId)
+
+    if (!isLessonUnlocked({
+      tier,
+      lessonIndex: currentIndex,
+      isFree: currentLesson.is_free,
+    })) {
+      const lockedPayload: LockedLessonPayload = {
+        locked: true,
+        formationSlug: formation.slug as string,
+        formationTitle: formation.title as string,
+        lessonTitle: currentLesson.title as string,
+      }
+      return lockedPayload
     }
 
     const completedLessons =
@@ -660,7 +745,14 @@ export const getLessonPageData = cache(
       (p) => p.lesson_id === lessonId
     )
 
-    // Build curriculum with completion status
+    // Índice global de cada lección dentro del temario aplanado. El candado
+    // depende de la posición en la formación entera, no dentro del módulo,
+    // así que se resuelve una sola vez y se consulta por id.
+    const indexByLessonId = new Map<string, number>(
+      allLessons.map((les: any, i: number) => [les.id, i])
+    )
+
+    // Build curriculum with completion + lock status
     const curriculum = formation.modules.map(
       (mod: any, modIndex: number) => ({
         id: mod.id,
@@ -671,9 +763,22 @@ export const getLessonPageData = cache(
           title: les.title,
           isCompleted: completedLessons.includes(les.id),
           isCurrent: les.id === lessonId,
+          isLocked: !isLessonUnlocked({
+            tier,
+            lessonIndex: indexByLessonId.get(les.id) ?? 0,
+            isFree: les.is_free,
+          }),
         })),
       })
     )
+
+    const nextLessonUnlocked = nextLesson
+      ? isLessonUnlocked({
+          tier,
+          lessonIndex: currentIndex + 1,
+          isFree: nextLesson.is_free,
+        })
+      : false
 
     return {
       lesson: {
@@ -707,10 +812,16 @@ export const getLessonPageData = cache(
         ? { id: previousLesson.id, title: previousLesson.title }
         : null,
       nextLesson: nextLesson
-        ? { id: nextLesson.id, title: nextLesson.title }
+        ? {
+            id: nextLesson.id,
+            title: nextLesson.title,
+            isLocked: !nextLessonUnlocked,
+          }
         : null,
       completedCount: completedLessons.length,
       totalCount: allLessons.length,
+      /** Si es false, esta lección es la muestra gratuita y lo siguiente está de pago. */
+      hasFullAccess: hasFullAccess(tier),
     }
   }
 )

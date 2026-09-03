@@ -1,37 +1,34 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolveAccessTier, canEnterPlatform, safeRedirectTarget } from '@/lib/access'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const rawNext = searchParams.get('next') ?? '/dashboard'
-  // Solo rutas internas, nunca URLs absolutas externas
-  const next = rawNext.startsWith('/') ? rawNext : '/dashboard'
+  const next = safeRedirectTarget(searchParams.get('next'))
 
   if (code) {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Recuperación de contraseña: ir siempre al formulario de reset,
-      // aunque la cuenta esté pendiente de aprobación.
+      // Recuperación de contraseña: ir siempre al formulario de reset.
       if (next.startsWith('/reset-password')) {
         return NextResponse.redirect(`${origin}${next}`)
       }
 
-      // Check profile access status before deciding where to redirect
       const { data: profile } = await supabase
-        .from("profiles")
-        .select("access_status, role")
-        .eq("id", data.user.id)
+        .from('profiles')
+        .select('access_status, role')
+        .eq('id', data.user.id)
         .single()
 
-      const accessStatus = profile?.access_status ?? "pending"
-      const role = profile?.role ?? "student"
-      const hasAccess =
-        accessStatus === "approved" || role === "admin" || role === "mentor"
+      const tier = resolveAccessTier(profile?.role, profile?.access_status)
 
-      const destination = hasAccess ? next : "/pending"
+      // Confirmar el email da acceso inmediato al nivel gratuito: el usuario
+      // entra a la plataforma y ve la primera clase de cada formación. Solo
+      // una cuenta suspendida se desvía al aviso correspondiente.
+      const destination = canEnterPlatform(tier) ? next : '/pending'
       return NextResponse.redirect(`${origin}${destination}`)
     }
   }

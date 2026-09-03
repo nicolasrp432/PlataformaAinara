@@ -79,12 +79,12 @@ interface UsersTableProps {
 
 const accessStatusConfig = {
   approved: {
-    label: "Aprobado",
+    label: "Suscrito",
     icon: CheckCircle2,
     className: "bg-success-soft text-success-strong border-success-border",
   },
   pending: {
-    label: "Pendiente",
+    label: "Gratuito",
     icon: Clock,
     className: "bg-warning-soft text-warning-strong border-warning-border",
   },
@@ -248,10 +248,10 @@ function UserActions({ user }: { user: UserRow }) {
             <div className="space-y-1">
               <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Acceso</p>
               <Button variant="ghost" className="w-full justify-start h-12 text-success-strong" disabled={user.access_status === "approved"} onClick={closeAnd(() => handleAccess("approved"))}>
-                <CheckCircle2 className="mr-3 h-5 w-5" /> Aprobar acceso
+                <CheckCircle2 className="mr-3 h-5 w-5" /> Dar acceso completo
               </Button>
               <Button variant="ghost" className="w-full justify-start h-12" disabled={user.access_status === "pending"} onClick={closeAnd(() => handleAccess("pending"))}>
-                <Clock className="mr-3 h-5 w-5" /> Marcar pendiente
+                <Clock className="mr-3 h-5 w-5" /> Pasar a plan gratuito
               </Button>
               <Button variant="ghost" className="w-full justify-start h-12 text-danger-strong" disabled={user.access_status === "suspended"} onClick={closeAnd(() => handleAccess("suspended"))}>
                 <XCircle className="mr-3 h-5 w-5" /> Suspender acceso
@@ -291,14 +291,14 @@ function UserActions({ user }: { user: UserRow }) {
           className="text-success-strong focus:text-success-strong"
         >
           <CheckCircle2 className="mr-2 h-4 w-4" />
-          Aprobar acceso
+          Dar acceso completo
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => handleAccess("pending")}
           disabled={user.access_status === "pending"}
         >
           <Clock className="mr-2 h-4 w-4" />
-          Marcar pendiente
+          Pasar a gratuito
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => handleAccess("suspended")}
@@ -370,8 +370,8 @@ export function UsersTable({ users }: UsersTableProps) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
           { label: "Total", value: counts.total, color: "text-foreground" },
-          { label: "Aprobados", value: counts.approved, color: "text-success-strong" },
-          { label: "Pendientes", value: counts.pending, color: "text-warning-strong" },
+          { label: "Suscritos", value: counts.approved, color: "text-success-strong" },
+          { label: "Gratuitos", value: counts.pending, color: "text-warning-strong" },
           { label: "Suspendidos", value: counts.suspended, color: "text-danger-strong" },
         ].map((stat) => (
           <Card key={stat.label}>
@@ -400,8 +400,8 @@ export function UsersTable({ users }: UsersTableProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="approved">Aprobados</SelectItem>
-            <SelectItem value="pending">Pendientes</SelectItem>
+            <SelectItem value="approved">Suscritos</SelectItem>
+            <SelectItem value="pending">Gratuitos</SelectItem>
             <SelectItem value="suspended">Suspendidos</SelectItem>
           </SelectContent>
         </Select>

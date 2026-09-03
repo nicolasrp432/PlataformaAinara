@@ -1,25 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe"
-import { createClient } from "@supabase/supabase-js"
+import { supabaseAdmin } from "@/lib/supabase/admin"
+import { resolveUserId, syncSubscription } from "@/lib/services/subscription"
 import type Stripe from "stripe"
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
-
-function periodDates(item: Stripe.SubscriptionItem) {
-  return {
-    current_period_start: item.current_period_start
-      ? new Date(item.current_period_start * 1000).toISOString()
-      : null,
-    current_period_end: item.current_period_end
-      ? new Date(item.current_period_end * 1000).toISOString()
-      : null,
-  }
-}
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -39,7 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
 
-  const supabase = getServiceClient()
+  const supabase = supabaseAdmin()
 
   // ── Idempotencia: Stripe reintenta/reenvía eventos. Insertamos el event.id;
   // si ya existe (23505) lo ignoramos. Defensivo: si la tabla aún no existe
@@ -58,97 +41,92 @@ export async function POST(req: NextRequest) {
     console.warn("[stripe webhook] idempotency error:", e)
   }
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session
-      const userId = session.metadata?.supabase_user_id
-      if (!userId) break
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session
 
-      // One-off mentorship booking
-      if (session.mode === "payment" && session.metadata?.mentorship_session_id) {
-        const mentorshipId = session.metadata.mentorship_session_id
-        await supabase
-          .from("mentorship_sessions")
-          .update({
-            status: "confirmed",
-            payment_reference: session.id,
-          })
-          .eq("id", mentorshipId)
-        // TODO: trigger transactional email (Resend/SendGrid) with confirmation
+        // Reserva puntual de mentoría (pago único, no suscripción).
+        if (session.mode === "payment" && session.metadata?.mentorship_session_id) {
+          await supabase
+            .from("mentorship_sessions")
+            .update({
+              status: "confirmed",
+              payment_reference: session.id,
+            })
+            .eq("id", session.metadata.mentorship_session_id)
+          break
+        }
+
+        if (session.mode !== "subscription") break
+
+        const userId = await resolveUserId({
+          metadataUserId: session.metadata?.supabase_user_id,
+          customerId: session.customer as string | null,
+        })
+        if (!userId) {
+          console.warn("[stripe webhook] sesión sin usuario resoluble:", session.id)
+          break
+        }
+
+        const subscription = await stripe.subscriptions.retrieve(
+          session.subscription as string
+        )
+        await syncSubscription({ userId, subscription })
         break
       }
 
-      if (session.mode !== "subscription") break
+      // Cubre altas, renovaciones, impagos, pausas y reactivaciones. Antes
+      // este caso solo sabía RETIRAR el acceso: si una suscripción volvía a
+      // `active` tras un impago resuelto, el usuario se quedaba suspendido
+      // para siempre. `syncSubscription` decide en ambos sentidos.
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted": {
+        const sub = event.data.object as Stripe.Subscription
 
-      const subscriptionId = session.subscription as string
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-      const item = subscription.items.data[0]
+        const userId = await resolveUserId({
+          metadataUserId: sub.metadata?.supabase_user_id,
+          customerId: sub.customer as string | null,
+        })
+        if (!userId) {
+          console.warn("[stripe webhook] suscripción sin usuario resoluble:", sub.id)
+          break
+        }
 
-      await supabase.from("subscriptions").upsert({
-        user_id: userId,
-        stripe_customer_id: session.customer as string,
-        stripe_subscription_id: subscriptionId,
-        stripe_price_id: item?.price.id ?? null,
-        status: subscription.status,
-        ...periodDates(item),
-        cancel_at_period_end: subscription.cancel_at_period_end,
-      }, { onConflict: "user_id" })
-
-      await supabase
-        .from("profiles")
-        .update({ access_status: "approved" })
-        .eq("id", userId)
-
-      break
-    }
-
-    case "customer.subscription.updated": {
-      const sub = event.data.object as Stripe.Subscription
-      const userId = sub.metadata?.supabase_user_id
-      if (!userId) break
-
-      const isActive = ["active", "trialing"].includes(sub.status)
-      const item = sub.items.data[0]
-
-      await supabase.from("subscriptions").upsert({
-        user_id: userId,
-        stripe_customer_id: sub.customer as string,
-        stripe_subscription_id: sub.id,
-        stripe_price_id: item?.price.id ?? null,
-        status: sub.status,
-        ...periodDates(item),
-        cancel_at_period_end: sub.cancel_at_period_end,
-      }, { onConflict: "user_id" })
-
-      if (!isActive) {
-        await supabase
-          .from("profiles")
-          .update({ access_status: "suspended" })
-          .eq("id", userId)
+        await syncSubscription({ userId, subscription: sub })
+        break
       }
 
-      break
+      // Renovación cobrada: reconfirma el acceso por si un `past_due` previo
+      // lo había dejado en un estado intermedio.
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice
+        const subscriptionId =
+          typeof invoice.parent?.subscription_details?.subscription === "string"
+            ? invoice.parent.subscription_details.subscription
+            : null
+        if (!subscriptionId) break
+
+        const sub = await stripe.subscriptions.retrieve(subscriptionId)
+        const userId = await resolveUserId({
+          metadataUserId: sub.metadata?.supabase_user_id,
+          customerId: sub.customer as string | null,
+        })
+        if (!userId) break
+
+        await syncSubscription({ userId, subscription: sub })
+        break
+      }
+
+      default:
+        break
     }
-
-    case "customer.subscription.deleted": {
-      const sub = event.data.object as Stripe.Subscription
-      const userId = sub.metadata?.supabase_user_id
-      if (!userId) break
-
-      await supabase.from("subscriptions")
-        .update({ status: "canceled" })
-        .eq("stripe_subscription_id", sub.id)
-
-      await supabase
-        .from("profiles")
-        .update({ access_status: "suspended" })
-        .eq("id", userId)
-
-      break
-    }
-
-    default:
-      break
+  } catch (error) {
+    // Devolver 500 hace que Stripe reintente, que es lo correcto ante un
+    // fallo transitorio de la base de datos.
+    console.error(`[stripe webhook] fallo procesando ${event.type}:`, error)
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 })
   }
 
   return NextResponse.json({ received: true })

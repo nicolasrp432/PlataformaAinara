@@ -17,6 +17,14 @@ export interface NavItem {
   icon: LucideIcon
   /** Etiqueta corta para la barra inferior móvil, donde el ancho es escaso */
   shortName?: string
+  /**
+   * Requiere suscripción activa. Debe coincidir con `MEMBER_PREFIXES` de
+   * `lib/access.ts`, que es quien lo hace cumplir en el middleware. Se marca
+   * aquí para poder pintar el candado: un usuario gratuito que pulsa y acaba
+   * en facturación sin aviso vive el redirect como un fallo, no como un
+   * límite del plan.
+   */
+  requiresMembership?: boolean
 }
 
 /**
@@ -27,11 +35,11 @@ export const PLATFORM_NAV: NavItem[] = [
   { name: "Dashboard",  href: "/dashboard",   icon: LayoutDashboard, shortName: "Inicio" },
   { name: "Biblioteca", href: "/library",     icon: BookOpen, shortName: "Cursos" },
   { name: "Reflexión",  href: "/reflexion",   icon: NotebookPen, shortName: "Reflexión" },
-  { name: "Logros",     href: "/quest",       icon: Trophy, shortName: "Logros" },
-  { name: "Comunidad",  href: "/taberna",     icon: MessageSquare, shortName: "Comunidad" },
-  { name: "Mensajes",   href: "/messages",    icon: Mail },
-  { name: "Mentoría",   href: "/mentorship",  icon: Users },
-  { name: "Asistente",  href: "/assistant",   icon: Bot },
+  { name: "Logros",     href: "/quest",       icon: Trophy, shortName: "Logros", requiresMembership: true },
+  { name: "Comunidad",  href: "/taberna",     icon: MessageSquare, shortName: "Comunidad", requiresMembership: true },
+  { name: "Mensajes",   href: "/messages",    icon: Mail, requiresMembership: true },
+  { name: "Mentoría",   href: "/mentorship",  icon: Users, requiresMembership: true },
+  { name: "Asistente",  href: "/assistant",   icon: Bot, requiresMembership: true },
   { name: "Perfil",     href: "/profile",     icon: User },
 ]
 

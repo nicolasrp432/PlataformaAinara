@@ -51,6 +51,18 @@ export function LandingPage({ formations }: LandingPageProps) {
 
   return (
     <>
+      {/*
+        Las secciones de esta página entran con framer-motion desde
+        `opacity: 0`, y ese estado inicial viaja ya en el HTML del servidor.
+        Si el JavaScript no llega a ejecutarse, la portada —la puerta de
+        entrada del producto— se quedaría en blanco para siempre. Esta regla
+        solo se aplica cuando no hay JS, así que no interfiere con ninguna
+        animación.
+      */}
+      <noscript>
+        <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style>
+      </noscript>
+
       <div className="flex min-h-screen flex-col bg-background">
         {/* ── HEADER ── */}
         <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/90 backdrop-blur-xl">
@@ -340,14 +352,14 @@ export function LandingPage({ formations }: LandingPageProps) {
                   {
                     step: "01",
                     icon: BookOpen,
-                    title: "Regístrate",
-                    desc: "Crea tu cuenta y solicita acceso. El equipo revisa tu solicitud o puedes activar acceso inmediato con una suscripción.",
+                    title: "Regístrate gratis",
+                    desc: "Creas tu cuenta y entras al momento. Sin tarjeta, sin lista de espera.",
                   },
                   {
                     step: "02",
                     icon: Play,
-                    title: "Elige tu formación",
-                    desc: "Explora nuestras formaciones en desarrollo personal, espiritualidad y liderazgo. Aprende a tu ritmo.",
+                    title: "Prueba la primera clase",
+                    desc: "La primera clase de cada formación es tuya desde el primer día. Suscríbete cuando quieras seguir.",
                   },
                   {
                     step: "03",
@@ -541,18 +553,18 @@ export function LandingPage({ formations }: LandingPageProps) {
                   transition={{ duration: 0.5 }}
                   className="rounded-3xl border border-border/60 bg-card p-8"
                 >
-                  <p className="mb-2 text-sm font-medium uppercase tracking-widest text-muted-foreground">Acceso curado</p>
+                  <p className="mb-2 text-sm font-medium uppercase tracking-widest text-muted-foreground">Para empezar</p>
                   <p className="font-display mb-1 text-4xl font-light">Gratis</p>
-                  <p className="mb-6 text-sm text-muted-foreground">Solicitud de acceso manual</p>
+                  <p className="mb-6 text-sm text-muted-foreground">Sin tarjeta, entras al momento</p>
                   <ul className="mb-8 space-y-3">
                     {[
-                      "Lecciones de preview gratuitas",
-                      "Acceso a la comunidad",
+                      "La primera clase de cada formación",
+                      "El catálogo completo, para explorarlo",
                       "Reflexión diaria con registro emocional",
-                      "Revisión manual por el equipo",
+                      "Tu progreso guardado desde el día uno",
                     ].map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-sm">
-                        <Check className="h-4 w-4 text-success-strong shrink-0" />
+                      <li key={item} className="flex items-start gap-3 text-sm">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-success-strong" />
                         {item}
                       </li>
                     ))}
@@ -562,7 +574,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                     className="w-full border-border/60 hover:border-primary/40 hover:bg-primary/5"
                     onClick={() => setRegisterOpen(true)}
                   >
-                    Solicitar acceso
+                    Crear cuenta gratis
                   </Button>
                 </motion.div>
 
@@ -584,18 +596,18 @@ export function LandingPage({ formations }: LandingPageProps) {
                       <span className="font-display text-5xl font-light">€97</span>
                       <span className="mb-2 text-muted-foreground">/mes</span>
                     </div>
-                    <p className="mb-6 text-sm text-muted-foreground">Acceso completo inmediato</p>
+                    <p className="mb-6 text-sm text-muted-foreground">Todo desbloqueado al instante</p>
                     <ul className="mb-8 space-y-3">
                       {[
-                        "Todas las formaciones completas",
+                        "Todas las lecciones de todas las formaciones",
                         "Nuevas formaciones cada mes",
-                        "Comunidad privada exclusiva",
-                        "Sesiones de mentoría grupal",
+                        "Comunidad privada y mensajes",
+                        "Mentoría 1 a 1 con Ainara",
+                        "Asistente IA y retos de progreso",
                         "Certificados verificables",
-                        "Acceso inmediato sin esperas",
                       ].map((item) => (
-                        <li key={item} className="flex items-center gap-3 text-sm">
-                          <Check className="h-4 w-4 text-primary shrink-0" />
+                        <li key={item} className="flex items-start gap-3 text-sm">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                           {item}
                         </li>
                       ))}

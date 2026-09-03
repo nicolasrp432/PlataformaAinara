@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import {
   CreditCard,
   LayoutDashboard,
+  Lock,
   LogOut,
   MoreHorizontal,
   Settings,
@@ -32,6 +33,8 @@ import {
 } from "@/lib/navigation"
 
 interface MobileBottomNavProps {
+  /** false → plan gratuito: las secciones de pago se marcan con candado. */
+  hasFullAccess: boolean
   user: {
     id: string
     full_name: string
@@ -49,7 +52,7 @@ interface MobileBottomNavProps {
  * Diseño táctil optimizado para la ergonomía del pulgar, acristalado cálido (glassmorphism),
  * microanimaciones elásticas y hoja expandida enriquecida.
  */
-export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
+export function MobileBottomNav({ user, streak, hasFullAccess }: MobileBottomNavProps) {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = React.useState(false)
   const { state: storeState } = useUserStore()
@@ -81,6 +84,7 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
             {MOBILE_PRIMARY_NAV.map((item) => {
               const isActive = isNavItemActive(pathname, item.href)
               const isReflexion = item.href === "/reflexion"
+              const isLocked = Boolean(item.requiresMembership) && !hasFullAccess
 
               return (
                 <Link
@@ -113,12 +117,22 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
                       <item.icon className="h-4 w-4" />
                     </div>
                   ) : (
-                    <item.icon
-                      className={cn(
-                        "relative z-10 h-5 w-5 transition-transform",
-                        isActive && "scale-110 text-primary"
+                    <span className="relative z-10">
+                      <item.icon
+                        className={cn(
+                          "h-5 w-5 transition-transform",
+                          isActive && "scale-110 text-primary"
+                        )}
+                      />
+                      {isLocked && (
+                        <span
+                          className="absolute -right-1.5 -top-1 flex h-3 w-3 items-center justify-center rounded-full bg-muted ring-1 ring-background"
+                          aria-label="Requiere suscripción"
+                        >
+                          <Lock className="h-2 w-2 text-muted-foreground" aria-hidden />
+                        </span>
                       )}
-                    />
+                    </span>
                   )}
 
                   <span className="relative z-10 text-3xs tracking-tight leading-none">
@@ -204,6 +218,7 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
           <div className="mt-4 grid grid-cols-3 gap-2.5">
             {MOBILE_SECONDARY_NAV.map((item) => {
               const isActive = isNavItemActive(pathname, item.href)
+              const isLocked = Boolean(item.requiresMembership) && !hasFullAccess
               return (
                 <Link
                   key={item.href}
@@ -226,7 +241,15 @@ export function MobileBottomNav({ user, streak }: MobileBottomNavProps) {
                     <item.icon className="h-4.5 w-4.5" />
                   </div>
                   <span className="text-xs font-medium leading-none">{item.name}</span>
-                  {item.href === "/messages" && <MessagesUnreadBadge isCollapsed />}
+                  {isLocked && (
+                    <Lock
+                      className="absolute right-2 top-2 h-3 w-3 text-muted-foreground/70"
+                      aria-label="Requiere suscripción"
+                    />
+                  )}
+                  {item.href === "/messages" && !isLocked && (
+                    <MessagesUnreadBadge isCollapsed />
+                  )}
                 </Link>
               )
             })}

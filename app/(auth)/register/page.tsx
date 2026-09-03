@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import Link from "next/link"
 import { RegisterForm } from "./register-form"
 import { BrandMark, Wordmark } from "@/components/ui/brand"
+import { AuthFormSkeleton } from "@/components/auth/auth-form-skeleton"
 
 export const metadata: Metadata = {
   title: "Crear Cuenta",
@@ -43,11 +45,13 @@ export default function RegisterPage() {
               Crea tu cuenta
             </h1>
             <p className="text-sm text-muted-foreground">
-              Comienza tu viaje de transformacion personal
+              Gratis para empezar. La primera clase de cada formación es tuya.
             </p>
           </div>
 
-          <RegisterForm />
+          <Suspense fallback={<AuthFormSkeleton fields={4} />}>
+            <RegisterForm />
+          </Suspense>
 
           <p className="px-8 text-center text-sm text-muted-foreground">
             Al registrarte, aceptas nuestros{" "}
