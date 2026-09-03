@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, CheckCircle2, Upload } from "lucide-react"
 import { updateProfile } from "./actions"
+import { uploadImage, ACCEPTED_IMAGE_TYPES } from "@/lib/image-upload"
 
 interface ProfileFormProps {
   initialData: {
@@ -22,9 +23,37 @@ interface ProfileFormProps {
 export function ProfileForm({ initialData }: ProfileFormProps) {
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [avatarFileName, setAvatarFileName] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url || "")
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  /**
+   * El avatar se sube en cuanto se elige, directo a Storage, y el formulario
+   * solo guarda la URL resultante. Antes el fichero viajaba dentro de la
+   * Server Action: eso topaba con el límite de tamaño de la petición y además
+   * dependía de una política del bucket que solo permitía escribir a los
+   * administradores, así que ningún usuario normal podía cambiar su foto.
+   */
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = "" // permite reintentar con el mismo fichero
+
+    setIsUploadingAvatar(true)
+    setMessage(null)
+    try {
+      const url = await uploadImage(file, "avatars")
+      setAvatarUrl(url)
+      setMessage({ type: "success", text: "Imagen lista. Pulsa Guardar para aplicarla." })
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "No se pudo subir la imagen.",
+      })
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -40,8 +69,6 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           if (result.newAvatarUrl) {
             setAvatarUrl(result.newAvatarUrl)
           }
-          setAvatarFileName(null)
-          if (fileInputRef.current) fileInputRef.current.value = ""
           setMessage({ type: 'success', text: "Perfil actualizado correctamente." })
         }
       } catch {
@@ -83,16 +110,16 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
               <input
                 ref={fileInputRef}
                 type="file"
-                name="avatar_file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
+                accept={ACCEPTED_IMAGE_TYPES}
                 className="hidden"
-                onChange={(e) => setAvatarFileName(e.target.files?.[0]?.name || null)}
+                onChange={handleAvatarChange}
               />
               <div className="flex gap-2">
                 <Input
                   id="avatar_url"
                   name="avatar_url"
                   value={avatarUrl}
+                  disabled={isUploadingAvatar}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   placeholder="https://ejemplo.com/mifoto.jpg"
                   className="bg-background/50 border-border/50 focus:border-primary/50 flex-1"
@@ -102,19 +129,20 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   variant="outline"
                   size="sm"
                   className="shrink-0"
+                  disabled={isUploadingAvatar}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="h-4 w-4 mr-1" />
-                  Subir
+                  {isUploadingAvatar ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Upload className="mr-1 h-4 w-4" aria-hidden />
+                  )}
+                  {isUploadingAvatar ? "Subiendo…" : "Subir"}
                 </Button>
               </div>
-              {avatarFileName && (
-                <p className="text-xs text-primary">
-                  Archivo seleccionado: {avatarFileName}
-                </p>
-              )}
               <p className="text-xs text-muted-foreground">
-                Sube una imagen o pega una URL. JPG, PNG o WebP.
+                Sube una imagen o pega una URL. JPG, PNG o WebP; la reducimos
+                automáticamente antes de guardarla.
               </p>
             </div>
 
