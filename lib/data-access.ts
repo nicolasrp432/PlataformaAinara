@@ -56,10 +56,14 @@ export const getAccessTier = cache(
     const supabase = await createClient()
     const { data } = await supabase
       .from("profiles")
-      .select("role, access_status")
+      .select("role, access_status, has_lifetime_access")
       .eq("id", userId)
       .single()
-    return resolveAccessTier(data?.role, data?.access_status)
+    return resolveAccessTier({
+      role: data?.role,
+      accessStatus: data?.access_status,
+      hasLifetimeAccess: data?.has_lifetime_access,
+    })
   }
 )
 

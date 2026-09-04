@@ -1,22 +1,31 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Cormorant_Garamond } from "next/font/google"
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google"
 import { AppToaster } from "@/components/ui/app-toaster"
 import { CookieNotice } from "@/components/legal/cookie-notice"
 import { MotionProvider } from "@/components/providers/motion-provider"
 import "./globals.css"
 
-const inter = Inter({
+// Cuerpo: Plus Jakarta Sans. Humanista geométrica, con formas abiertas que
+// aguantan bien los tamaños pequeños de un texto de venta largo. Sustituye a
+// Inter, que es la sans por defecto de medio internet y no aporta carácter.
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans-brand",
   display: "swap",
   preload: true,
 })
 
-const cormorant = Cormorant_Garamond({
+// Titulares: Fraunces. Serif variable con carácter propio y, sobre todo, con
+// eje óptico (`opsz`): a tamaño grande afina los remates y a tamaño pequeño
+// los engorda, que es justo lo que le faltaba a Cormorant Garamond —a 6rem y
+// en peso ligero se deshacía y perdía contraste contra el marfil del fondo.
+//
+// `SOFT` redondea los vértices lo justo para que no resulte severa.
+const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
+  axes: ["SOFT", "opsz"],
   preload: true,
 })
 
@@ -83,7 +92,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${inter.variable} ${cormorant.variable} font-sans antialiased`}
+        className={`${jakarta.variable} ${fraunces.variable} font-sans antialiased`}
       >
         <MotionProvider>
           {children}

@@ -71,11 +71,15 @@ export async function POST(request: NextRequest) {
   // Una cuenta suspendida sí queda fuera.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("access_status, role")
+    .select("access_status, role, has_lifetime_access")
     .eq("id", user.id)
     .single()
 
-  const tier = resolveAccessTier(profile?.role, profile?.access_status)
+  const tier = resolveAccessTier({
+    role: profile?.role,
+    accessStatus: profile?.access_status,
+    hasLifetimeAccess: profile?.has_lifetime_access,
+  })
 
   if (!canEnterPlatform(tier)) {
     return NextResponse.json(

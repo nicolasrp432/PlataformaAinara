@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import {
   canEnterPlatform,
   getRouteAccess,
-  hasFullAccess,
+  tierMeetsRoute,
   isAuthEntryRoute,
   resolveAccessTier,
   safeRedirectTarget,
@@ -20,9 +20,11 @@ const PROFILE_CACHE_MAX_AGE = 60 // segundos
 
 function parseProfileCache(raw: string | undefined, userId: string) {
   if (!raw) return null
-  const [cachedId, role, accessStatus] = raw.split("|")
-  if (cachedId !== userId || !role || !accessStatus) return null
-  return { role, accessStatus }
+  const [cachedId, role, accessStatus, lifetime] = raw.split("|")
+  if (cachedId !== userId || !role || !accessStatus || lifetime === undefined) {
+    return null
+  }
+  return { role, accessStatus, hasLifetimeAccess: lifetime === "1" }
 }
 
 export async function updateSession(request: NextRequest) {
@@ -96,20 +98,22 @@ export async function updateSession(request: NextRequest) {
 
   let role = cached?.role ?? ""
   let accessStatus = cached?.accessStatus ?? ""
+  let hasLifetimeAccess = cached?.hasLifetimeAccess ?? false
 
   if (!cached) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, access_status")
+      .select("role, access_status, has_lifetime_access")
       .eq("id", user.id)
       .single()
 
     role = profile?.role ?? "student"
     accessStatus = profile?.access_status ?? "pending"
+    hasLifetimeAccess = profile?.has_lifetime_access === true
 
     supabaseResponse.cookies.set(
       PROFILE_CACHE_COOKIE,
-      `${user.id}|${role}|${accessStatus}`,
+      `${user.id}|${role}|${accessStatus}|${hasLifetimeAccess ? "1" : "0"}`,
       {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -120,7 +124,7 @@ export async function updateSession(request: NextRequest) {
     )
   }
 
-  const tier = resolveAccessTier(role, accessStatus)
+  const tier = resolveAccessTier({ role, accessStatus, hasLifetimeAccess })
 
   // Cuenta suspendida: solo puede ver el aviso, facturación y salir.
   if (!canEnterPlatform(tier)) {
@@ -144,11 +148,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (routeAccess === "member" && !hasFullAccess(tier)) {
+  // `content` exige haber comprado; `member`, suscripción activa. La regla
+  // vive en `tierMeetsRoute` para que middleware y páginas no discrepen.
+  if (!tierMeetsRoute(tier, routeAccess)) {
     const url = request.nextUrl.clone()
     url.pathname = "/billing"
     url.search = ""
-    url.searchParams.set("reason", "subscription")
+    url.searchParams.set("reason", routeAccess === "member" ? "membership" : "access")
     url.searchParams.set("from", pathname)
     return NextResponse.redirect(url)
   }

@@ -24,7 +24,11 @@ export default async function PendingPage() {
   if (!user) redirect("/login")
 
   const profile = await getUserProfile(user.id)
-  const tier = resolveAccessTier(profile?.role, profile?.access_status)
+  const tier = resolveAccessTier({
+    role: profile?.role,
+    accessStatus: profile?.access_status,
+    hasLifetimeAccess: profile?.has_lifetime_access,
+  })
 
   if (tier !== "suspended") redirect("/dashboard")
 

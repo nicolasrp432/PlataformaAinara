@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe"
-import { syncSubscription } from "@/lib/services/subscription"
+import { grantLifetimeAccess, syncSubscription } from "@/lib/services/subscription"
 
 /**
  * Retorno del checkout de Stripe.
@@ -14,6 +14,9 @@ import { syncSubscription } from "@/lib/services/subscription"
  * en el acto, sin esperar al webhook. El webhook sigue siendo la fuente
  * duradera (renovaciones, impagos, cancelaciones); esto solo elimina la
  * ventana en la que el usuario ha pagado y todavía ve candados.
+ *
+ * Atiende los dos modos: en `mode: "payment"` NO hay objeto `subscription`,
+ * así que el código no puede darlo por hecho.
  */
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get("session_id")
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
   try {
     const stripe = getStripe()
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ["subscription"],
+      expand: ["subscription", "line_items"],
     })
 
     // La sesión debe pertenecer a quien está navegando: sin esta comprobación
@@ -47,9 +50,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(failure)
     }
 
-    const subscription = session.subscription
-    if (subscription && typeof subscription !== "string") {
-      await syncSubscription({ userId: user.id, subscription })
+    if (session.mode === "subscription") {
+      const subscription = session.subscription
+      if (subscription && typeof subscription !== "string") {
+        await syncSubscription({ userId: user.id, subscription })
+      }
+    } else if (session.mode === "payment") {
+      await grantLifetimeAccess({ userId: user.id, session })
     }
   } catch (error) {
     console.error("[billing/success] no se pudo verificar la sesión:", error)
@@ -61,7 +68,7 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(success)
 
   // La caché de perfil del middleware vive 60s en cookie. Sin borrarla, el
-  // usuario recién suscrito seguiría viendo candados durante ese minuto.
+  // usuario que acaba de pagar seguiría viendo candados durante ese minuto.
   response.cookies.delete("x-user-access")
 
   return response

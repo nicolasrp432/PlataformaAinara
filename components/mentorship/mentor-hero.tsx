@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MentorshipBookingDialog } from "@/components/mentorship/booking-dialog"
 import { MENTOR_PROFILE, MENTOR_EXPERIENCE_LABEL } from "@/lib/mentor"
+import { formatPriceDisplay } from "@/lib/pricing"
 
 interface MentorHeroProps {
   mentor: {
@@ -13,6 +14,12 @@ interface MentorHeroProps {
     session_price: number
     session_duration_minutes: number
   }
+  /**
+   * Con suscripción activa la sesión va incluida; con solo el pago único se
+   * abona aparte. Es la diferencia que compra la suscripción, así que tiene
+   * que verse justo donde se decide reservar.
+   */
+  includedInMembership: boolean
 }
 
 /**
@@ -23,7 +30,7 @@ interface MentorHeroProps {
  * primera pregunta que responde la página. El velo cálido inferior sostiene
  * la insignia sin comerse la cara.
  */
-export function MentorHero({ mentor }: MentorHeroProps) {
+export function MentorHero({ mentor, includedInMembership }: MentorHeroProps) {
   return (
     <Card className="overflow-hidden border-border/50 bg-card/60 shadow-2xl shadow-black/5 backdrop-blur-xl">
       <div className="grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]">
@@ -77,7 +84,11 @@ export function MentorHero({ mentor }: MentorHeroProps) {
               <span>{mentor.session_duration_minutes} min</span>
             </div>
             <div className="text-sm font-semibold text-foreground">
-              {mentor.session_price} €
+              {includedInMembership ? (
+                <span className="text-success-strong">Incluida en tu suscripción</span>
+              ) : (
+                <>{formatPriceDisplay(mentor.session_price)} por sesión</>
+              )}
             </div>
           </div>
 

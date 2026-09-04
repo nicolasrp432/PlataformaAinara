@@ -7,6 +7,8 @@ import { CreditCard, CheckCircle2, XCircle, AlertCircle, ExternalLink, Loader2, 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CheckoutResultToast } from "@/components/access/checkout-result-toast"
+import { PLANS, planPrice, formatPriceDisplay, SINGLE_SESSION_PRICE } from "@/lib/pricing"
+import { Infinity as InfinityIcon } from "lucide-react"
 
 interface Subscription {
   status: string
@@ -18,6 +20,8 @@ interface BillingClientProps {
   subscription: Subscription | null
   portalUrl: string | null
   userEmail: string
+  /** Pago único ya realizado: acceso permanente al contenido. */
+  hasLifetimeAccess: boolean
 }
 
 const statusConfig = {
@@ -28,8 +32,13 @@ const statusConfig = {
   inactive: { label: "Sin suscripción", color: "bg-muted text-muted-foreground border-border/60", icon: XCircle },
 }
 
-export function BillingClient({ subscription, portalUrl, userEmail }: BillingClientProps) {
-  const [isCheckingOut, setIsCheckingOut] = useState(false)
+export function BillingClient({
+  subscription,
+  portalUrl,
+  userEmail,
+  hasLifetimeAccess,
+}: BillingClientProps) {
+  const [checkingOut, setCheckingOut] = useState<"lifetime" | "membership" | null>(null)
 
   const status = subscription?.status ?? "inactive"
   const cfg = statusConfig[status as keyof typeof statusConfig] ?? statusConfig.inactive
@@ -41,14 +50,22 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
       })
     : null
 
-  async function startCheckout() {
-    setIsCheckingOut(true)
+  async function startCheckout(plan: "lifetime" | "membership") {
+    setCheckingOut(plan)
     try {
-      const res = await fetch("/api/checkout", { method: "POST" })
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
+      if (data.url) {
+        window.location.href = data.url
+        return
+      }
+      setCheckingOut(null)
     } catch {
-      setIsCheckingOut(false)
+      setCheckingOut(null)
     }
   }
 
@@ -116,37 +133,86 @@ export function BillingClient({ subscription, portalUrl, userEmail }: BillingCli
         ) : (
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Con tu cuenta gratuita ves la primera clase de cada formación.
-              La suscripción abre todo lo demás, desde hoy mismo.
+              {hasLifetimeAccess
+                ? "Ya tienes todo el contenido. La suscripción añade acompañamiento: mentoría 1 a 1 incluida y talleres en directo."
+                : "Con tu cuenta gratuita ves la primera clase de cada formación. El acceso completo se compra una sola vez."}
             </p>
-            <div className="space-y-2">
-              {[
-                "Todas las lecciones de todas las formaciones",
-                "Comunidad privada y mensajes directos",
-                "Mentoría 1 a 1 con Ainara",
-                "Asistente IA y retos de progreso",
-                "Certificados verificables",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-success-strong shrink-0" />
-                  {item}
-                </div>
-              ))}
-            </div>
             <Button
               className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90"
               size="lg"
-              onClick={startCheckout}
-              disabled={isCheckingOut}
+              onClick={() => startCheckout("membership")}
+              disabled={checkingOut !== null}
             >
-              {isCheckingOut ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {checkingOut === "membership" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
+                <Sparkles className="mr-2 h-4 w-4" aria-hidden />
               )}
-              Activar suscripción — €97/mes
+              Activar acompañamiento — {planPrice(PLANS.membership)}/mes
             </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Una sesión de mentoría suelta cuesta{" "}
+              {formatPriceDisplay(SINGLE_SESSION_PRICE)}
+            </p>
           </div>
+        )}
+      </motion.div>
+
+      {/*
+        Estado del pago único. Va en su propia tarjeta porque es un producto
+        distinto de la suscripción: se compra una vez y no caduca, así que
+        mezclarlo con el estado de la suscripción confundiría las dos cosas.
+      */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border border-border/60 bg-card p-6"
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <InfinityIcon className="h-5 w-5 text-primary" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold">{PLANS.lifetime.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {PLANS.lifetime.billingNote}
+              </p>
+            </div>
+          </div>
+          <Badge
+            className={`flex shrink-0 items-center gap-1.5 border ${
+              hasLifetimeAccess
+                ? "border-success-border bg-success-soft text-success-strong"
+                : "border-border/60 bg-muted text-muted-foreground"
+            }`}
+          >
+            {hasLifetimeAccess ? (
+              <CheckCircle2 className="h-3 w-3" aria-hidden />
+            ) : (
+              <XCircle className="h-3 w-3" aria-hidden />
+            )}
+            {hasLifetimeAccess ? "Activo" : "No comprado"}
+          </Badge>
+        </div>
+
+        {hasLifetimeAccess ? (
+          <p className="rounded-xl bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+            Tienes acceso permanente a todas las formaciones. No caduca y no
+            hay nada que renovar.
+          </p>
+        ) : (
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={() => startCheckout("lifetime")}
+            disabled={checkingOut !== null}
+          >
+            {checkingOut === "lifetime" && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+            )}
+            Comprar acceso completo — {planPrice(PLANS.lifetime)}
+          </Button>
         )}
       </motion.div>
     </div>

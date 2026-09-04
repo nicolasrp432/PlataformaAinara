@@ -19,11 +19,15 @@ export async function GET(request: Request) {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('access_status, role')
+        .select('access_status, role, has_lifetime_access')
         .eq('id', data.user.id)
         .single()
 
-      const tier = resolveAccessTier(profile?.role, profile?.access_status)
+      const tier = resolveAccessTier({
+        role: profile?.role,
+        accessStatus: profile?.access_status,
+        hasLifetimeAccess: profile?.has_lifetime_access,
+      })
 
       // Confirmar el email da acceso inmediato al nivel gratuito: el usuario
       // entra a la plataforma y ve la primera clase de cada formación. Solo

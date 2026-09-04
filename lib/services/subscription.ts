@@ -106,3 +106,43 @@ export async function syncSubscription(params: {
 
   return nextAccess
 }
+
+/**
+ * Concede el acceso de por vida tras un pago único.
+ *
+ * Escribe en `profiles.has_lifetime_access`, NUNCA en `access_status`: ese
+ * campo es de la suscripción y lo sobrescribe el webhook por su cuenta. Si el
+ * pago único viviera ahí, cancelar la suscripción borraría un acceso ya
+ * pagado.
+ *
+ * Idempotente: lo llaman el retorno del checkout y el webhook, y no importa
+ * cuál llegue antes. `stripe_session_id` es único, así que reprocesar el
+ * mismo pago no duplica la fila.
+ */
+export async function grantLifetimeAccess(params: {
+  userId: string
+  session: Stripe.Checkout.Session
+}): Promise<void> {
+  const { userId, session } = params
+  const supabase = supabaseAdmin()
+
+  await supabase.from("one_time_purchases").upsert(
+    {
+      user_id: userId,
+      stripe_customer_id:
+        typeof session.customer === "string" ? session.customer : null,
+      stripe_session_id: session.id,
+      stripe_payment_intent_id:
+        typeof session.payment_intent === "string" ? session.payment_intent : null,
+      stripe_price_id: session.line_items?.data[0]?.price?.id ?? null,
+      amount_total: session.amount_total,
+      currency: session.currency,
+    },
+    { onConflict: "stripe_session_id" }
+  )
+
+  await supabase
+    .from("profiles")
+    .update({ has_lifetime_access: true })
+    .eq("id", userId)
+}
