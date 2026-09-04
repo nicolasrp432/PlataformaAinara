@@ -3,45 +3,80 @@
  *  MODELO DE ACCESO — FUENTE ÚNICA DE VERDAD
  * ─────────────────────────────────────────────────────────────────────────
  *
- * La plataforma tiene tres niveles de acceso. El nivel NO se guarda: se
- * deriva siempre de `profiles.role` + `profiles.access_status`, de modo que
+ * El nivel NO se guarda: se deriva siempre de `profiles.role`,
+ * `profiles.access_status` y `profiles.has_lifetime_access`, de modo que
  * middleware, páginas de servidor y rutas de API no puedan discrepar.
  *
- *   free    → cuenta creada, sin suscripción activa.
- *             Navega el catálogo completo y ve la PRIMERA clase de cada
- *             formación. El resto aparece bloqueado con la invitación a
- *             suscribirse.
- *   member  → suscripción activa (`access_status = 'approved'`).
- *             Acceso total al contenido.
- *   staff   → `role` admin o mentor. Acceso total + panel de administración.
+ *   free      → cuenta creada, no ha comprado nada. Navega el catálogo
+ *               entero y ve la PRIMERA clase de cada formación.
+ *   lifetime  → ha pagado una vez. Toda la plataforma, para siempre.
+ *   member    → suscripción activa. Todo lo anterior más talleres en
+ *               directo y mentoría 1 a 1 incluida sin pagar por sesión.
+ *   staff     → `role` admin o mentor.
+ *   suspended → sin acceso.
  *
- * `access_status = 'suspended'` es el único estado que retira el acceso
- * gratuito: corresponde a una suscripción impagada o a una cuenta bloqueada.
+ * ── POR QUÉ SON DOS CAMPOS Y NO UN ENUM ──────────────────────────────────
+ *
+ * «Acceso de por vida» y «suscripción activa» son ortogonales: se puede
+ * tener uno, el otro o los dos. Meterlos en el mismo campo obligaría a
+ * sobrescribir un valor con el otro, y ahí está el peligro real: cuando el
+ * webhook de Stripe marca `access_status = 'suspended'` al cancelarse una
+ * suscripción, no puede llevarse por delante un acceso que la persona ya
+ * pagó. Por eso `has_lifetime_access` es una columna aparte y, en
+ * `resolveAccessTier`, gana a `suspended`.
+ *
+ * Dicho de otro modo: cancelar la suscripción te devuelve a `lifetime`,
+ * nunca a `free` ni a `suspended`.
  *
  * IMPORTANTE: registrarse NO deja al usuario "en revisión". Un registro
  * nuevo entra directamente como `free` y puede usar la plataforma en el
- * mismo segundo. `approved` significa exclusivamente "ha pagado".
+ * mismo segundo.
  */
 
 export type AccessStatus = "pending" | "approved" | "suspended"
 export type UserRole = "student" | "mentor" | "admin"
-export type AccessTier = "free" | "member" | "suspended" | "staff"
+export type AccessTier = "free" | "lifetime" | "member" | "suspended" | "staff"
 
 /** Cuántas lecciones iniciales de cada formación son gratuitas. */
 export const FREE_LESSONS_PER_FORMATION = 1
 
-export function resolveAccessTier(
-  role: string | null | undefined,
-  accessStatus: string | null | undefined
-): AccessTier {
+export interface AccessInput {
+  role?: string | null
+  /** Estado de la SUSCRIPCIÓN, no del acceso global. */
+  accessStatus?: string | null
+  /** Pago único realizado. Nunca caduca. */
+  hasLifetimeAccess?: boolean | null
+}
+
+export function resolveAccessTier(input: AccessInput): AccessTier {
+  const { role, accessStatus, hasLifetimeAccess } = input
+
   if (role === "admin" || role === "mentor") return "staff"
+
+  // Suscripción activa: el nivel más alto de cliente.
   if (accessStatus === "approved") return "member"
+
+  // Un pago único ya hecho sobrevive a que la suscripción se cancele o se
+  // impague. Va ANTES de `suspended` a propósito: ver la nota de cabecera.
+  if (hasLifetimeAccess === true) return "lifetime"
+
   if (accessStatus === "suspended") return "suspended"
+
   return "free"
 }
 
-/** ¿Tiene el contenido completo desbloqueado? */
+/** ¿Tiene desbloqueado todo el contenido de las formaciones? */
 export function hasFullAccess(tier: AccessTier): boolean {
+  return tier === "lifetime" || tier === "member" || tier === "staff"
+}
+
+/**
+ * ¿Tiene la mentoría 1 a 1 y los talleres incluidos?
+ *
+ * Es lo que compra la suscripción. Quien solo tiene el pago único puede
+ * reservar igualmente, pero pagando la sesión aparte.
+ */
+export function hasIncludedMentoring(tier: AccessTier): boolean {
   return tier === "member" || tier === "staff"
 }
 
@@ -75,7 +110,12 @@ export function isLessonUnlocked(params: {
 //  CLASIFICACIÓN DE RUTAS
 // ─────────────────────────────────────────────────────────────────────────
 
-export type RouteAccess = "public" | "authenticated" | "member" | "staff"
+export type RouteAccess =
+  | "public"
+  | "authenticated"
+  | "content"
+  | "member"
+  | "staff"
 
 /** Sin sesión: landing y páginas de marketing/legales. */
 const PUBLIC_EXACT = new Set([
@@ -98,11 +138,10 @@ const PUBLIC_PREFIXES = [
 ]
 
 /**
- * Requiere sesión, no suscripción. Aquí vive la experiencia gratuita: el
- * catálogo se navega entero y las formaciones se abren; el candado se aplica
- * lección a lección, no de golpe en la puerta. Bloquear `/library` entero
- * dejaba al usuario recién registrado sin nada que ver y sin motivo para
- * pagar.
+ * Requiere sesión, no compra. Aquí vive la experiencia gratuita: el catálogo
+ * se navega entero y las formaciones se abren; el candado se aplica lección a
+ * lección, no de golpe en la puerta. Bloquear `/library` entero dejaba al
+ * usuario recién registrado sin nada que ver y sin motivo para pagar.
  */
 const AUTHENTICATED_PREFIXES = [
   "/dashboard",
@@ -116,8 +155,16 @@ const AUTHENTICATED_PREFIXES = [
   "/learn",
 ]
 
-/** Requiere suscripción activa. */
-const MEMBER_PREFIXES = [
+/**
+ * Requiere haber comprado (pago único o suscripción). Es «la plataforma»
+ * más allá del catálogo: comunidad, logros, mensajes, asistente y la
+ * reserva de mentoría.
+ *
+ * `/mentorship` está aquí y no en `MEMBER_PREFIXES` a propósito: quien tiene
+ * el pago único puede reservar una sesión, solo que la paga aparte. Es la
+ * propia página la que decide si va incluida, con `hasIncludedMentoring`.
+ */
+const CONTENT_PREFIXES = [
   "/quest",
   "/taberna",
   "/mentorship",
@@ -125,6 +172,13 @@ const MEMBER_PREFIXES = [
   "/assistant",
   "/u",
 ]
+
+/**
+ * Exclusivo de la suscripción. Vacío por ahora: lo que la suscripción añade
+ * hoy (mentoría incluida) es una condición DENTRO de `/mentorship`, no una
+ * sección aparte. Aquí entrarán los talleres en directo cuando existan.
+ */
+const MEMBER_PREFIXES: string[] = []
 
 const STAFF_PREFIXES = ["/admin"]
 
@@ -139,8 +193,25 @@ export function getRouteAccess(pathname: string): RouteAccess {
   if (matches(pathname, PUBLIC_PREFIXES)) return "public"
   if (matches(pathname, STAFF_PREFIXES)) return "staff"
   if (matches(pathname, MEMBER_PREFIXES)) return "member"
+  if (matches(pathname, CONTENT_PREFIXES)) return "content"
   if (matches(pathname, AUTHENTICATED_PREFIXES)) return "authenticated"
   return "public"
+}
+
+/** ¿El nivel alcanza para entrar en una ruta de esa categoría? */
+export function tierMeetsRoute(tier: AccessTier, route: RouteAccess): boolean {
+  switch (route) {
+    case "public":
+      return true
+    case "authenticated":
+      return canEnterPlatform(tier)
+    case "content":
+      return hasFullAccess(tier)
+    case "member":
+      return hasIncludedMentoring(tier)
+    case "staff":
+      return tier === "staff"
+  }
 }
 
 /** Rutas de autenticación de las que hay que expulsar a quien ya tiene sesión. */

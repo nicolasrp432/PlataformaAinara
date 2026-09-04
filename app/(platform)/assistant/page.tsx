@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { requireMembership } from "@/lib/guards"
+import { requireContentAccess } from "@/lib/guards"
 import { Bot, Sparkles } from "lucide-react"
 import { ChatPanel } from "@/components/ai/chat-panel"
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default async function AssistantPage() {
   // Sesión + suscripción activa. Segunda capa junto al middleware.
-  await requireMembership("/assistant")
+  await requireContentAccess("/assistant")
 
   return (
     <div className="flex flex-col h-[calc(100svh-4.5rem)] max-w-3xl mx-auto px-2 sm:px-4">

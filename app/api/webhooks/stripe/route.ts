@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe"
 import { supabaseAdmin } from "@/lib/supabase/admin"
-import { resolveUserId, syncSubscription } from "@/lib/services/subscription"
+import {
+  grantLifetimeAccess,
+  resolveUserId,
+  syncSubscription,
+} from "@/lib/services/subscription"
 import type Stripe from "stripe"
 
 export async function POST(req: NextRequest) {
@@ -58,8 +62,6 @@ export async function POST(req: NextRequest) {
           break
         }
 
-        if (session.mode !== "subscription") break
-
         const userId = await resolveUserId({
           metadataUserId: session.metadata?.supabase_user_id,
           customerId: session.customer as string | null,
@@ -68,6 +70,19 @@ export async function POST(req: NextRequest) {
           console.warn("[stripe webhook] sesión sin usuario resoluble:", session.id)
           break
         }
+
+        // Pago único: acceso permanente. Se recupera la sesión con las líneas
+        // expandidas porque el evento no las trae y hacen falta para dejar
+        // constancia de qué precio se cobró.
+        if (session.mode === "payment") {
+          const full = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ["line_items"],
+          })
+          await grantLifetimeAccess({ userId, session: full })
+          break
+        }
+
+        if (session.mode !== "subscription") break
 
         const subscription = await stripe.subscriptions.retrieve(
           session.subscription as string

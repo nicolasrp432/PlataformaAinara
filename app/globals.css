@@ -188,9 +188,9 @@
   --text-6xl--line-height: 1;
   --text-6xl--letter-spacing: -0.035em;
 
-  /* —— TYPOGRAPHY — Inter (body) + Cormorant Garamond (display) —— */
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  /* —— TYPOGRAPHY — Plus Jakarta Sans (cuerpo) + Fraunces (titulares) —— */
+  --font-sans: var(--font-sans-brand), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display), "Fraunces", Georgia, serif;
   --font-mono: ui-monospace, monospace;
 
   /* —— SHADOWS — Warm gold-tinted, soft & premium —— */
@@ -276,7 +276,11 @@
    ============================================================ */
 
 .font-display {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-display), "Fraunces", Georgia, serif;
+  /* Fraunces trae eje óptico: dejar que el navegador lo module con el tamaño
+     es lo que evita que los titulares grandes se afilen de más y los
+     pequeños se emborronen. */
+  font-optical-sizing: auto;
 }
 
 /* Floating animation for hero orbs */

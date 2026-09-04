@@ -12,7 +12,7 @@ export default async function BillingPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, stripe_customer_id")
+    .select("full_name, stripe_customer_id, has_lifetime_access")
     .eq("id", user.id)
     .single()
 
@@ -44,6 +44,7 @@ export default async function BillingPage() {
       subscription={subscription}
       portalUrl={portalUrl}
       userEmail={user.email ?? ""}
+      hasLifetimeAccess={profile?.has_lifetime_access === true}
     />
   )
 }

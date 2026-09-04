@@ -45,7 +45,13 @@ export default async function TabernaPage() {
 
   // Segunda capa de seguridad tras el middleware. Usa el mismo helper que el
   // resto de la app para que no pueda divergir de `lib/access.ts`.
-  if (!hasFullAccess(resolveAccessTier(profile?.role, profile?.access_status))) {
+  const tier = resolveAccessTier({
+    role: profile?.role,
+    accessStatus: profile?.access_status,
+    hasLifetimeAccess: profile?.has_lifetime_access,
+  })
+
+  if (!hasFullAccess(tier)) {
     redirect("/billing?reason=subscription&from=/taberna")
   }
 

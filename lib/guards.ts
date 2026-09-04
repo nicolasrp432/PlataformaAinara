@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { getAuthUser, getAccessTier } from "@/lib/data-access"
-import { hasFullAccess, canEnterPlatform } from "@/lib/access"
+import { hasFullAccess, hasIncludedMentoring, canEnterPlatform } from "@/lib/access"
 
 /**
  * Guardas de servidor para páginas.
@@ -27,15 +27,40 @@ export async function requireUser(redirectTo?: string) {
   return user
 }
 
-/** Exige sesión + suscripción activa (o rol de staff). */
-export async function requireMembership(from: string) {
+/**
+ * Exige haber comprado: pago único o suscripción (o rol de staff).
+ *
+ * Es el listón de «la plataforma»: comunidad, logros, asistente y la reserva
+ * de mentoría. NO exige suscripción, porque quien pagó una vez compró el
+ * acceso completo al contenido.
+ */
+export async function requireContentAccess(from: string) {
   const user = await requireUser(from)
   const tier = await getAccessTier(user.id)
 
   if (!canEnterPlatform(tier)) redirect("/pending")
 
   if (!hasFullAccess(tier)) {
-    redirect(`/billing?reason=subscription&from=${encodeURIComponent(from)}`)
+    redirect(`/billing?reason=access&from=${encodeURIComponent(from)}`)
+  }
+
+  return user
+}
+
+/**
+ * Exige suscripción activa. Reservado para lo que la suscripción añade por
+ * encima del pago único: los talleres en directo cuando existan.
+ *
+ * Ojo: la mentoría NO usa esta guarda. Su página es accesible para quien
+ * tiene el pago único; lo que cambia según el nivel es si la sesión va
+ * incluida o se paga aparte.
+ */
+export async function requireMembership(from: string) {
+  const user = await requireContentAccess(from)
+  const tier = await getAccessTier(user.id)
+
+  if (!hasIncludedMentoring(tier)) {
+    redirect(`/billing?reason=membership&from=${encodeURIComponent(from)}`)
   }
 
   return user

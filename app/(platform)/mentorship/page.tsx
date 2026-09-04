@@ -1,5 +1,7 @@
 import { Metadata } from "next"
-import { requireMembership } from "@/lib/guards"
+import { requireContentAccess } from "@/lib/guards"
+import { getAccessTier } from "@/lib/data-access"
+import { hasIncludedMentoring } from "@/lib/access"
 import { createClient } from "@/lib/supabase/server"
 import { Card } from "@/components/ui/card"
 import { Clock, Sparkles, ShieldCheck, Heart } from "lucide-react"
@@ -17,8 +19,11 @@ const DEFAULT_SESSION_PRICE = 150
 const DEFAULT_SESSION_MINUTES = 60
 
 export default async function MentorshipPage() {
-  // Sesión + suscripción activa. Segunda capa junto al middleware.
-  await requireMembership("/mentorship")
+  // Haber comprado basta para reservar. Lo que decide la suscripción no es el
+  // acceso a esta página, sino si la sesión se paga aparte.
+  const user = await requireContentAccess("/mentorship")
+  const tier = await getAccessTier(user.id)
+  const includedInMembership = hasIncludedMentoring(tier)
 
   // De la base de datos solo se toma lo operativo: el id con el que se crea la
   // reserva, el precio y la duración. El perfil público (nombre, retrato,
@@ -58,7 +63,7 @@ export default async function MentorshipPage() {
         </p>
       </header>
 
-      <MentorHero mentor={mentor} />
+      <MentorHero mentor={mentor} includedInMembership={includedInMembership} />
 
       {/* Cómo trabaja: el «qué pasa si reservo», que es la duda real. */}
       <section className="space-y-4">
