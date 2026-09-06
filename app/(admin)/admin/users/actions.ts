@@ -40,6 +40,39 @@ export async function updateUserAccessAction(
   }
 }
 
+/**
+ * Concede o retira el acceso permanente a mano, sin pasar por Stripe.
+ *
+ * Es la vía para regalar acceso: al equipo, a una persona que pagó por otro
+ * canal, o a ti mismo para revisar la plataforma como la ve quien ha pagado.
+ * Escribe la MISMA columna que el pago único (`has_lifetime_access`), así que
+ * no existen dos clases de acceso permanente que puedan divergir: el resto de
+ * la aplicación no distingue si vino de una compra o de aquí.
+ *
+ * Retirarlo es igual de deliberado. Ojo: si la persona lo pagó de verdad,
+ * quitárselo es retirarle algo que compró.
+ */
+export async function updateUserLifetimeAccessAction(
+  userId: string,
+  hasLifetimeAccess: boolean
+) {
+  try {
+    const supabase = await requireAdmin()
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ has_lifetime_access: hasLifetimeAccess })
+      .eq("id", userId)
+
+    if (error) throw error
+
+    revalidatePath("/admin/users")
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Error desconocido" }
+  }
+}
+
 export async function adminSetUserPasswordAction(
   userId: string,
   newPassword: string

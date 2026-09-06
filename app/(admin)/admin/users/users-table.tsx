@@ -53,9 +53,11 @@ import {
   ShieldAlert,
   Loader2,
   KeyRound,
+  Infinity as InfinityIcon,
 } from "lucide-react"
 import {
   updateUserAccessAction,
+  updateUserLifetimeAccessAction,
   updateUserRoleAction,
   adminSetUserPasswordAction,
 } from "./actions"
@@ -68,6 +70,7 @@ interface UserRow {
   email: string | null
   role: string | null
   access_status: string | null
+  has_lifetime_access: boolean | null
   level: number | null
   xp: number | null
   created_at: string | null
@@ -210,6 +213,26 @@ function UserActions({ user }: { user: UserRow }) {
     })
   }
 
+  /**
+   * Acceso permanente concedido a mano, sin pasar por Stripe. Escribe la misma
+   * columna que el pago único, así que para el resto de la plataforma es
+   * indistinguible de haberlo comprado.
+   */
+  function handleLifetime(grant: boolean) {
+    startTransition(async () => {
+      const res = await updateUserLifetimeAccessAction(user.id, grant)
+      if (res.success) {
+        toast.success(
+          grant
+            ? `Acceso permanente concedido a ${user.full_name || "usuario"}`
+            : `Acceso permanente retirado a ${user.full_name || "usuario"}`
+        )
+      } else {
+        toast.error(res.error || "Error al actualizar el acceso permanente")
+      }
+    })
+  }
+
   function handleRole(role: "student" | "mentor" | "admin") {
     startTransition(async () => {
       const res = await updateUserRoleAction(user.id, role)
@@ -246,12 +269,19 @@ function UserActions({ user }: { user: UserRow }) {
               <SheetTitle>{user.full_name || "Usuario"}</SheetTitle>
             </SheetHeader>
             <div className="space-y-1">
-              <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Acceso</p>
+              <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Acceso permanente</p>
+              <Button variant="ghost" className="w-full justify-start h-12 text-success-strong" disabled={user.has_lifetime_access === true} onClick={closeAnd(() => handleLifetime(true))}>
+                <InfinityIcon className="mr-3 h-5 w-5" /> Conceder sin pagar
+              </Button>
+              <Button variant="ghost" className="w-full justify-start h-12" disabled={user.has_lifetime_access !== true} onClick={closeAnd(() => handleLifetime(false))}>
+                <XCircle className="mr-3 h-5 w-5" /> Retirar acceso permanente
+              </Button>
+              <p className="px-1 pt-3 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Suscripción</p>
               <Button variant="ghost" className="w-full justify-start h-12 text-success-strong" disabled={user.access_status === "approved"} onClick={closeAnd(() => handleAccess("approved"))}>
-                <CheckCircle2 className="mr-3 h-5 w-5" /> Dar acceso completo
+                <CheckCircle2 className="mr-3 h-5 w-5" /> Activar (con mentoría)
               </Button>
               <Button variant="ghost" className="w-full justify-start h-12" disabled={user.access_status === "pending"} onClick={closeAnd(() => handleAccess("pending"))}>
-                <Clock className="mr-3 h-5 w-5" /> Pasar a plan gratuito
+                <Clock className="mr-3 h-5 w-5" /> Desactivar suscripción
               </Button>
               <Button variant="ghost" className="w-full justify-start h-12 text-danger-strong" disabled={user.access_status === "suspended"} onClick={closeAnd(() => handleAccess("suspended"))}>
                 <XCircle className="mr-3 h-5 w-5" /> Suspender acceso
@@ -284,21 +314,38 @@ function UserActions({ user }: { user: UserRow }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuLabel>Acceso</DropdownMenuLabel>
+        <DropdownMenuLabel>Acceso permanente</DropdownMenuLabel>
+        <DropdownMenuItem
+          onClick={() => handleLifetime(true)}
+          disabled={user.has_lifetime_access === true}
+          className="text-success-strong focus:text-success-strong"
+        >
+          <InfinityIcon className="mr-2 h-4 w-4" />
+          Conceder sin pagar
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleLifetime(false)}
+          disabled={user.has_lifetime_access !== true}
+        >
+          <XCircle className="mr-2 h-4 w-4" />
+          Retirar
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Suscripción</DropdownMenuLabel>
         <DropdownMenuItem
           onClick={() => handleAccess("approved")}
           disabled={user.access_status === "approved"}
           className="text-success-strong focus:text-success-strong"
         >
           <CheckCircle2 className="mr-2 h-4 w-4" />
-          Dar acceso completo
+          Activar (con mentoría)
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => handleAccess("pending")}
           disabled={user.access_status === "pending"}
         >
           <Clock className="mr-2 h-4 w-4" />
-          Pasar a gratuito
+          Desactivar
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => handleAccess("suspended")}
@@ -485,6 +532,18 @@ export function UsersTable({ users }: UsersTableProps) {
                           <StatusIcon className="h-3 w-3" />
                           {statusCfg.label}
                         </Badge>
+                        {/* El acceso permanente es independiente de la
+                            suscripción, así que se muestra aparte: sin esto no
+                            hay forma de ver quién lo tiene. */}
+                        {user.has_lifetime_access === true && (
+                          <Badge
+                            variant="outline"
+                            className="ml-1.5 gap-1 border-primary/30 bg-primary/5 text-primary"
+                          >
+                            <InfinityIcon className="h-3 w-3" />
+                            Permanente
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <span className="text-sm text-muted-foreground">

@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { CreditCard, CheckCircle2, XCircle, AlertCircle, ExternalLink, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -58,13 +59,26 @@ export function BillingClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       })
-      const data = await res.json()
-      if (data.url) {
+      const data = await res.json().catch(() => null)
+
+      if (res.ok && data?.url) {
         window.location.href = data.url
         return
       }
+
+      // Antes esto se quedaba en silencio: el botón dejaba de girar y no
+      // pasaba nada más, así que el único rastro del fallo era la consola.
+      // El caso más probable es que falte configurar el precio en Stripe, y
+      // eso hay que poder verlo sin abrir las herramientas de desarrollo.
+      toast.error("No hemos podido abrir el pago", {
+        description:
+          data?.error ?? "Inténtalo de nuevo en unos segundos o escríbenos.",
+      })
       setCheckingOut(null)
     } catch {
+      toast.error("Sin conexión con la pasarela de pago", {
+        description: "Comprueba tu conexión e inténtalo de nuevo.",
+      })
       setCheckingOut(null)
     }
   }
