@@ -12,7 +12,7 @@ async function getUsers() {
   const supabase = await createClient()
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, access_status, level, xp, created_at")
+    .select("id, full_name, email, role, access_status, has_lifetime_access, level, xp, created_at")
     .order("created_at", { ascending: false })
 
   return data ?? []
