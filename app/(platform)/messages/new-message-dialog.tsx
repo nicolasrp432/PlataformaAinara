@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, PenSquare, Search, Users } from "lucide-react"
 import {
@@ -25,6 +26,7 @@ interface SearchResult {
 }
 
 export function NewMessageDialog({ currentUserId }: { currentUserId: string }) {
+  const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState("")
   const [results, setResults] = React.useState<SearchResult[]>([])
@@ -73,10 +75,13 @@ export function NewMessageDialog({ currentUserId }: { currentUserId: string }) {
     setPendingUserId(userId)
     startTransition(async () => {
       const result = await startConversationAction(userId)
-      // En éxito la acción redirige al hilo; si devuelve algo, es un error
       if (result?.error) {
         toast.error(result.error)
         setPendingUserId(null)
+      } else if (result?.conversationId) {
+        setOpen(false)
+        router.push(`/messages/${result.conversationId}`)
+        router.refresh()
       }
     })
   }

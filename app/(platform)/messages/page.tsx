@@ -86,10 +86,14 @@ export default async function MessagesPage() {
                     )}
                   </div>
                 </div>
-                {conv.lastMessage && (
+                {conv.lastMessage ? (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">
                     {conv.lastMessage.sender_id === user.id ? "Tú: " : ""}
                     {conv.lastMessage.body}
+                  </p>
+                ) : (
+                  <p className="text-xs text-primary/80 italic truncate mt-0.5">
+                    Conversación iniciada · Escribe el primer mensaje
                   </p>
                 )}
               </div>

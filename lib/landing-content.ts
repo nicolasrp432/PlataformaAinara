@@ -107,7 +107,7 @@ export const METHOD_PILLARS = [
 ] as const
 
 /**
- * Qué incluye el PAGO ÚNICO. Se muestra junto al precio para que 337,97 € se
+ * Qué incluye el PAGO ÚNICO. Se muestra junto al precio para que 337,37 € se
  * lea frente a lo que se recibe y no en el vacío.
  */
 export const LIFETIME_INCLUDES = [
@@ -163,12 +163,12 @@ export const MEMBERSHIP_ADDS = [
  */
 export const FAQ = [
   {
-    q: "¿337,97 € es un pago único de verdad?",
+    q: "¿337,37 € es un pago único de verdad?",
     a: "Sí. Se paga una vez y el acceso a la plataforma es permanente: no hay cuota mensual, no caduca y no hay nada que cancelar. Si más adelante publicamos formaciones nuevas, también las tienes.",
   },
   {
     q: "¿En qué se diferencia la suscripción?",
-    a: "El pago único te da todo el contenido. La suscripción, 67 € al mes, añade acompañamiento: mentoría 1 a 1 con Ainara incluida y talleres en directo. Una sesión suelta cuesta 150 €, así que si vas a tener aunque sea una al mes, la cuota sale a cuenta sola. Son cosas distintas: el contenido lo estudias tú, el acompañamiento es tiempo de ella contigo.",
+    a: "El pago único te da todo el contenido. La suscripción, 97 € al mes, añade acompañamiento: mentoría 1 a 1 con Ainara incluida y talleres en directo. Una sesión suelta cuesta 150 €, así que si vas a tener aunque sea una al mes, la cuota sale a cuenta sola. Son cosas distintas: el contenido lo estudias tú, el acompañamiento es tiempo de ella contigo.",
   },
   {
     q: "¿Tengo que contratar las dos cosas?",

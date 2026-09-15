@@ -19,7 +19,7 @@
  *  apunta `stripePriceIdEnv`. Son dos cosas distintas y nada las mantiene
  *  sincronizadas automáticamente. Si no coinciden, la página está mintiendo:
  *
- *    · Importe: si aquí pone 337,97 € y el precio de Stripe cobra otra
+ *    · Importe: si aquí pone 337,37 € y el precio de Stripe cobra otra
  *      cantidad, el usuario ve un número y paga otro.
  *    · Modo: `mode` DEBE corresponderse con el tipo de precio en Stripe.
  *        "payment"      → precio one-time (pago único)
@@ -58,7 +58,7 @@ export const PLANS: Record<PlanId, Plan> = {
   lifetime: {
     id: "lifetime",
     name: "Acceso completo",
-    amount: 337.97,
+    amount: 337.37,
     mode: "payment",
     stripePriceIdEnv: "STRIPE_PRICE_ID_LIFETIME",
     billingNote: "Pago único. Sin cuotas ni renovaciones.",
@@ -67,7 +67,7 @@ export const PLANS: Record<PlanId, Plan> = {
   membership: {
     id: "membership",
     name: "Acompañamiento",
-    amount: 67,
+    amount: 97,
     mode: "subscription",
     stripePriceIdEnv: "STRIPE_PRICE_ID_MEMBERSHIP",
     billingNote: "Al mes. Cancela cuando quieras.",
@@ -81,7 +81,7 @@ export const PRIMARY_PLAN = PLANS.lifetime
 /**
  * Lo que cuesta una sesión de mentoría suelta, sin suscripción.
  *
- * Es el ancla honesta de la suscripción: 67 €/mes frente a 150 € por sesión.
+ * Es el ancla honesta de la suscripción: 97 €/mes frente a 150 € por sesión.
  * Debe coincidir con `mentors.session_price` en la base de datos y con el
  * respaldo de `app/(platform)/mentorship/page.tsx`; si allí cambia, cambia
  * aquí, porque este número se publica en la página de venta.
@@ -103,7 +103,7 @@ const displayFormatter = new Intl.NumberFormat("es-ES", {
 })
 
 /**
- * Importe exacto, siempre con dos decimales: «337,97 €», «67,00 €».
+ * Importe exacto, siempre con dos decimales: «337,37 €», «97,00 €».
  * Para facturación y para cualquier sitio donde el céntimo importe.
  *
  * El separador entre cifra y símbolo es un espacio duro (U+00A0), cosa de
@@ -114,7 +114,7 @@ export function formatPrice(amount: number): string {
 }
 
 /**
- * Importe para escaparate: «337,97 €», pero «67 €» en vez de «67,00 €».
+ * Importe para escaparate: «337,37 €», pero «97 €» en vez de «97,00 €».
  * Un precio redondo arrastrando dos ceros se lee peor y no aporta nada.
  */
 export function formatPriceDisplay(amount: number): string {
