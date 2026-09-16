@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 import { getConversationMessages, markConversationRead } from "@/lib/services/messaging"
 import { MessagesThread } from "./messages-thread"
 
@@ -18,8 +19,9 @@ export default async function ConversationPage({ params }: PageProps) {
   const messages = await getConversationMessages(conversationId, user.id)
   if (messages === null) notFound()
 
-  // Obtener info del otro participante
-  const { data: participants } = await supabase
+  // Obtener info del otro participante mediante admin para evitar bloqueos por RLS
+  const admin = supabaseAdmin()
+  const { data: participants } = await admin
     .from("conversation_participants")
     .select("user_id, profiles(id, full_name, avatar_url)")
     .eq("conversation_id", conversationId)

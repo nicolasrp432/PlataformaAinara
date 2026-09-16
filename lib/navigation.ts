@@ -37,7 +37,7 @@ export const PLATFORM_NAV: NavItem[] = [
   { name: "Reflexión",  href: "/reflexion",   icon: NotebookPen, shortName: "Reflexión" },
   { name: "Logros",     href: "/quest",       icon: Trophy, shortName: "Logros", requiresMembership: true },
   { name: "Comunidad",  href: "/taberna",     icon: MessageSquare, shortName: "Comunidad", requiresMembership: true },
-  { name: "Mensajes",   href: "/messages",    icon: Mail, requiresMembership: true },
+  { name: "Mensajes",   href: "/messages",    icon: Mail, shortName: "Mensajes" },
   { name: "Mentoría",   href: "/mentorship",  icon: Users, requiresMembership: true },
   { name: "Asistente",  href: "/assistant",   icon: Bot, requiresMembership: true },
   { name: "Perfil",     href: "/profile",     icon: User },

@@ -153,12 +153,13 @@ const AUTHENTICATED_PREFIXES = [
   "/library",
   "/formations",
   "/learn",
+  "/messages",
+  "/mensajes",
 ]
 
 /**
  * Requiere haber comprado (pago único o suscripción). Es «la plataforma»
- * más allá del catálogo: comunidad, logros, mensajes, asistente y la
- * reserva de mentoría.
+ * más allá del catálogo: comunidad, logros, asistente y la reserva de mentoría.
  *
  * `/mentorship` está aquí y no en `MEMBER_PREFIXES` a propósito: quien tiene
  * el pago único puede reservar una sesión, solo que la paga aparte. Es la
@@ -168,7 +169,6 @@ const CONTENT_PREFIXES = [
   "/quest",
   "/taberna",
   "/mentorship",
-  "/messages",
   "/assistant",
   "/u",
 ]

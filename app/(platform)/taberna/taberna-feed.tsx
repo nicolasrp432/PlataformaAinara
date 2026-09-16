@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useTransition } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { createReflection } from "./actions"
 import { ReflectionForm } from "./reflection-form"
@@ -10,11 +12,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Loader2 } from "lucide-react"
+import { MessageCircle, Loader2, MessageSquare, Share2, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { startConversationAction } from "@/app/(platform)/messages/actions"
 
 type ReflectionAuthor = {
+  id?: string
   full_name: string | null
   avatar_url: string | null
   role?: string | null
@@ -76,9 +80,11 @@ const FEED_FILTERS = [
   { id: "revelacion", label: "💡 Revelaciones", match: "#revelación" },
   { id: "pregunta", label: "❓ Preguntas", match: "#pregunta" },
   { id: "practica", label: "🎯 Práctica", match: "#práctica" },
+  { id: "gratitud", label: "✨ Gratitud", match: "#gratitud" },
 ]
 
 export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProps) {
+  const router = useRouter()
   const [reflections, setReflections] = useState<ReflectionItem[]>(
     initialReflections.map((r) => ({ ...r, replies: r.replies || [] }))
   )
@@ -86,6 +92,8 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState("")
   const [isPendingReply, startReplyTransition] = useTransition()
+  const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({})
+  const [messagingUserId, setMessagingUserId] = useState<string | null>(null)
 
   const handleOptimisticReflection = (reflection: OptimisticReflectionUpdate) => {
     if ("__revert" in reflection) {
@@ -98,6 +106,8 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
   const handleReply = (reflectionId: string, authorName: string) => {
     setReplyingTo(reflectionId)
     setReplyText(`@${authorName} `)
+    // Asegurar que el hilo de respuestas esté abierto al responder
+    setExpandedThreads((prev) => ({ ...prev, [reflectionId]: true }))
   }
 
   const handleCancelReply = () => {
@@ -105,12 +115,64 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     setReplyText("")
   }
 
+  const toggleThread = (reflectionId: string) => {
+    setExpandedThreads((prev) => ({
+      ...prev,
+      [reflectionId]: !prev[reflectionId],
+    }))
+  }
+
+  const handleDirectMessage = async (userId: string, authorName: string) => {
+    setMessagingUserId(userId)
+    toast.loading(`Abriendo conversación con ${authorName}...`, { id: "dm-start" })
+    try {
+      const res = await startConversationAction(userId)
+      if (res?.error) {
+        toast.error(res.error, { id: "dm-start" })
+        setMessagingUserId(null)
+      } else if (res?.conversationId) {
+        toast.dismiss("dm-start")
+        router.push(`/messages/${res.conversationId}`)
+        router.refresh()
+      }
+    } catch {
+      toast.error("No se pudo iniciar la conversación", { id: "dm-start" })
+      setMessagingUserId(null)
+    }
+  }
+
+  const handleShare = async (reflection: ReflectionItem, authorName: string) => {
+    const shareData = {
+      title: `Reflexión de ${authorName} en Plataforma Ainara`,
+      text: `«${reflection.content.slice(0, 140)}...» — ${authorName}`,
+      url: window.location.href,
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+        return
+      } catch {
+        /* fallback al portapapeles */
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(
+        `«${reflection.content}»\n— ${authorName} en Plataforma Ainara (${window.location.href})`
+      )
+      toast.success("Reflexión copiada al portapapeles para compartir.")
+    } catch {
+      toast.error("No se pudo copiar el enlace.")
+    }
+  }
+
   const handleSubmitReply = (e: React.FormEvent, reflectionId: string) => {
     e.preventDefault()
     const trimmed = replyText.trim()
     if (!trimmed) return
 
-    const optimisticReply = {
+    const optimisticReply: ReflectionReply = {
       id: `temp-${Date.now()}`,
       content: trimmed,
       created_at: new Date().toISOString(),
@@ -146,7 +208,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
           )
         )
       } else {
-        toast.success("Respuesta publicada.")
+        toast.success("Respuesta publicada en la comunidad.")
       }
     })
   }
@@ -169,11 +231,11 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
 
           const { data: profile } = await supabase
             .from("profiles")
-            .select("full_name, avatar_url, role")
+            .select("id, full_name, avatar_url, role")
             .eq("id", raw.user_id)
             .single()
 
-          const enriched = {
+          const enriched: ReflectionItem = {
             id: raw.id,
             content: raw.content,
             created_at: raw.created_at,
@@ -194,10 +256,10 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                 )
                 if (tempIdx !== -1) {
                   const next = [...existing]
-                  next[tempIdx] = enriched
+                  next[tempIdx] = enriched as ReflectionReply
                   return { ...r, replies: next }
                 }
-                return { ...r, replies: [...existing, enriched] }
+                return { ...r, replies: [...existing, enriched as ReflectionReply] }
               })
             }
 
@@ -229,6 +291,30 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     return r.content.toLowerCase().includes(targetFilter.match)
   })
 
+  // Renderizar hashtags clickeables en el texto
+  const renderFormattedContent = (text: string) => {
+    const parts = text.split(/(#[\wáéíóúÁÉÍÓÚñÑ]+)/g)
+    return parts.map((part, index) => {
+      if (part.startsWith("#")) {
+        const clean = part.toLowerCase()
+        const matchedFilter = FEED_FILTERS.find((f) => f.match && clean.includes(f.match))
+        return (
+          <button
+            key={index}
+            type="button"
+            onClick={() => {
+              if (matchedFilter) setActiveFilter(matchedFilter.id)
+            }}
+            className="font-semibold text-primary hover:underline hover:opacity-80 transition-opacity inline-block mr-0.5"
+          >
+            {part}
+          </button>
+        )
+      }
+      return <span key={index}>{part}</span>
+    })
+  }
+
   return (
     <>
       <ReflectionForm user={currentUser} onOptimisticReflection={handleOptimisticReflection} />
@@ -242,7 +328,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
             </h2>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
             {FEED_FILTERS.map((filter) => {
               const isSelected = activeFilter === filter.id
               return (
@@ -250,10 +336,10 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                   key={filter.id}
                   onClick={() => setActiveFilter(filter.id)}
                   className={cn(
-                    "text-xs font-semibold px-2.5 py-1 rounded-lg border transition-[transform,background-color,border-color,color,box-shadow,opacity] active:scale-95 shrink-0",
+                    "text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all duration-150 active:scale-95 shrink-0",
                     isSelected
-                      ? "border-primary bg-primary/15 text-primary shadow-sm"
-                      : "border-border bg-card/40 text-muted-foreground hover:bg-card/80 hover:text-foreground"
+                      ? "border-primary bg-primary/15 text-primary shadow-xs"
+                      : "border-border/70 bg-card/50 text-muted-foreground hover:bg-card hover:text-foreground"
                   )}
                 >
                   {filter.label}
@@ -264,49 +350,79 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
         </div>
 
         {filteredReflections.length === 0 ? (
-          <div className="text-center py-12 px-4 border border-dashed border-border rounded-xl bg-card/20 backdrop-blur-sm">
+          <div className="text-center py-12 px-4 border border-dashed border-border/80 rounded-xl bg-card/20 backdrop-blur-sm">
             <MessageCircle className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2.5" />
             <h3 className="text-base font-semibold text-foreground">Aún no hay publicaciones en este tema</h3>
             <p className="text-muted-foreground text-xs max-w-sm mx-auto mt-1">
-              Sé el primero en compartir tu experiencia o aprendizaje con los demás.
+              Sé el primero en compartir tu experiencia o aprendizaje con los demás exploradores.
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-4">
             {filteredReflections.map((reflection) => {
               const authorProfile = Array.isArray(reflection.profiles)
                 ? reflection.profiles[0]
                 : reflection.profiles
-              const authorName = authorProfile?.full_name || "Usuario de la Tribu"
+              const authorId = authorProfile?.id
+              const authorName = authorProfile?.full_name || "Explorador"
               const authorAvatar = authorProfile?.avatar_url || ""
               const isAuthorAdmin = authorProfile?.role === "admin"
               const isAuthorMentor = authorProfile?.role === "mentor"
               const isTemp = reflection.id?.startsWith("temp-")
               const isReplying = replyingTo === reflection.id
               const replies: ReflectionReply[] = reflection.replies || []
+              const hasReplies = replies.length > 0
+              const isThreadExpanded = expandedThreads[reflection.id] ?? true // expandido por defecto
 
               return (
                 <Card
                   key={reflection.id}
-                  className={`border-border bg-card/70 backdrop-blur-md rounded-xl shadow-sm overflow-hidden transition-[transform,background-color,border-color,color,box-shadow,opacity] ${
-                    isTemp ? "opacity-70 animate-pulse" : "hover:border-primary/40"
+                  className={`border border-border/70 bg-card/75 backdrop-blur-md rounded-xl shadow-xs overflow-hidden transition-all duration-200 ${
+                    isTemp ? "opacity-70 animate-pulse" : "hover:border-primary/40 hover:shadow-sm"
                   }`}
                 >
                   <CardContent className="p-4 sm:p-5">
                     <div className="flex gap-3">
-                      <Avatar className="h-9 w-9 shrink-0 ring-1 ring-primary/20 mt-0.5">
-                        <AvatarImage src={authorAvatar} className="object-cover" />
-                        <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
-                          {authorName.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      {/* Avatar enlazado al perfil del usuario */}
+                      {authorId ? (
+                        <Link
+                          href={`/u/${authorId}`}
+                          className="shrink-0 group/avatar"
+                          title={`Ver perfil de ${authorName}`}
+                        >
+                          <Avatar className="h-9 w-9 ring-1 ring-primary/20 group-hover/avatar:ring-primary/60 transition-all duration-200">
+                            <AvatarImage src={authorAvatar} className="object-cover" />
+                            <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
+                              {authorName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
+                      ) : (
+                        <Avatar className="h-9 w-9 shrink-0 ring-1 ring-primary/20">
+                          <AvatarImage src={authorAvatar} className="object-cover" />
+                          <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
+                            {authorName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
 
                       <div className="flex-1 min-w-0">
+                        {/* Cabecera del post con autor, roles y enlace a perfil */}
                         <div className="flex items-center justify-between mb-1 text-sm">
                           <div className="flex items-center gap-2 truncate pr-2">
-                            <span className="font-semibold text-foreground truncate text-xs sm:text-sm">
-                              {authorName}
-                            </span>
+                            {authorId ? (
+                              <Link
+                                href={`/u/${authorId}`}
+                                className="font-semibold text-foreground truncate text-xs sm:text-sm hover:text-primary transition-colors"
+                              >
+                                {authorName}
+                              </Link>
+                            ) : (
+                              <span className="font-semibold text-foreground truncate text-xs sm:text-sm">
+                                {authorName}
+                              </span>
+                            )}
+
                             {isAuthorAdmin && (
                               <Badge
                                 variant="secondary"
@@ -323,13 +439,34 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                 Mentor
                               </Badge>
                             )}
+
                             <span className="text-muted-foreground text-2xs hidden sm:inline">
                               &bull; {formatTimeAgo(reflection.created_at)}
                             </span>
                           </div>
-                          <span className="text-muted-foreground text-3xs sm:hidden">
-                            {formatTimeAgo(reflection.created_at)}
-                          </span>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Botón de mensaje directo si no es uno mismo */}
+                            {authorId && authorName !== currentUser.full_name && (
+                              <button
+                                type="button"
+                                onClick={() => handleDirectMessage(authorId, authorName)}
+                                disabled={messagingUserId === authorId}
+                                className="text-muted-foreground hover:text-primary transition-colors p-1 rounded-md hover:bg-muted/40"
+                                title={`Enviar mensaje a ${authorName}`}
+                              >
+                                {messagingUserId === authorId ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            )}
+
+                            <span className="text-muted-foreground text-3xs sm:hidden">
+                              {formatTimeAgo(reflection.created_at)}
+                            </span>
+                          </div>
                         </div>
 
                         {reflection.lessons && (
@@ -343,27 +480,31 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                           </div>
                         )}
 
-                        <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
-                          {reflection.content}
-                        </p>
+                        {/* Contenido con hashtags parseados */}
+                        <div className="text-foreground/90 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
+                          {renderFormattedContent(reflection.content)}
+                        </div>
 
+                        {/* Barra social inferior: Resonar, Responder, Compartir */}
                         {!isTemp && (
-                          <div className="flex items-center gap-5 mt-3 pt-2.5 border-t border-border/40">
+                          <div className="flex items-center gap-4 sm:gap-6 mt-3.5 pt-2.5 border-t border-border/40">
                             <ResonanceButton
                               reflectionId={reflection.id}
                               initialCount={reflection.likes_count || 0}
                             />
+
                             <button
                               onClick={() =>
                                 isReplying
                                   ? handleCancelReply()
                                   : handleReply(reflection.id, authorName)
                               }
-                              className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                              className={cn(
+                                "flex items-center gap-1.5 text-xs font-medium transition-colors",
                                 isReplying
-                                  ? "text-primary"
+                                  ? "text-primary font-semibold"
                                   : "text-muted-foreground hover:text-primary"
-                              }`}
+                              )}
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
                               <span>
@@ -374,61 +515,118 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                   : "Responder"}
                               </span>
                             </button>
+
+                            <button
+                              onClick={() => handleShare(reflection, authorName)}
+                              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors ml-auto"
+                              title="Compartir reflexión"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Compartir</span>
+                            </button>
                           </div>
                         )}
 
-                        {/* Hilos de Respuestas */}
-                        {replies.length > 0 && (
-                          <div className="mt-3 space-y-2.5 pl-3 border-l-2 border-primary/20">
-                            {replies.map((reply) => {
-                              const rp = Array.isArray(reply.profiles) ? reply.profiles[0] : reply.profiles
-                              const rName = rp?.full_name || "Usuario Anónimo"
-                              const rAvatar = rp?.avatar_url || ""
-                              const rTemp = reply.id?.startsWith("temp-")
+                        {/* Hilos de Respuestas Colapsables */}
+                        {hasReplies && (
+                          <div className="mt-3.5 space-y-2 pt-2 border-t border-border/25">
+                            {replies.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => toggleThread(reflection.id)}
+                                className="flex items-center gap-1 text-3xs font-semibold text-primary hover:underline pb-1"
+                              >
+                                {isThreadExpanded ? (
+                                  <>
+                                    <ChevronUp className="w-3 h-3" />
+                                    <span>Ocultar respuestas</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="w-3 h-3" />
+                                    <span>Ver todas las respuestas ({replies.length})</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
 
-                              return (
-                                <div
-                                  key={reply.id}
-                                  className={`flex gap-2 p-2 rounded-lg bg-background/50 ${rTemp ? "opacity-60 animate-pulse" : ""}`}
-                                >
-                                  <Avatar className="h-6 w-6 shrink-0 ring-1 ring-primary/20 mt-0.5">
-                                    <AvatarImage src={rAvatar} className="object-cover" />
-                                    <AvatarFallback className="bg-primary/15 text-primary text-3xs font-bold">
-                                      {rName.charAt(0).toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 text-xs mb-0.5">
-                                      <span className="font-semibold text-foreground text-xs">{rName}</span>
-                                      <span className="text-muted-foreground text-3xs">
-                                        &bull; {formatTimeAgo(reply.created_at)}
-                                      </span>
+                            {isThreadExpanded && (
+                              <div className="space-y-2.5 pl-3 border-l-2 border-primary/25">
+                                {replies.map((reply) => {
+                                  const rp = Array.isArray(reply.profiles) ? reply.profiles[0] : reply.profiles
+                                  const rId = rp?.id
+                                  const rName = rp?.full_name || "Explorador"
+                                  const rAvatar = rp?.avatar_url || ""
+                                  const rTemp = reply.id?.startsWith("temp-")
+
+                                  return (
+                                    <div
+                                      key={reply.id}
+                                      className={`flex gap-2.5 p-2.5 rounded-lg bg-background/60 border border-border/30 ${
+                                        rTemp ? "opacity-60 animate-pulse" : ""
+                                      }`}
+                                    >
+                                      {rId ? (
+                                        <Link href={`/u/${rId}`} className="shrink-0">
+                                          <Avatar className="h-6 w-6 ring-1 ring-primary/20">
+                                            <AvatarImage src={rAvatar} className="object-cover" />
+                                            <AvatarFallback className="bg-primary/15 text-primary text-3xs font-bold">
+                                              {rName.charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                        </Link>
+                                      ) : (
+                                        <Avatar className="h-6 w-6 shrink-0 ring-1 ring-primary/20">
+                                          <AvatarImage src={rAvatar} className="object-cover" />
+                                          <AvatarFallback className="bg-primary/15 text-primary text-3xs font-bold">
+                                            {rName.charAt(0).toUpperCase()}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      )}
+
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-1 text-xs mb-0.5">
+                                          {rId ? (
+                                            <Link
+                                              href={`/u/${rId}`}
+                                              className="font-semibold text-foreground text-xs hover:text-primary transition-colors"
+                                            >
+                                              {rName}
+                                            </Link>
+                                          ) : (
+                                            <span className="font-semibold text-foreground text-xs">{rName}</span>
+                                          )}
+                                          <span className="text-muted-foreground text-3xs">
+                                            {formatTimeAgo(reply.created_at)}
+                                          </span>
+                                        </div>
+                                        <p className="text-foreground/85 text-xs whitespace-pre-wrap leading-relaxed">
+                                          {reply.content}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <p className="text-foreground/85 text-xs whitespace-pre-wrap leading-relaxed">
-                                      {reply.content}
-                                    </p>
-                                  </div>
-                                </div>
-                              )
-                            })}
+                                  )
+                                })}
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {/* Formulario de Respuesta */}
+                        {/* Formulario de Respuesta Rápida */}
                         {isReplying && (
                           <form
                             onSubmit={(e) => handleSubmitReply(e, reflection.id)}
-                            className="mt-3 space-y-2"
+                            className="mt-3.5 space-y-2 bg-muted/20 p-3 rounded-lg border border-border/50"
                           >
                             <Textarea
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
                               placeholder={`Escribe tu respuesta a @${authorName}...`}
-                              className="min-h-[70px] resize-none bg-background rounded-lg border-border px-3 py-2 text-xs sm:text-sm"
+                              className="min-h-[70px] resize-none bg-background rounded-lg border-border/80 px-3 py-2 text-xs sm:text-sm focus-visible:ring-primary/20"
                               disabled={isPendingReply}
                               autoFocus
                             />
-                            <div className="flex justify-end gap-1.5">
+                            <div className="flex justify-end gap-2">
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -443,7 +641,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                 type="submit"
                                 size="sm"
                                 disabled={isPendingReply || !replyText.trim()}
-                                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg px-4 h-8"
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg px-4 h-8 shadow-xs"
                               >
                                 {isPendingReply ? (
                                   <>
@@ -451,7 +649,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                                     Enviando...
                                   </>
                                 ) : (
-                                  "Enviar"
+                                  "Responder"
                                 )}
                               </Button>
                             </div>

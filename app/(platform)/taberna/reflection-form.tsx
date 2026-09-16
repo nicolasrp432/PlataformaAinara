@@ -10,6 +10,7 @@ import { Loader2, Send, Sparkles } from "lucide-react"
 import { createReflection } from "./actions"
 
 type ReflectionAuthor = {
+  id?: string
   full_name: string | null
   avatar_url: string | null
   role?: string | null
@@ -36,16 +37,19 @@ interface ReflectionFormProps {
 }
 
 const TOPIC_PRESETS = [
-  { label: "💡 Revelación", prefix: "#Revelación: " },
-  { label: "❓ Pregunta", prefix: "#Pregunta: " },
-  { label: "🎯 Práctica", prefix: "#Práctica: " },
-  { label: "✨ Gratitud", prefix: "#Gratitud: " },
+  { label: "💡 Revelación", tag: "#revelación" },
+  { label: "❓ Pregunta", tag: "#pregunta" },
+  { label: "🎯 Práctica", tag: "#práctica" },
+  { label: "✨ Gratitud", tag: "#gratitud" },
 ]
+
+const MAX_CHARS = 1500
 
 export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormProps) {
   const [isPending, startTransition] = useTransition()
   const [content, setContent] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [activeTag, setActiveTag] = useState<string | null>(null)
 
   // Cargar borrador de sessionStorage
   useEffect(() => {
@@ -64,10 +68,20 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
     }
   }, [])
 
-  const handleApplyTag = (tagPrefix: string) => {
-    if (!content.startsWith(tagPrefix)) {
-      setContent((prev) => `${tagPrefix}${prev}`)
+  const handleApplyTag = (tag: string) => {
+    if (activeTag === tag) {
+      // Quitar tag si ya estaba
+      setActiveTag(null)
+      setContent((prev) => prev.replace(`${tag} `, "").replace(tag, "").trim())
+      return
     }
+
+    setActiveTag(tag)
+    const cleanContent = content
+      .replace(/#(revelación|pregunta|práctica|gratitud)\s*/gi, "")
+      .trim()
+
+    setContent(`${tag} ${cleanContent}`)
   }
 
   const handleSubmit = (e: { preventDefault(): void }) => {
@@ -87,6 +101,7 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
       lessons: null,
     })
     setContent("")
+    setActiveTag(null)
 
     const formData = new FormData()
     formData.append("content", trimmed)
@@ -97,42 +112,56 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
         if (result.error) {
           setError(result.error)
           onOptimisticReflection?.({ __revert: true })
+          toast.error(result.error)
         } else {
-          toast.success("¡Tu voz ha sido compartida en la comunidad!")
+          toast.success("¡Tu reflexión ha sido compartida con la comunidad!")
         }
       } catch {
-        setError("Ocurrió un error al enviar tu publicación.")
+        setError("Ocurrió un error al publicar tu mensaje.")
+        onOptimisticReflection?.({ __revert: true })
       }
     })
   }
 
+  const charsLeft = MAX_CHARS - content.length
+
   return (
-    <Card className="border border-border/80 bg-card/70 backdrop-blur-md shadow-sm rounded-xl overflow-hidden mb-6">
-      <CardContent className="p-4 sm:p-5 space-y-3">
+    <Card className="border border-border/80 bg-card/75 backdrop-blur-md shadow-sm rounded-xl overflow-hidden mb-6">
+      <CardContent className="p-4 sm:p-5 space-y-3.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-wider text-foreground">
               Comparte tu Voz
             </span>
           </div>
+
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-            {TOPIC_PRESETS.map((tag) => (
-              <button
-                key={tag.label}
-                type="button"
-                onClick={() => handleApplyTag(tag.prefix)}
-                className="text-2xs font-semibold px-2 py-1 rounded-md border border-border bg-background/60 hover:bg-primary/10 hover:border-primary/40 text-foreground transition-[transform,background-color,border-color,color,box-shadow,opacity] active:scale-95 shrink-0"
-              >
-                {tag.label}
-              </button>
-            ))}
+            {TOPIC_PRESETS.map((item) => {
+              const isSelected = content.toLowerCase().includes(item.tag)
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => handleApplyTag(item.tag)}
+                  className={`text-2xs font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 active:scale-95 shrink-0 ${
+                    isSelected
+                      ? "border-primary bg-primary/20 text-primary font-bold shadow-xs"
+                      : "border-border/70 bg-background/60 hover:bg-primary/10 hover:border-primary/30 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex gap-3">
-            <Avatar className="h-9 w-9 shrink-0 ring-1 ring-primary/20 hidden sm:block">
+            <Avatar className="h-9 w-9 shrink-0 ring-1 ring-primary/20 hidden sm:block mt-0.5">
               <AvatarImage src={user.avatarUrl || ""} />
               <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
                 {user.full_name.charAt(0).toUpperCase()}
@@ -140,21 +169,23 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
             </Avatar>
             <div className="flex-1 space-y-2.5">
               <Textarea
-                placeholder="¿Qué entendiste hoy? ¿Qué duda tienes sobre tu camino? Escribe con libertad..."
-                className="min-h-[100px] resize-none bg-background rounded-lg border-border px-3.5 py-2.5 text-sm sm:text-base leading-relaxed placeholder:text-muted-foreground/60"
+                placeholder="¿Qué comprendiste hoy? ¿Qué inquietud deseas debatir con la comunidad? Escribe con honestidad..."
+                className="min-h-[96px] resize-none bg-background/80 rounded-lg border-border/80 px-3.5 py-2.5 text-sm leading-relaxed placeholder:text-muted-foreground/60 focus-visible:ring-primary/20"
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={(e) => setContent(e.target.value.slice(0, MAX_CHARS))}
                 disabled={isPending}
               />
               {error && <p className="text-xs text-destructive">{error}</p>}
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-2xs text-muted-foreground hidden sm:block">
-                  Las reflexiones auténticas crean puentes de crecimiento mutuo.
-                </p>
+              
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <span className={`text-3xs font-medium ${charsLeft < 100 ? "text-warning" : "text-muted-foreground"}`}>
+                  {charsLeft} caracteres restantes
+                </span>
+
                 <Button
                   type="submit"
                   disabled={isPending || !content.trim()}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg px-5 h-9 text-xs shadow-sm w-full sm:w-auto"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg px-5 h-9 text-xs shadow-xs w-full sm:w-auto"
                 >
                   {isPending ? (
                     <>

@@ -62,7 +62,7 @@ export function NotificationsProvider({
 
     const [total, messages] = await Promise.all([
       base(),
-      base().eq("kind", "new_message"),
+      base().or("kind.eq.new_message,link.ilike.%/messages/%"),
     ])
 
     setUnreadTotal(total.count ?? 0)

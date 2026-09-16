@@ -26,6 +26,21 @@ export async function startConversation(currentUserId: string, otherUserId: stri
     }
   }
 
+  // Asegurar que el perfil del usuario actual existe antes de insertar FK
+  const { data: myProfile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("id", currentUserId)
+    .maybeSingle()
+
+  if (!myProfile) {
+    await admin.from("profiles").upsert({
+      id: currentUserId,
+      full_name: "Explorador",
+      role: "student",
+    })
+  }
+
   // Crear nueva conversación
   const { data: conv, error } = await admin
     .from("conversations")
@@ -33,7 +48,10 @@ export async function startConversation(currentUserId: string, otherUserId: stri
     .select("id")
     .single()
 
-  if (error || !conv) throw new Error("No se pudo crear la conversación")
+  if (error || !conv) {
+    console.error("[messaging] startConversation insert error:", error?.message)
+    throw new Error("No se pudo crear la conversación")
+  }
 
   const { error: participantsError } = await admin
     .from("conversation_participants")
@@ -43,6 +61,7 @@ export async function startConversation(currentUserId: string, otherUserId: stri
     ])
 
   if (participantsError) {
+    console.error("[messaging] participantsError:", participantsError.message)
     // Sin participantes la conversación daría 404 permanente: no dejarla huérfana
     await admin.from("conversations").delete().eq("id", conv.id)
     throw new Error("No se pudo iniciar la conversación")
@@ -60,13 +79,25 @@ export async function sendMessage(conversationId: string, senderId: string, body
     .select("id")
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error("[messaging] sendMessage error:", error.message)
+    throw new Error(error.message)
+  }
 
   // Actualizar last_message_at
   await admin
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversationId)
+
+  // Obtener nombre del remitente para la notificación
+  const { data: senderProfile } = await admin
+    .from("profiles")
+    .select("full_name")
+    .eq("id", senderId)
+    .maybeSingle()
+
+  const senderName = senderProfile?.full_name?.trim() || "Un miembro de la comunidad"
 
   // Notificar al otro participante
   const { data: participants } = await admin
@@ -75,10 +106,10 @@ export async function sendMessage(conversationId: string, senderId: string, body
     .eq("conversation_id", conversationId)
     .neq("user_id", senderId)
 
-  if (participants) {
+  if (participants && participants.length > 0) {
     for (const p of participants) {
       await createNotification(p.user_id, "new_message", {
-        title: "Nuevo mensaje",
+        title: `${senderName} te ha enviado un mensaje`,
         body: body.slice(0, 80),
         link: `/messages/${conversationId}`,
         createdBy: senderId,
@@ -90,9 +121,9 @@ export async function sendMessage(conversationId: string, senderId: string, body
 }
 
 export async function listConversations(userId: string) {
-  const supabase = await createClient()
+  const admin = supabaseAdmin()
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("conversation_participants")
     .select(`
       conversation_id,
@@ -115,15 +146,14 @@ export async function listConversations(userId: string) {
 
   const convIds = rows.map((r) => r.conversation_id)
 
-  // Antes: 3 queries POR conversación (N+1). Ahora: 2 queries en batch para
-  // TODAS las conversaciones, agregando en JS.
+  // Consultas en batch usando admin para garantizar consistencia
   const [{ data: otherParticipants }, { data: allMessages }] = await Promise.all([
-    supabase
+    admin
       .from("conversation_participants")
       .select("conversation_id, user_id, profiles(id, full_name, avatar_url)")
       .in("conversation_id", convIds)
       .neq("user_id", userId),
-    supabase
+    admin
       .from("messages")
       .select("conversation_id, body, created_at, sender_id")
       .in("conversation_id", convIds)
@@ -180,20 +210,24 @@ export async function getConversationMessages(
   userId: string,
   opts: { limit?: number; cursor?: string } = {}
 ) {
-  const supabase = await createClient()
+  const admin = supabaseAdmin()
   const limit = opts.limit ?? 50
 
-  // Verificar participante
-  const { data: participant } = await supabase
+  // Verificar participante con admin para evitar errores de RLS recursivos
+  const { data: participant, error: partError } = await admin
     .from("conversation_participants")
     .select("user_id")
     .eq("conversation_id", conversationId)
     .eq("user_id", userId)
-    .single()
+    .maybeSingle()
+
+  if (partError) {
+    console.error("[messaging] getConversationMessages participant check:", partError.message)
+  }
 
   if (!participant) return null
 
-  let query = supabase
+  let query = admin
     .from("messages")
     .select("id, sender_id, body, created_at, profiles(id, full_name, avatar_url)")
     .eq("conversation_id", conversationId)
@@ -208,19 +242,18 @@ export async function getConversationMessages(
 }
 
 export async function markConversationRead(conversationId: string, userId: string) {
-  const supabase = await createClient()
+  const admin = supabaseAdmin()
   await Promise.all([
-    supabase
+    admin
       .from("conversation_participants")
       .update({ last_read_at: new Date().toISOString() })
       .eq("conversation_id", conversationId)
       .eq("user_id", userId),
     // Sincronizar la campana: las notificaciones de esta conversación ya están vistas
-    supabase
+    admin
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
       .eq("user_id", userId)
-      .eq("kind", "new_message")
       .eq("link", `/messages/${conversationId}`)
       .is("read_at", null),
   ])

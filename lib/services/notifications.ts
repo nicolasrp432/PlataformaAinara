@@ -30,17 +30,39 @@ export async function createNotification(
   kind: NotificationKind,
   payload: NotificationPayload
 ) {
-  const admin = supabaseAdmin()
-  const { error } = await admin.from("notifications").insert({
-    user_id: userId,
-    kind,
-    title: payload.title,
-    body: payload.body ?? null,
-    link: payload.link ?? null,
-    metadata: payload.metadata ?? {},
-    created_by: payload.createdBy ?? null,
-  })
-  if (error) console.error("[notifications] createNotification:", error.message)
+  try {
+    const admin = supabaseAdmin()
+    const { error } = await admin.from("notifications").insert({
+      user_id: userId,
+      kind,
+      title: payload.title,
+      body: payload.body ?? null,
+      link: payload.link ?? null,
+      metadata: payload.metadata ?? {},
+      created_by: payload.createdBy ?? null,
+    })
+
+    if (error) {
+      console.error("[notifications] createNotification:", error.message)
+      // Si falla por el tipo enum en Postgres, reintentar con 'system' como fallback seguro
+      if (error.message.includes("notification_kind") || kind === "new_message") {
+        const { error: fallbackError } = await admin.from("notifications").insert({
+          user_id: userId,
+          kind: "system",
+          title: payload.title,
+          body: payload.body ?? null,
+          link: payload.link ?? null,
+          metadata: { ...(payload.metadata ?? {}), originalKind: kind },
+          created_by: payload.createdBy ?? null,
+        })
+        if (fallbackError) {
+          console.error("[notifications] createNotification fallback failed:", fallbackError.message)
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[notifications] createNotification exception:", err)
+  }
 }
 
 const CHUNK = 500
@@ -64,7 +86,13 @@ export async function createBulkNotifications(
       created_by: payload.createdBy ?? null,
     }))
     const { error } = await admin.from("notifications").insert(rows)
-    if (error) console.error("[notifications] createBulkNotifications chunk:", error.message)
+    if (error) {
+      console.error("[notifications] createBulkNotifications chunk:", error.message)
+      if (error.message.includes("notification_kind")) {
+        const fallbackRows = rows.map((r) => ({ ...r, kind: "system" as const, metadata: { ...r.metadata, originalKind: kind } }))
+        await admin.from("notifications").insert(fallbackRows)
+      }
+    }
   }
 }
 

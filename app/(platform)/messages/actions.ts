@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 import { startConversation, sendMessage } from "@/lib/services/messaging"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
@@ -11,11 +12,12 @@ export async function startConversationAction(otherUserId: string) {
   if (!user) return { error: "No autorizado" }
   if (user.id === otherUserId) return { error: "No puedes enviarte mensajes a ti mismo" }
 
-  const { data: profile, error: profileError } = await supabase
+  const admin = supabaseAdmin()
+  const { data: profile, error: profileError } = await admin
     .from("profiles")
     .select("allow_direct_messages, full_name")
     .eq("id", otherUserId)
-    .single()
+    .maybeSingle()
 
   if (profileError || !profile) return { error: "Usuario no encontrado" }
   if (profile.allow_direct_messages === false) {

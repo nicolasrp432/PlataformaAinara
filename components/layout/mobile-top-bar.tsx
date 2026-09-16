@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Flame } from "lucide-react"
+import { Flame, Mail } from "lucide-react"
 import { isImmersiveRoute } from "@/lib/navigation"
 import { BrandMark } from "@/components/ui/brand"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { NotificationsBell } from "@/components/notifications/notifications-bell"
+import { MessagesUnreadBadge } from "@/components/messages/messages-unread-badge"
 import { UserSearch } from "@/components/layout/user-search"
 import { getInitials } from "@/lib/utils"
 
@@ -49,7 +50,17 @@ export function MobileTopBar({ user, streak }: MobileTopBarProps) {
 
           <UserSearch variant="icon" />
 
-          <div className="w-11">
+          <Link
+            href="/messages"
+            aria-label="Mensajes"
+            title="Mensajes directos"
+            className="relative flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+          >
+            <Mail className="h-4 w-4" />
+            <MessagesUnreadBadge isCollapsed />
+          </Link>
+
+          <div className="w-10 flex items-center justify-center">
             <NotificationsBell userId={user.id} isCollapsed placement="bottom" />
           </div>
 

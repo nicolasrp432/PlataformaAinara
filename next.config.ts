@@ -128,6 +128,22 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // ── Redirects: Spanish aliases ────────────────────────────
+  async redirects() {
+    return [
+      {
+        source: "/mensajes",
+        destination: "/messages",
+        permanent: false,
+      },
+      {
+        source: "/mensajes/:conversationId",
+        destination: "/messages/:conversationId",
+        permanent: false,
+      },
+    ]
+  },
 }
 
 export default nextConfig
+
