@@ -1,436 +1,138 @@
-# Leader Blueprint - Plataforma de Micro-Learning Premium
+# Plataforma Ainara
 
-## Descripción General
-Plataforma de formación y desarrollo personal con arquitectura de micro-learning, gamificación ética, y mentoría personalizada. Diseñada siguiendo principios de LX Design y carga cognitiva optimizada.
+> Plataforma educativa integral de desarrollo personal, autoconocimiento y sabiduría consciente, impulsada por inteligencia artificial en tiempo real y arquitectura moderna.
 
-## URLs
-
-### Producción (pendiente de deploy)
-- **Cloudflare Pages**: *Por configurar*
-- **GitHub**: https://github.com/nicolasrp432/PlataformaAinara
-
-### Desarrollo (Sandbox)
-- **URL Base**: https://3000-{sandbox-id}.sandbox.novita.ai
-- **Health Check**: `/api/health`
-
-## Usuarios de Prueba
-
-| Usuario | Email | Contraseña | Rol | Acceso |
-|---------|-------|------------|-----|--------|
-| Admin | admin@leaderblueprint.com | Admin123! | admin | Elite |
-| Usuario Demo | demo@leaderblueprint.com | User1234! | user | Free |
-| Usuario Premium | premium@leaderblueprint.com | User1234! | user | Premium |
-
-### 🔑 Cómo acceder sin desarrollar la verificación de correo (Supabase)
-
-Puesto que el proyecto usa **Supabase Auth** para la autenticación, los registros de nuevos usuarios requieren por defecto confirmación por correo electrónico. Como aún no tienes desarrollada esa pantalla o flujo web, tienes dos formas sencillas de acceder inmediatamente:
-
-**Opción 1: Crear el usuario manualmente en el Panel de Supabase (Recomendado)**
-1. Entra a tu proyecto en Supabase (https://supabase.com/dashboard/project/_/auth/users).
-2. Ve a la sección **Authentication** > **Users**.
-3. Haz clic en **Add user** > **Create new user**.
-4. Introduce el correo (ej. `admin@leaderblueprint.com`) y la contraseña (ej. `Admin123!`). 
-   *(Al crear el usuario por esta vía desde el panel, su correo se auto-verifica automáticamente y podrás hacer Login en la plataforma inmediatamente).*
-
-**Opción 2: Desactivar temporalmente la verificación de correos**
-1. En Supabase, ve a **Authentication** > **Providers** > **Email**.
-2. Apaga la opción **"Confirm email"** y dale a Guardar.
-3. Ahora cualquier persona que se registre en la página de tu plataforma entrará directamente sin necesidad de validar correos.
-
-## Gestión de Usuarios — SQL de Referencia
-
-### Modelo de acceso
-
-Cada usuario tiene dos campos en la tabla `public.profiles` que determinan qué puede hacer:
-
-| Campo | Valores posibles | Descripción |
-|-------|-----------------|-------------|
-| `role` | `student` · `mentor` · `admin` | Tipo de usuario |
-| `access_status` | `pending` · `approved` · `suspended` | Estado de acceso a contenido premium |
-
-**Regla general:**
-- `access_status = 'pending'` → solo puede acceder al dashboard (ve el banner de upsell)
-- `access_status = 'approved'` → acceso completo a formaciones, comunidad, mentoría
-- `access_status = 'suspended'` → bloqueado, no puede entrar a la plataforma
-- `role = 'admin'` o `role = 'mentor'` → acceso completo siempre, independiente de `access_status`
+[![Next.js 15](https://img.shields.io/badge/Next.js-15.3-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-blue?style=flat&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
+[![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini-orange?style=flat&logo=google)](https://ai.google.dev/)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 
 ---
 
-### Consultas de uso frecuente
+## 🌟 Características Principales
 
-#### Ver todos los usuarios y su estado
-```sql
-SELECT id, email, full_name, role, access_status, created_at
-FROM public.profiles
-ORDER BY created_at DESC;
-```
+### 1. Formaciones y Aprendizaje Consciente
+- **Catálogo Estructurado**: Formaciones organizadas por módulos y lecciones secuenciales con control de progreso.
+- **Seguimiento Dinámico**: Registro de lecciones completadas, cálculo de porcentajes y acumulación de experiencia (XP) y niveles.
+- **Reproductor Adaptativo**: Soporte para streaming de video con persistencia del avance del estudiante.
 
-#### Buscar un usuario por email
-```sql
-SELECT id, email, full_name, role, access_status
-FROM public.profiles
-WHERE email = 'usuario@email.com';
-```
+### 2. Tutor y Asistente IA en Tiempo Real (Google Gemini)
+- **Acompañamiento Pedagógico**: Tutor interactivo impulsado por Google Gemini (`gemini-3.5-flash`) con streaming SSE fluido.
+- **Contexto Curricular Completo**: Conocimiento en tiempo real de la lección activa, módulos y catálogo global de cursos para responder dudas formativas.
+- **Resiliencia Multi-Nivel**: Arquitectura tolerante a fallos con fallback secundario y generador autónomo de contingencia.
 
-#### Ver usuarios pendientes de aprobación
-```sql
-SELECT id, email, full_name, created_at
-FROM public.profiles
-WHERE access_status = 'pending' AND role = 'student'
-ORDER BY created_at DESC;
-```
+### 3. Sistema de Mensajería Instantánea Multi-Transporte
+- **Comunicación en Tiempo Real**: Mensajería directa entre usuarios con entrega sub-50ms mediante WebSockets y Supabase Broadcast.
+- **Diseño Split-Screen & Mobile**: Bandeja lateral reactiva con buscador dinámico en escritorio y navegación fluida en dispositivos móviles.
+- **Confirmaciones de Lectura y Estado**: Indicadores de envío (`✓`), lectura (`✓✓`), escritura en vivo y separadores cronológicos.
+- **Alertas Sonoras Nativas**: Sintetizador armónico mediante **Web Audio API** (sin dependencias de archivos externos) y notificaciones interactivas *in-app*.
 
----
+### 4. La Taberna (Comunidad de Reflexión)
+- **Espacio Social de Crecimiento**: Publicaciones y debates organizados por temas y etiquetas interactivas.
+- **Interacción y Resonancia**: Sistema de reacciones ("Resonar"), comentarios en hilo y perfiles conectables.
 
-### Aprobar acceso (usuario suscrito o autorizado manualmente)
-
-Usar cuando el usuario ha pagado fuera de Stripe o se quiere dar acceso manual:
-
-```sql
-UPDATE public.profiles
-SET access_status = 'approved'
-WHERE email = 'usuario@email.com';
-```
+### 5. Diario Personal de Introspección
+- **Espacio Íntimo del Estudiante**: Editor enriquecido para asentar aprendizajes y revelaciones diarias.
+- **Métricas y Clima Emocional**: Conteo de palabras, tiempo estimado de lectura y categorización por estados de ánimo.
 
 ---
 
-### Suspender acceso (canceló suscripción o incumplimiento)
+## 🛠️ Stack Tecnológico
 
-```sql
-UPDATE public.profiles
-SET access_status = 'suspended'
-WHERE email = 'usuario@email.com';
-```
-
----
-
-### Volver a estado pendiente (acceso en revisión)
-
-```sql
-UPDATE public.profiles
-SET access_status = 'pending'
-WHERE email = 'usuario@email.com';
-```
+| Capa | Tecnologías |
+| :--- | :--- |
+| **Frontend** | [Next.js 15](https://nextjs.org/) (App Router, Turbopack), [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/) |
+| **Diseño & UI** | [Tailwind CSS v4](https://tailwindcss.com/), [Radix UI](https://www.radix-ui.com/), [Lucide React](https://lucide.dev/), [Sonner](https://sonner.emilkowal.ski/) |
+| **Backend & BD** | [Supabase](https://supabase.com/) (PostgreSQL, Row-Level Security, Realtime Engine, Supabase Auth) |
+| **Inteligencia Artificial** | [Google Gemini API](https://ai.google.dev/) (`gemini-3.5-flash`), Server-Sent Events (SSE) |
+| **Pagos & Facturación** | [Stripe](https://stripe.com/) (Checkout & Webhooks) |
+| **Audio** | Pure Web Audio API (sintetizador armónico nativo) |
 
 ---
 
-### Promover a admin (SOLO desde base de datos)
+## 🚀 Inicio Rápido (Desarrollo Local)
 
-Los admins solo se pueden crear desde SQL, nunca desde la UI de la plataforma:
+### Requisitos previos
+- **Node.js** 20.x o superior
+- **npm**, **pnpm** o **yarn**
+- Proyecto en **Supabase** (PostgreSQL)
 
-```sql
-UPDATE public.profiles
-SET role = 'admin', access_status = 'approved'
-WHERE email = 'nuevo-admin@email.com';
-```
-
-> Después de ejecutar este SQL, el nuevo admin debe esperar ~5 minutos o cerrar sesión y volver a entrar para que el middleware actualice la cookie de rol.
-
----
-
-### Promover a mentor
-
-```sql
-UPDATE public.profiles
-SET role = 'mentor', access_status = 'approved'
-WHERE email = 'mentor@email.com';
-```
-
----
-
-### Degradar mentor/admin a estudiante
-
-```sql
-UPDATE public.profiles
-SET role = 'student'
-WHERE email = 'usuario@email.com';
-```
-
----
-
-### Flujo automático vía Stripe
-
-Cuando un usuario completa un pago en Stripe, el webhook en `/api/webhooks/stripe` hace automáticamente:
-```sql
--- checkout.session.completed → aprueba acceso
-UPDATE profiles SET access_status = 'approved' WHERE id = '<user_id>';
-
--- customer.subscription.deleted → suspende acceso
-UPDATE profiles SET access_status = 'suspended' WHERE id = '<user_id>';
-```
-
-No es necesario hacerlo manualmente si Stripe está activo.
-
----
-
-### Alternativa: gestión desde el panel admin
-
-Todo lo anterior también se puede hacer desde la interfaz en `/admin/users`:
-- Filtrar por estado (pendiente / aprobado / suspendido)
-- Hacer clic en `⋮` → Aprobar / Suspender / Cambiar rol
-
----
-
-## Arquitectura del Sistema
-
-### Stack Tecnológico
-- **Frontend & Backend**: Next.js 15 (App Router) + TypeScript
-- **Base de Datos**: Supabase (PostgreSQL)
-- **Estilos**: Tailwind CSS + Shadcn UI
-- **Autenticación**: Supabase Auth
-
-### Estructura del Proyecto
-```
-webapp/
-├── src/
-│   ├── index.tsx          # Punto de entrada y rutas principales
-│   ├── renderer.tsx       # Template HTML base con estilos globales
-│   ├── api/               # APIs REST
-│   │   ├── auth.ts        # Autenticación (login, register, logout)
-│   │   ├── users.ts       # Gestión de usuarios y perfiles
-│   │   ├── content.ts     # Formaciones, módulos, lecciones
-│   │   ├── mentorship.ts  # Sistema de mentoría
-│   │   └── reflections.ts # Reflexiones y comunidad
-│   ├── lib/
-│   │   └── auth.ts        # Utilidades de autenticación y JWT
-│   ├── middleware/
-│   │   └── auth.ts        # Middleware de autenticación
-│   ├── pages/             # Componentes de página
-│   │   ├── Dashboard.tsx  # Panel principal
-│   │   ├── Quest.tsx      # Reproductor de micro-learning
-│   │   ├── Taberna.tsx    # Comunidad y reflexiones
-│   │   ├── Library.tsx    # Biblioteca de formaciones
-│   │   ├── Profile.tsx    # Perfil de usuario
-│   │   └── Mentorship.tsx # Sistema de mentoría
-│   ├── components/
-│   │   └── Header.tsx     # Cabecera con navegación
-│   └── types/
-│       └── index.ts       # Tipos TypeScript
-├── migrations/
-│   ├── 0001_initial_schema.sql  # Esquema de base de datos
-│   └── 0002_seed_data.sql       # Datos iniciales
-├── wrangler.jsonc         # Configuración de Cloudflare
-├── ecosystem.config.cjs   # Configuración de PM2
-└── package.json           # Dependencias y scripts
-```
-
-## Páginas y Funcionalidades
-
-### 1. Dashboard (`/`)
-- Métricas de racha (días consecutivos)
-- Nivel y XP cognitivo con barra de progreso
-- Módulo recomendado (hero card)
-- Grid de próximos insights
-- Acceso rápido a La Taberna
-- Widget de introspección diaria
-- Información del mentor
-
-### 2. Reproductor Micro-Learning (`/quest/:id`)
-- Video player premium con controles personalizados
-- Barra de progreso de la quest
-- **Suite de Transformación**:
-  - Alineación de Frecuencia 432Hz con visualizador
-  - Herramienta del Crítico Interior
-- Lista de lecciones con estados (completado, en progreso, bloqueado)
-- Aide-Mémoire (checklist, resumen, descargas)
-
-### 3. La Taberna - Comunidad (`/taberna`)
-- Feed de reflexiones públicas
-- Composer para compartir momentos
-- Tabs: Todas, Mi Viaje, Resonados
-- Sala de Meditación (participantes activos)
-- Compañeros de Viaje (usuarios online)
-- Badge de Espacio Seguro Certificado
-
-### 4. Biblioteca (`/library`)
-- Grid de formaciones (Quests)
-- Filtros por categoría
-- Estados: Completado, En Progreso, Nuevo
-- Estadísticas de progreso
-
-### 5. Perfil de Usuario (`/profile`)
-- Edición de nombre y avatar
-- Estadísticas: racha, XP, lecciones, reflexiones
-- Cambio de contraseña
-- Estado de acceso (Free/Premium)
-- Actividad reciente
-- Nivel y progreso a siguiente nivel
-- Próximas sesiones de mentoría
-- Cierre de sesión
-
-### 6. Mentoría (`/mentorship`)
-- Perfil de la mentora (Ainara Sterling)
-- Especialidades y bio
-- Calendario de disponibilidad interactivo
-- Selección de fecha y hora
-- Notas para la sesión
-- Reserva de sesiones (requiere autenticación)
-- Historial de sesiones (próximas y pasadas)
-- Cancelación de sesiones
-- Testimonios de alumnos
-
-### 7. Autenticación
-- Login (`/login`)
-- Registro (`/register`)
-- Validación de contraseñas (8+ caracteres, mayúscula, minúscula, número)
-
-## API Endpoints
-
-### Autenticación
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/auth/register` | Registro de usuario | No |
-| POST | `/api/auth/login` | Inicio de sesión | No |
-| POST | `/api/auth/refresh` | Refrescar token | No |
-| POST | `/api/auth/logout` | Cerrar sesión | Sí |
-| GET | `/api/auth/me` | Usuario actual | Sí |
-
-### Usuarios
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/users/profile` | Perfil completo | Sí |
-| PUT | `/api/users/profile` | Actualizar perfil | Sí |
-| PUT | `/api/users/password` | Cambiar contraseña | Sí |
-| GET | `/api/users/progress` | Progreso detallado | Sí |
-| GET | `/api/users/activity` | Historial de actividad | Sí |
-| GET | `/api/users` | Listar usuarios (admin) | Admin |
-| PUT | `/api/users/:id/access` | Gestionar acceso (admin) | Admin |
-
-### Contenido
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/content/formations` | Listar formaciones | Opcional |
-| GET | `/api/content/formations/:slug` | Detalle de formación | Opcional |
-| GET | `/api/content/lessons/:id` | Detalle de lección | Sí |
-| POST | `/api/content/lessons/:id/progress` | Actualizar progreso | Sí |
-| POST | `/api/content/formations` | Crear formación (admin) | Admin |
-| PUT | `/api/content/formations/:id` | Editar formación (admin) | Admin |
-| POST | `/api/content/modules` | Crear módulo (admin) | Admin |
-| POST | `/api/content/lessons` | Crear lección (admin) | Admin |
-
-### Mentoría
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/mentorship/mentors` | Listar mentores | Opcional |
-| GET | `/api/mentorship/mentors/:id` | Detalle de mentor | Opcional |
-| GET | `/api/mentorship/mentors/:id/availability` | Disponibilidad | No |
-| POST | `/api/mentorship/sessions` | Reservar sesión | Sí |
-| GET | `/api/mentorship/sessions` | Mis sesiones | Sí |
-| PUT | `/api/mentorship/sessions/:id/cancel` | Cancelar sesión | Sí |
-| PUT | `/api/mentorship/sessions/:id/confirm` | Confirmar (admin) | Admin |
-| POST | `/api/mentorship/mentors/:id/block` | Bloquear fecha (admin) | Admin |
-
-### Reflexiones
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/reflections` | Listar reflexiones | Sí |
-| GET | `/api/reflections/mine` | Mis reflexiones | Sí |
-| POST | `/api/reflections` | Crear reflexión | Sí |
-| PUT | `/api/reflections/:id` | Editar reflexión | Sí |
-| DELETE | `/api/reflections/:id` | Eliminar reflexión | Sí |
-| POST | `/api/reflections/:id/react` | Reaccionar | Sí |
-
-### Utilidades
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/health` | Estado del sistema | No |
-
-## Modelos de Datos
-
-### Users
-- id, email, password_hash, name, avatar_url
-- role: user | admin | mentor
-- status: active | inactive | suspended
-
-### User Access
-- access_type: free | paid | manual | trial
-- starts_at, expires_at
-- access_granted_by, access_reason
-
-### Formations → Modules → Lessons
-- Estructura jerárquica de contenido
-- content_type: video | audio | text | quiz | exercise
-- is_free_preview para contenido de muestra
-
-### User Progress
-- status: not_started | in_progress | completed
-- progress_percent, last_position_seconds
-
-### User Streaks
-- current_streak, longest_streak
-- total_xp, level
-
-### Mentorship Sessions
-- status: pending | confirmed | completed | cancelled | no_show
-- meeting_link, notes, user_notes
-
-### Reflections
-- content, is_public
-- Reactions: resonate | support
-
-## Scripts de Desarrollo
-
+### 1. Clonar el repositorio
 ```bash
-# Desarrollo local
-npm run build              # Compilar con Vite
-pm2 start ecosystem.config.cjs  # Iniciar con PM2
-
-# Base de datos
-npm run db:migrate:local   # Aplicar migraciones (local)
-npm run db:seed            # Cargar datos iniciales
-npm run db:reset           # Reset completo de BD
-
-# Despliegue
-npm run deploy             # Deploy a Cloudflare Pages
-npm run deploy:prod        # Deploy a producción
+git clone https://github.com/nicolasrp432/PlataformaAinara.git
+cd PlataformaAinara
 ```
 
-## Principios de Diseño
+### 2. Instalar dependencias
+```bash
+npm install
+```
 
-### Diseño Instruccional
-- **Micro-módulos**: 5-15 minutos por lección
-- **Carga cognitiva**: Regla de los 3 segundos en Dashboard
-- **Modelo ADDIE**: Análisis → Diseño → Desarrollo → Implementación → Evaluación
+### 3. Configurar variables de entorno
+Copia la plantilla de configuración:
+```bash
+cp .env.example .env.local
+```
+Edita `.env.local` con las credenciales de tu proyecto Supabase y servicios correspondientes:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
+SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key
 
-### LX Design
-- Formación de hábitos (66 días promedio)
-- Fases: Iniciación → Aprendizaje → Estabilidad
-- Gamificación compasiva (XP sin competencia)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-### UI/UX
-- Patrón de lectura en F
-- Divulgación progresiva
-- Mobile-first
-- Tipografías terapéuticas (Playfair Display + Manrope)
-- Paleta: Dorado #C5A059, Charcoal #2D2D2D, Ivory #FDFCFB
+# Asistente IA (Google Gemini)
+GEMINI_API_KEY=tu-gemini-api-key
+GEMINI_MODEL=gemini-3.5-flash
+```
 
-## Seguridad
+> [!IMPORTANT]
+> Nunca incluyas credenciales reales en repositorios públicos. El archivo `.env.local` está ignorado por `.gitignore` por defecto.
 
-- Autenticación JWT con refresh tokens
-- Hashing SHA-256 para contraseñas
-- Middleware de autorización por roles
-- Validación de entradas
-- CORS configurado
-
-## Próximas Mejoras
-
-- [ ] Sistema de pagos (Paddle/Lemon Squeezy)
-- [ ] Integración de calendario externo
-- [ ] Notificaciones push
-- [ ] Meditaciones con audio real
-- [ ] Analytics de comportamiento
-- [ ] Panel de administración completo
-
-## Estado del Proyecto
-
-- **Plataforma**: ✅ Activa (desarrollo)
-- **Frontend**: ✅ Completo
-- **Backend API**: ✅ Completo
-- **Base de Datos**: ✅ Configurada con D1
-- **Autenticación**: ✅ JWT implementado
-- **Deploy Cloudflare**: ⏳ Pendiente
+### 4. Iniciar el servidor de desarrollo
+```bash
+npm run dev
+```
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la aplicación.
 
 ---
 
-**Tech Stack**: Hono + TypeScript + Cloudflare Workers/D1 + Tailwind CSS
-**Última actualización**: 2026-01-16
+## 🔒 Seguridad y Control de Acceso
+
+- **Row Level Security (RLS)**: Cada tabla en Supabase cuenta con políticas RLS que aíslan los datos de cada usuario y restringen la edición administrativa.
+- **Roles del Sistema**:
+  - `student`: Acceso a formaciones inscritas, diario personal, comunidad y mensajería.
+  - `mentor`: Capacidades de tutoría y seguimiento.
+  - `admin`: Panel de control de contenidos, formaciones y métricas globales.
+- **Gestión de Secretos**: Todas las llamadas a modelos de IA y servicios de pago se gestionan desde el servidor mediante Next.js Route Handlers y Server Actions, evitando exponer credenciales en el cliente.
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+PlataformaAinara/
+├── app/                        # Next.js 15 App Router
+│   ├── (admin)/                # Panel de administración
+│   ├── (auth)/                 # Autenticación (login, registro)
+│   ├── (platform)/             # Área privada de estudiantes
+│   │   ├── assistant/          # Tutor IA Ainara
+│   │   ├── formations/         # Catálogo y detalle de cursos
+│   │   ├── learn/              # Visor interactivo de clases
+│   │   ├── messages/           # Mensajería instantánea
+│   │   ├── reflexion/          # Diario de reflexión
+│   │   └── taberna/            # Comunidad social
+│   └── api/                    # Endpoints y webhooks (AI, Stripe, etc.)
+├── components/                 # Componentes de UI modulares y accesibles
+├── lib/                        # Clientes de BD, servicios y utilidades
+├── migrations/                 # Migraciones SQL para Supabase
+└── public/                     # Recursos estáticos
+```
+
+---
+
+## 📄 Licencia
+
+Este proyecto es propiedad privada de **Ainara Plataforma**. Todos los derechos reservados.

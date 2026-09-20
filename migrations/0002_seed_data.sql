@@ -92,15 +92,15 @@ INSERT OR IGNORE INTO mentor_availability (id, mentor_id, day_of_week, start_tim
   ('avail_5', 'mentor_ainara', 5, '09:00', '13:00', 1); -- Viernes (medio día)
 
 -- =====================================================
--- Usuarios de Prueba
+-- Usuarios de Ejemplo (Seeds locales para entorno de pruebas)
 -- =====================================================
--- Admin password: Admin123! (hash: 3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121)
--- User password: User1234! (hash: 0ac8adfad468b363de01d0556d4239831b654eab5d732cf7564b8e975853c22c)
+-- Las contraseñas de producción deben ser generadas de forma segura vía Supabase Auth con hash bcrypt/argon2.
+-- NOTA: No utilizar credenciales de prueba en entornos de producción.
 
 INSERT OR IGNORE INTO users (id, email, password_hash, name, role, status, email_verified) VALUES
-  ('user_admin', 'admin@leaderblueprint.com', '3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121', 'Administrador', 'admin', 'active', 1),
-  ('user_demo', 'demo@leaderblueprint.com', '0ac8adfad468b363de01d0556d4239831b654eab5d732cf7564b8e975853c22c', 'Usuario Demo', 'user', 'active', 1),
-  ('user_premium', 'premium@leaderblueprint.com', '0ac8adfad468b363de01d0556d4239831b654eab5d732cf7564b8e975853c22c', 'Usuario Premium', 'user', 'active', 1);
+  ('user_admin', 'admin@example.local', '$2a$12$eX4mpL3H45hV4lu3D0N0tU5e1nPr0duct10nS3cur3R4nd0m', 'Administrador', 'admin', 'active', 1),
+  ('user_demo', 'demo@example.local', '$2a$12$eX4mpL3H45hV4lu3D0N0tU5e1nPr0duct10nS3cur3R4nd0m', 'Usuario Demo', 'user', 'active', 1),
+  ('user_premium', 'premium@example.local', '$2a$12$eX4mpL3H45hV4lu3D0N0tU5e1nPr0duct10nS3cur3R4nd0m', 'Usuario Premium', 'user', 'active', 1);
 
 -- Acceso para usuarios de prueba
 INSERT OR IGNORE INTO user_access (id, user_id, plan_id, access_type, access_granted_by, access_reason, is_active) VALUES
