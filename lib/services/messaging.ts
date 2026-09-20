@@ -2,20 +2,50 @@ import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 import { createNotification } from "@/lib/services/notifications"
 
+/**
+ * Resuelve el cliente de base de datos más confiable:
+ * - Si SUPABASE_SERVICE_ROLE_KEY está configurada, usa supabaseAdmin() con bypass RLS.
+ * - De lo contrario, usa el cliente de servidor autenticado con cookies de sesión de Next.js.
+ */
+async function getDbClient() {
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+  if (serviceKey && !serviceKey.includes("placeholder") && serviceKey.length > 20) {
+    return supabaseAdmin()
+  }
+  return await createClient()
+}
+
 // ── Conversaciones ────────────────────────────────────────────────────────────
 
 export async function startConversation(currentUserId: string, otherUserId: string) {
-  const admin = supabaseAdmin()
+  const client = await getDbClient()
 
-  // Buscar conversación 1:1 existente entre los dos usuarios
-  const { data: existing } = await admin
+  // 1. Asegurar que ambos perfiles existan en la tabla profiles
+  try {
+    await Promise.all([
+      client.from("profiles").upsert(
+        { id: currentUserId, full_name: "Explorador", role: "student" },
+        { onConflict: "id", ignoreDuplicates: true }
+      ),
+      client.from("profiles").upsert(
+        { id: otherUserId, full_name: "Explorador", role: "student" },
+        { onConflict: "id", ignoreDuplicates: true }
+      ),
+    ])
+  } catch (err) {
+    console.error("[messaging] profiles check non-fatal warning:", err)
+  }
+
+  // 2. Buscar si ya existe una conversación 1:1 entre ambos usuarios
+  const { data: existing } = await client
     .from("conversation_participants")
     .select("conversation_id")
     .eq("user_id", currentUserId)
 
   if (existing && existing.length > 0) {
     const myConvIds = existing.map((r) => r.conversation_id)
-    const { data: shared } = await admin
+    const { data: shared } = await client
       .from("conversation_participants")
       .select("conversation_id")
       .eq("user_id", otherUserId)
@@ -26,34 +56,20 @@ export async function startConversation(currentUserId: string, otherUserId: stri
     }
   }
 
-  // Asegurar que el perfil del usuario actual existe antes de insertar FK
-  const { data: myProfile } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("id", currentUserId)
-    .maybeSingle()
-
-  if (!myProfile) {
-    await admin.from("profiles").upsert({
-      id: currentUserId,
-      full_name: "Explorador",
-      role: "student",
-    })
-  }
-
-  // Crear nueva conversación
-  const { data: conv, error } = await admin
+  // 3. Crear nueva conversación
+  const { data: conv, error: convError } = await client
     .from("conversations")
     .insert({})
     .select("id")
     .single()
 
-  if (error || !conv) {
-    console.error("[messaging] startConversation insert error:", error?.message)
+  if (convError || !conv) {
+    console.error("[messaging] startConversation insert error:", convError?.message)
     throw new Error("No se pudo crear la conversación")
   }
 
-  const { error: participantsError } = await admin
+  // 4. Vincular participantes
+  const { error: participantsError } = await client
     .from("conversation_participants")
     .insert([
       { conversation_id: conv.id, user_id: currentUserId },
@@ -62,68 +78,102 @@ export async function startConversation(currentUserId: string, otherUserId: stri
 
   if (participantsError) {
     console.error("[messaging] participantsError:", participantsError.message)
-    // Sin participantes la conversación daría 404 permanente: no dejarla huérfana
-    await admin.from("conversations").delete().eq("id", conv.id)
-    throw new Error("No se pudo iniciar la conversación")
+    await client.from("conversations").delete().eq("id", conv.id)
+    throw new Error("No se pudo registrar a los participantes")
   }
 
   return { conversationId: conv.id }
 }
 
 export async function sendMessage(conversationId: string, senderId: string, body: string) {
-  const admin = supabaseAdmin()
+  const client = await getDbClient()
+  const trimmed = body.trim()
 
-  const { data: msg, error } = await admin
-    .from("messages")
-    .insert({ conversation_id: conversationId, sender_id: senderId, body })
-    .select("id")
-    .single()
-
-  if (error) {
-    console.error("[messaging] sendMessage error:", error.message)
-    throw new Error(error.message)
+  if (!trimmed) {
+    throw new Error("El mensaje no puede estar vacío")
   }
 
-  // Actualizar last_message_at
-  await admin
+  // 1. Asegurar que el remitente está registrado en la conversación
+  const { data: curParticipants } = await client
+    .from("conversation_participants")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+
+  const participantIds = new Set((curParticipants || []).map((p) => p.user_id))
+  if (!participantIds.has(senderId)) {
+    await client
+      .from("conversation_participants")
+      .insert({ conversation_id: conversationId, user_id: senderId })
+  }
+
+  // 2. Insertar mensaje
+  const { data: msg, error: msgError } = await client
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      body: trimmed,
+    })
+    .select("id, conversation_id, sender_id, body, created_at")
+    .single()
+
+  if (msgError || !msg) {
+    console.error("[messaging] sendMessage insert error:", msgError?.message)
+    throw new Error(msgError?.message || "Error al enviar el mensaje")
+  }
+
+  // 3. Actualizar fecha de último mensaje en la conversación
+  await client
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversationId)
 
-  // Obtener nombre del remitente para la notificación
-  const { data: senderProfile } = await admin
+  // 4. Obtener perfil enriquecido del remitente
+  const { data: senderProfile } = await client
     .from("profiles")
-    .select("full_name")
+    .select("id, full_name, avatar_url")
     .eq("id", senderId)
     .maybeSingle()
 
   const senderName = senderProfile?.full_name?.trim() || "Un miembro de la comunidad"
 
-  // Notificar al otro participante
-  const { data: participants } = await admin
+  // 5. Notificar a los demás participantes
+  const { data: otherParticipants } = await client
     .from("conversation_participants")
     .select("user_id")
     .eq("conversation_id", conversationId)
     .neq("user_id", senderId)
 
-  if (participants && participants.length > 0) {
-    for (const p of participants) {
+  const recipientList = otherParticipants || []
+  if (recipientList.length > 0) {
+    for (const p of recipientList) {
       await createNotification(p.user_id, "new_message", {
         title: `${senderName} te ha enviado un mensaje`,
-        body: body.slice(0, 80),
+        body: trimmed.slice(0, 100),
         link: `/messages/${conversationId}`,
         createdBy: senderId,
+        metadata: {
+          conversationId,
+          senderId,
+          senderName,
+          senderAvatar: senderProfile?.avatar_url,
+          bodySnippet: trimmed.slice(0, 100),
+        },
       })
     }
   }
 
-  return msg
+  return {
+    ...msg,
+    profiles: senderProfile ?? null,
+    recipientIds: recipientList.map((p) => p.user_id),
+  }
 }
 
 export async function listConversations(userId: string) {
-  const admin = supabaseAdmin()
+  const client = await getDbClient()
 
-  const { data, error } = await admin
+  const { data, error } = await client
     .from("conversation_participants")
     .select(`
       conversation_id,
@@ -134,10 +184,9 @@ export async function listConversations(userId: string) {
       )
     `)
     .eq("user_id", userId)
-    .order("conversation_id")
 
   if (error) {
-    console.error("[messaging] listConversations:", error.message)
+    console.error("[messaging] listConversations error:", error.message)
     return []
   }
 
@@ -146,14 +195,13 @@ export async function listConversations(userId: string) {
 
   const convIds = rows.map((r) => r.conversation_id)
 
-  // Consultas en batch usando admin para garantizar consistencia
   const [{ data: otherParticipants }, { data: allMessages }] = await Promise.all([
-    admin
+    client
       .from("conversation_participants")
-      .select("conversation_id, user_id, profiles(id, full_name, avatar_url)")
+      .select("conversation_id, user_id, last_read_at, profiles(id, full_name, avatar_url)")
       .in("conversation_id", convIds)
       .neq("user_id", userId),
-    admin
+    client
       .from("messages")
       .select("conversation_id, body, created_at, sender_id")
       .in("conversation_id", convIds)
@@ -161,23 +209,38 @@ export async function listConversations(userId: string) {
   ])
 
   // Otro participante por conversación
-  const otherByConv = new Map<string, { id: string; full_name: string; avatar_url: string | null }>()
+  const otherByConv = new Map<
+    string,
+    { id: string; full_name: string; avatar_url: string | null; last_read_at?: string | null }
+  >()
   for (const p of otherParticipants ?? []) {
     if (otherByConv.has(p.conversation_id)) continue
     const raw = p.profiles
     const prof = (Array.isArray(raw) ? raw[0] : raw) as
       | { id: string; full_name: string; avatar_url: string | null }
       | null
-    if (prof) otherByConv.set(p.conversation_id, prof)
+    if (prof) {
+      otherByConv.set(p.conversation_id, {
+        ...prof,
+        last_read_at: p.last_read_at,
+      })
+    }
   }
 
-  // Último mensaje (primero en orden desc) y conteo de no leídos por conversación
-  const lastReadByConv = new Map(rows.map((r) => [r.conversation_id, r.last_read_at ?? "1970-01-01"]))
+  // Último mensaje y conteo de no leídos
+  const lastReadByConv = new Map(
+    rows.map((r) => [r.conversation_id, r.last_read_at ?? "1970-01-01"])
+  )
   const lastMsgByConv = new Map<string, { body: string; created_at: string; sender_id: string }>()
   const unreadByConv = new Map<string, number>()
+
   for (const m of allMessages ?? []) {
     if (!lastMsgByConv.has(m.conversation_id)) {
-      lastMsgByConv.set(m.conversation_id, { body: m.body, created_at: m.created_at, sender_id: m.sender_id })
+      lastMsgByConv.set(m.conversation_id, {
+        body: m.body,
+        created_at: m.created_at,
+        sender_id: m.sender_id,
+      })
     }
     const lastRead = lastReadByConv.get(m.conversation_id) ?? "1970-01-01"
     if (m.sender_id !== userId && m.created_at > lastRead) {
@@ -200,8 +263,9 @@ export async function listConversations(userId: string) {
     }
   })
 
-  return results.sort((a, b) =>
-    new Date(b.lastMessageAt ?? 0).getTime() - new Date(a.lastMessageAt ?? 0).getTime()
+  return results.sort(
+    (a, b) =>
+      new Date(b.lastMessageAt ?? 0).getTime() - new Date(a.lastMessageAt ?? 0).getTime()
   )
 }
 
@@ -210,11 +274,11 @@ export async function getConversationMessages(
   userId: string,
   opts: { limit?: number; cursor?: string } = {}
 ) {
-  const admin = supabaseAdmin()
-  const limit = opts.limit ?? 50
+  const client = await getDbClient()
+  const limit = opts.limit ?? 100
 
-  // Verificar participante con admin para evitar errores de RLS recursivos
-  const { data: participant, error: partError } = await admin
+  // Verificar que el usuario pertenece a la conversación
+  const { data: participant, error: partError } = await client
     .from("conversation_participants")
     .select("user_id")
     .eq("conversation_id", conversationId)
@@ -222,14 +286,14 @@ export async function getConversationMessages(
     .maybeSingle()
 
   if (partError) {
-    console.error("[messaging] getConversationMessages participant check:", partError.message)
+    console.error("[messaging] participant check error:", partError.message)
   }
 
   if (!participant) return null
 
-  let query = admin
+  let query = client
     .from("messages")
-    .select("id, sender_id, body, created_at, profiles(id, full_name, avatar_url)")
+    .select("id, conversation_id, sender_id, body, created_at, profiles(id, full_name, avatar_url)")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -237,22 +301,22 @@ export async function getConversationMessages(
   if (opts.cursor) query = query.lt("created_at", opts.cursor)
 
   const { data, error } = await query
-  if (error) console.error("[messaging] getConversationMessages:", error.message)
+  if (error) console.error("[messaging] getConversationMessages error:", error.message)
   return (data ?? []).reverse()
 }
 
 export async function markConversationRead(conversationId: string, userId: string) {
-  const admin = supabaseAdmin()
+  const client = await getDbClient()
+  const now = new Date().toISOString()
   await Promise.all([
-    admin
+    client
       .from("conversation_participants")
-      .update({ last_read_at: new Date().toISOString() })
+      .update({ last_read_at: now })
       .eq("conversation_id", conversationId)
       .eq("user_id", userId),
-    // Sincronizar la campana: las notificaciones de esta conversación ya están vistas
-    admin
+    client
       .from("notifications")
-      .update({ read_at: new Date().toISOString() })
+      .update({ read_at: now })
       .eq("user_id", userId)
       .eq("link", `/messages/${conversationId}`)
       .is("read_at", null),
@@ -262,8 +326,8 @@ export async function markConversationRead(conversationId: string, userId: strin
 // ── Comentarios en perfil ─────────────────────────────────────────────────────
 
 export async function getProfileComments(profileId: string) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
+  const client = await getDbClient()
+  const { data, error } = await client
     .from("profile_comments")
     .select(`
       id, content, created_at, parent_id, author_id,

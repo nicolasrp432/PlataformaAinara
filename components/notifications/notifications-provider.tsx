@@ -1,25 +1,10 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-
-/**
- * Suscripción única a `notifications` para todo el layout de plataforma.
- *
- * Antes se suscribían los propios componentes (NotificationsBell y
- * MessagesUnreadBadge). Al añadir la navegación móvil pasaron a renderizarse
- * dos y tres veces a la vez —el sidebar se oculta con CSS pero React lo sigue
- * montando—, y como el cliente de navegador indexa sus canales por nombre de
- * topic, el segundo `supabase.channel("notifications:X")` devolvía el canal ya
- * suscrito y `.on("postgres_changes", …)` lanzaba:
- *
- *   cannot add `postgres_changes` callbacks for realtime:notifications:X
- *   after `subscribe()`
- *
- * Con el canal aquí arriba ningún componente es dueño de una suscripción, así
- * que da igual cuántas veces se rendericen. Además ambos contadores salen del
- * mismo flujo, que era la misma consulta duplicada.
- */
+import { playMessageChime } from "@/components/messages/audio-chime"
 
 interface NotificationsContextValue {
   /** No leídas de cualquier tipo (campana). */
@@ -29,6 +14,15 @@ interface NotificationsContextValue {
   refresh: () => void
   decrementUnread: () => void
   clearUnread: () => void
+  broadcastDirectMessage: (
+    recipientId: string,
+    data: {
+      conversationId: string
+      senderName: string
+      senderAvatar?: string | null
+      body: string
+    }
+  ) => void
 }
 
 const FALLBACK: NotificationsContextValue = {
@@ -37,6 +31,7 @@ const FALLBACK: NotificationsContextValue = {
   refresh: () => {},
   decrementUnread: () => {},
   clearUnread: () => {},
+  broadcastDirectMessage: () => {},
 }
 
 const NotificationsContext = React.createContext<NotificationsContextValue | null>(null)
@@ -48,8 +43,12 @@ export function NotificationsProvider({
   userId: string
   children: React.ReactNode
 }) {
+  const router = useRouter()
   const [unreadTotal, setUnreadTotal] = React.useState(0)
   const [unreadMessages, setUnreadMessages] = React.useState(0)
+  const channelRef = React.useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(
+    null
+  )
 
   const refresh = React.useCallback(async () => {
     const supabase = createClient()
@@ -73,27 +72,107 @@ export function NotificationsProvider({
     refresh()
 
     const supabase = createClient()
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => refresh()
-      )
-      .subscribe()
+    const channel = supabase.channel(`user:${userId}:global`, {
+      config: { broadcast: { self: false } },
+    })
+
+    channelRef.current = channel
+
+    // 1. Escuchar cambios de PostgreSQL en notifications para este usuario
+    channel.on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        refresh()
+        const row = payload.new as {
+          title?: string
+          body?: string
+          link?: string
+          kind?: string
+        }
+
+        // Si es un nuevo mensaje, alertar con sonido y toast
+        if (row.kind === "new_message" || (row.link && row.link.includes("/messages/"))) {
+          playMessageChime()
+          toast(row.title || "Nuevo mensaje recibido", {
+            description: row.body ? `«${row.body}»` : undefined,
+            action: row.link
+              ? {
+                  label: "Ver chat",
+                  onClick: () => router.push(row.link!),
+                }
+              : undefined,
+          })
+        }
+      }
+    )
+
+    // 2. Escuchar broadcast instantáneo de mensajes directos
+    channel.on(
+      "broadcast",
+      { event: "direct_message" },
+      (event) => {
+        const data = event.payload as {
+          conversationId: string
+          senderName: string
+          senderAvatar?: string | null
+          body: string
+        }
+        refresh()
+        playMessageChime()
+
+        toast(`${data.senderName} te ha enviado un mensaje`, {
+          description: `«${data.body.slice(0, 80)}»`,
+          action: {
+            label: "Responder",
+            onClick: () => router.push(`/messages/${data.conversationId}`),
+          },
+        })
+      }
+    )
+
+    channel.subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId, refresh])
+  }, [userId, refresh, router])
 
-  // Ajustes optimistas para que marcar como leído se sienta inmediato; el
-  // UPDATE real llega por Realtime y reconcilia ambos contadores.
+  // Difundir un mensaje directo en tiempo real al canal del destinatario
+  const broadcastDirectMessage = React.useCallback(
+    (
+      recipientId: string,
+      data: {
+        conversationId: string
+        senderName: string
+        senderAvatar?: string | null
+        body: string
+      }
+    ) => {
+      try {
+        const supabase = createClient()
+        const targetChannel = supabase.channel(`user:${recipientId}:global`)
+        targetChannel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            targetChannel.send({
+              type: "broadcast",
+              event: "direct_message",
+              payload: data,
+            })
+          }
+        })
+      } catch {
+        // Fallback silencioso; la notificación en base de datos ya está en curso
+      }
+    },
+    []
+  )
+
   const decrementUnread = React.useCallback(() => {
     setUnreadTotal((n) => Math.max(0, n - 1))
   }, [])
@@ -104,21 +183,20 @@ export function NotificationsProvider({
   }, [])
 
   const value = React.useMemo<NotificationsContextValue>(
-    () => ({ unreadTotal, unreadMessages, refresh, decrementUnread, clearUnread }),
-    [unreadTotal, unreadMessages, refresh, decrementUnread, clearUnread]
+    () => ({
+      unreadTotal,
+      unreadMessages,
+      refresh,
+      decrementUnread,
+      clearUnread,
+      broadcastDirectMessage,
+    }),
+    [unreadTotal, unreadMessages, refresh, decrementUnread, clearUnread, broadcastDirectMessage]
   )
 
-  return (
-    <NotificationsContext.Provider value={value}>
-      {children}
-    </NotificationsContext.Provider>
-  )
+  return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>
 }
 
-/**
- * Fuera del provider devuelve valores neutros en vez de lanzar: un descuido
- * al colocar un componente no debe volver a tumbar la plataforma entera.
- */
 export function useNotifications(): NotificationsContextValue {
   return React.useContext(NotificationsContext) ?? FALLBACK
 }

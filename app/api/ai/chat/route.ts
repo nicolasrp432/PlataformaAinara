@@ -10,7 +10,102 @@ import {
 
 export const runtime = "nodejs"
 
-// Modelos estables de Groq
+// Modelos estables de Google Gemini
+const GEMINI_MODELS = [
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-2.5-flash",
+  "gemini-1.5-flash",
+]
+
+function buildGeminiContents(
+  history: Array<{ role: string; content: string }>,
+  currentMessage: string,
+) {
+  const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = []
+
+  for (const m of history) {
+    if (m.role === "system") continue
+    const role: "user" | "model" = m.role === "assistant" || m.role === "model" ? "model" : "user"
+    const text = m.content.trim()
+    if (!text) continue
+
+    const last = contents[contents.length - 1]
+    if (last && last.role === role) {
+      last.parts.push({ text })
+    } else {
+      contents.push({ role, parts: [{ text }] })
+    }
+  }
+
+  // Añadir mensaje del usuario actual
+  const trimmedCurr = currentMessage.trim()
+  if (trimmedCurr) {
+    const last = contents[contents.length - 1]
+    if (last && last.role === "user") {
+      last.parts.push({ text: trimmedCurr })
+    } else {
+      contents.push({ role: "user", parts: [{ text: trimmedCurr }] })
+    }
+  }
+
+  // Gemini requiere que el primer turno sea 'user'
+  if (contents.length > 0 && contents[0].role === "model") {
+    contents.shift()
+  }
+
+  return contents
+}
+
+async function callGemini(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+): Promise<Response> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`
+  return fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
+      },
+    }),
+  })
+}
+
+async function getGeminiStream(
+  apiKey: string,
+  systemPrompt: string,
+  contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+): Promise<{ res: Response; model: string } | null> {
+  const override = process.env.GEMINI_MODEL
+  const candidates = override
+    ? [override, ...GEMINI_MODELS.filter((m) => m !== override)]
+    : GEMINI_MODELS
+
+  for (const model of candidates) {
+    try {
+      const res = await callGemini(apiKey, model, systemPrompt, contents)
+      if (res.ok && res.body) return { res, model }
+      const errSnippet = await res.text().catch(() => "").then((t) => t.slice(0, 200))
+      console.warn(`[ai/chat] Gemini model ${model} → ${res.status}: ${errSnippet}`)
+    } catch (e) {
+      console.warn(`[ai/chat] Error calling Gemini model ${model}:`, e)
+    }
+  }
+  return null
+}
+
+// Modelos estables de Groq (Fallback secundario)
 const GROQ_MODELS = [
   "llama-3.3-70b-versatile",
   "llama-3.1-8b-instant",
@@ -165,15 +260,100 @@ export async function POST(req: NextRequest) {
   await saveAiMessage(conversationId, "user", message.trim())
 
   const encoder = new TextEncoder()
-  const apiKey = process.env.GROQ_API_KEY
+  const geminiApiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY
+  const groqApiKey = process.env.GROQ_API_KEY
 
-  // Intentar obtener stream de Groq si la clave está disponible
-  let groqStreamResult: { res: Response; model: string } | null = null
-  if (apiKey && apiKey.trim() !== "") {
-    groqStreamResult = await getGroqStream(apiKey, messages)
+  // ── Caso 1: Google Gemini streaming prioritario ─────────────────────────
+  if (geminiApiKey && geminiApiKey.trim()) {
+    try {
+      const geminiContents = buildGeminiContents(history, message)
+      const geminiResult = await getGeminiStream(geminiApiKey.trim(), systemPrompt, geminiContents)
+
+      if (geminiResult?.res?.body) {
+        const geminiRes = geminiResult.res
+        const decoder = new TextDecoder()
+        let fullText = ""
+
+        const stream = new ReadableStream({
+          async start(controller) {
+            const reader = geminiRes.body!.getReader()
+            let buffer = ""
+
+            try {
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split("\n")
+                buffer = lines.pop() ?? ""
+
+                for (const line of lines) {
+                  const trimmed = line.trim()
+                  if (!trimmed || !trimmed.startsWith("data: ")) continue
+                  const data = trimmed.slice(6).trim()
+                  if (data === "[DONE]") {
+                    if (fullText) await saveAiMessage(conversationId, "assistant", fullText)
+                    controller.enqueue(encoder.encode("data: [DONE]\n\n"))
+                    controller.close()
+                    return
+                  }
+
+                  try {
+                    const parsed = JSON.parse(data)
+                    const candidate = parsed.candidates?.[0]
+                    const parts = candidate?.content?.parts
+                    if (Array.isArray(parts)) {
+                      for (const part of parts) {
+                        if (typeof part?.text === "string" && part.text) {
+                          fullText += part.text
+                          controller.enqueue(
+                            encoder.encode(`data: ${JSON.stringify({ text: part.text })}\n\n`)
+                          )
+                        }
+                      }
+                    }
+                  } catch {
+                    /* skip malformed chunks */
+                  }
+                }
+              }
+
+              if (fullText) await saveAiMessage(conversationId, "assistant", fullText)
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"))
+              controller.close()
+            } catch (err) {
+              console.error("Gemini stream error:", err)
+              controller.error(err)
+            } finally {
+              reader.releaseLock()
+            }
+          },
+        })
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+            "X-Conversation-Id": conversationId,
+          },
+        })
+      }
+    } catch (err) {
+      console.warn("[ai/chat] Fallo en llamada a Gemini, intentando alternativas:", err)
+    }
   }
 
-  // ── Caso 1: Groq streaming activo ──────────────────────────────────────
+  // ── Caso 2: Groq streaming (Fallback secundario) ────────────────────────
+  let groqStreamResult: { res: Response; model: string } | null = null
+  if (groqApiKey && groqApiKey.trim() !== "") {
+    groqStreamResult = await getGroqStream(groqApiKey, messages)
+  }
+
   if (groqStreamResult?.res?.body) {
     const groqRes = groqStreamResult.res
     const decoder = new TextDecoder()
@@ -239,7 +419,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // ── Caso 2: Contingencia inteligente autónoma (Siempre responde 200 OK) ──
+  // ── Caso 3: Contingencia inteligente autónoma (Siempre responde 200 OK) ──
   const wisdomText = generateAutonomousWisdom(message.trim(), lessonTitle)
   await saveAiMessage(conversationId, "assistant", wisdomText)
 

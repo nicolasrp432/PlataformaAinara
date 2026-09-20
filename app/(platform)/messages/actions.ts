@@ -2,13 +2,20 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
-import { startConversation, sendMessage } from "@/lib/services/messaging"
+import {
+  startConversation,
+  sendMessage,
+  markConversationRead,
+  getConversationMessages,
+} from "@/lib/services/messaging"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 export async function startConversationAction(otherUserId: string) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return { error: "No autorizado" }
   if (user.id === otherUserId) return { error: "No puedes enviarte mensajes a ti mismo" }
 
@@ -37,15 +44,21 @@ export async function startConversationAction(otherUserId: string) {
 }
 
 const messageSchema = z.object({
-  body: z.string().min(1, "El mensaje no puede estar vacío").max(2000, "Máximo 2000 caracteres"),
+  body: z
+    .string()
+    .min(1, "El mensaje no puede estar vacío")
+    .max(2000, "Máximo 2000 caracteres"),
 })
 
 export async function sendMessageAction(conversationId: string, formData: FormData) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return { error: "No autorizado" }
 
-  const parsed = messageSchema.safeParse({ body: formData.get("body") })
+  const rawBody = formData.get("body")
+  const parsed = messageSchema.safeParse({ body: rawBody })
   if (!parsed.success) {
     const issue = parsed.error.issues[0]?.message ?? "Mensaje inválido"
     return { error: issue }
@@ -55,8 +68,68 @@ export async function sendMessageAction(conversationId: string, formData: FormDa
     const msg = await sendMessage(conversationId, user.id, parsed.data.body)
     revalidatePath(`/messages/${conversationId}`)
     revalidatePath("/messages")
-    return { success: true, messageId: msg.id }
+    return {
+      success: true,
+      message: msg,
+    }
   } catch (e) {
+    console.error("[sendMessageAction] error:", e)
     return { error: e instanceof Error ? e.message : "Error al enviar el mensaje" }
+  }
+}
+
+export async function markConversationReadAction(conversationId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autorizado" }
+
+  try {
+    await markConversationRead(conversationId, user.id)
+    revalidatePath("/messages")
+    return { success: true }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error al marcar como leído" }
+  }
+}
+
+export async function getLatestMessagesAction(conversationId: string, afterTimestamp?: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { messages: [] }
+
+  try {
+    const messages = await getConversationMessages(conversationId, user.id, { limit: 50 })
+    if (!messages) return { messages: [] }
+
+    const formatted = messages.map((m) => {
+      const rawP = (m as Record<string, unknown>).profiles
+      const profiles = (Array.isArray(rawP) ? rawP[0] : rawP) as {
+        id: string
+        full_name: string
+        avatar_url: string | null
+      } | null
+      return {
+        id: m.id as string,
+        sender_id: m.sender_id as string,
+        body: m.body as string,
+        created_at: m.created_at as string,
+        profiles,
+      }
+    })
+
+    if (afterTimestamp) {
+      const filtered = formatted.filter(
+        (m) => new Date(m.created_at).getTime() > new Date(afterTimestamp).getTime()
+      )
+      return { messages: filtered }
+    }
+
+    return { messages: formatted }
+  } catch {
+    return { messages: [] }
   }
 }
