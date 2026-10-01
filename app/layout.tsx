@@ -23,7 +23,7 @@ const jakarta = Plus_Jakarta_Sans({
 // `SOFT` redondea los vértices lo justo para que no resulte severa.
 const fraunces = Fraunces({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-heading-brand",
   display: "swap",
   axes: ["SOFT", "opsz"],
   preload: true,
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   // Warm gold as theme color for browser chrome
-  themeColor: "#B8902E",
+  themeColor: "#176B65",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

@@ -2,7 +2,7 @@
 
 /* ============================================================
    SENDERO PLATFORM — LUXURY GOLD DESIGN SYSTEM
-   Theme: Premium, Warm Ivory + Rich Gold, Elegant & Transformational
+   Theme: Mitra — deep teal, editorial typography, personal working surfaces
    Font: Inter (sans-serif geometric)
    Source of truth: design-system.md §18 Tokens
    ============================================================ */
@@ -10,37 +10,37 @@
 @theme inline {
 
   /* —— GOLD PRIMARY (Action CTA) —— */
-  --color-primary: #F6D25C;
-  --color-primary-foreground: #171717;
+  --color-primary: #176B65;
+  --color-primary-foreground: #FFFFFF;
 
   /* —— RICH AMBER ACCENT (Hover / Active emphasis) —— */
-  --color-accent: #E8C544;
-  --color-accent-foreground: #171717;
+  --color-accent: #12554F;
+  --color-accent-foreground: #FFFFFF;
 
   /* —— CHAMPAGNE SECONDARY (Soft surfaces) —— */
-  --color-secondary: #F8F5EF;
-  --color-secondary-foreground: #434343;
+  --color-secondary: #F0F4F2;
+  --color-secondary-foreground: #415350;
 
   /* —— WARM IVORY BACKGROUNDS —— */
-  --color-background: #F5F1E8;
-  --color-foreground: #171717;
+  --color-background: #F6F7F5;
+  --color-foreground: #192F2D;
 
   /* —— CARD / SURFACE — Pure white cards —— */
   --color-card: #FFFFFF;
-  --color-card-foreground: #171717;
+  --color-card-foreground: #192F2D;
 
   /* —— POPOVER —— */
   --color-popover: #FFFFFF;
-  --color-popover-foreground: #171717;
+  --color-popover-foreground: #192F2D;
 
   /* —— PEARL MUTED — Crema secundario —— */
-  --color-muted: #EEE8DB;
-  --color-muted-foreground: #6B6B6B;
+  --color-muted: #E9EEEB;
+  --color-muted-foreground: #596B67;
 
   /* —— BORDERS & RINGS — Warm gold-tinted —— */
-  --color-border: #D7D0C2;
-  --color-input: #D7D0C2;
-  --color-ring: #F6D25C;
+  --color-border: #D3DEDA;
+  --color-input: #D3DEDA;
+  --color-ring: #176B65;
 
   /* —— SEMANTIC COLORS —— */
   --color-destructive: #D96C6C;
@@ -50,7 +50,7 @@
   --color-success-foreground: #FFFFFF;
 
   --color-warning: #E8B84A;
-  --color-warning-foreground: #171717;
+  --color-warning-foreground: #192F2D;
 
   --color-info: #6D9EEB;
   --color-info-foreground: #FFFFFF;
@@ -88,15 +88,15 @@
 
   /* —— SIDEBAR — White sidebar with subtle warm border —— */
   --color-sidebar: #FFFFFF;
-  --color-sidebar-foreground: #434343;
-  --color-sidebar-accent: #F8F5EF;
-  --color-sidebar-accent-foreground: #171717;
-  --color-sidebar-border: #E4DECF;
+  --color-sidebar-foreground: #415350;
+  --color-sidebar-accent: #F0F4F2;
+  --color-sidebar-accent-foreground: #192F2D;
+  --color-sidebar-border: #DCE6E1;
 
   /* —— CHART PALETTE —— */
-  --color-chart-1: #F6D25C;
+  --color-chart-1: #176B65;
   --color-chart-2: #6D9EEB;
-  --color-chart-3: #E8C544;
+  --color-chart-3: #12554F;
   --color-chart-4: #7BBF6A;
   --color-chart-5: #D96C6C;
 
@@ -138,11 +138,11 @@
      —————————————————————————————————————————————————————————— */
 
   /* Micro-etiquetas: contadores, badges, pies. Tracking positivo. */
-  --text-3xs: 0.625rem;
+  --text-3xs: 0.75rem;
   --text-3xs--line-height: 1.4;
   --text-3xs--letter-spacing: 0.02em;
 
-  --text-2xs: 0.6875rem;
+  --text-2xs: 0.75rem;
   --text-2xs--line-height: 1.45;
   --text-2xs--letter-spacing: 0.01em;
 
@@ -190,15 +190,15 @@
 
   /* —— TYPOGRAPHY — Plus Jakarta Sans (cuerpo) + Fraunces (titulares) —— */
   --font-sans: var(--font-sans-brand), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-display), "Fraunces", Georgia, serif;
+  --font-display: var(--font-heading-brand), "Fraunces", Georgia, serif;
   --font-mono: ui-monospace, monospace;
 
   /* —— SHADOWS — Warm gold-tinted, soft & premium —— */
-  --shadow-sm: 0 1px 3px rgba(246, 210, 92, 0.07), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow: 0 4px 12px rgba(246, 210, 92, 0.10), 0 2px 6px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 8px 24px rgba(246, 210, 92, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 16px 40px rgba(246, 210, 92, 0.14), 0 6px 16px rgba(0, 0, 0, 0.06);
-  --shadow-xl: 0 24px 64px rgba(246, 210, 92, 0.18), 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 3px rgba(23, 107, 101, 0.07), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow: 0 4px 12px rgba(23, 107, 101, 0.10), 0 2px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 24px rgba(23, 107, 101, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 16px 40px rgba(23, 107, 101, 0.14), 0 6px 16px rgba(0, 0, 0, 0.06);
+  --shadow-xl: 0 24px 64px rgba(23, 107, 101, 0.18), 0 8px 24px rgba(0, 0, 0, 0.08);
 
   /* —— TRANSITIONS —— */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -207,17 +207,17 @@
   --transition-spring: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* —— DESIGN SYSTEM EXTENDED — Surface & Text tokens —— */
-  --color-surface-soft: #E4DECF;
-  --color-surface-strong: #2B2B2B;
-  --color-text-secondary: #434343;
-  --color-text-tertiary: #6B6B6B;
-  --color-text-disabled: #A1A1A1;
-  --color-primary-soft: #FFECA6;
-  /* Oro legible como texto sobre fondos claros (5.37:1 sobre #F5F1E8).
+  --color-surface-soft: #DCE6E1;
+  --color-surface-strong: #192F2D;
+  --color-text-secondary: #415350;
+  --color-text-tertiary: #596B67;
+  --color-text-disabled: #7B8A86;
+  --color-primary-soft: #D8ECE6;
+  /* Oro legible como texto sobre fondos claros (5.37:1 sobre #F6F7F5).
      El oro de marca sólo sirve como fondo, no como tinta. */
-  --color-primary-strong: #7A5F0C;
-  --color-divider: #C5BEAE;
-  --color-icon-secondary: #9E9585;
+  --color-primary-strong: #12554F;
+  --color-divider: #BDCCC5;
+  --color-icon-secondary: #6B827A;
 }
 
 /* ============================================================
@@ -230,35 +230,35 @@
 
 :root {
   /* Backgrounds */
-  --background: #F5F1E8;
-  --foreground: #171717;
+  --background: #F6F7F5;
+  --foreground: #192F2D;
 
   /* Card & Surfaces */
   --card: #FFFFFF;
-  --card-foreground: #171717;
+  --card-foreground: #192F2D;
   --popover: #FFFFFF;
-  --popover-foreground: #171717;
+  --popover-foreground: #192F2D;
 
   /* Primary — Gold */
-  --primary: #F6D25C;
-  --primary-foreground: #171717;
+  --primary: #176B65;
+  --primary-foreground: #FFFFFF;
 
   /* Secondary — Champagne */
-  --secondary: #F8F5EF;
-  --secondary-foreground: #434343;
+  --secondary: #F0F4F2;
+  --secondary-foreground: #415350;
 
   /* Muted — Crema */
-  --muted: #EEE8DB;
-  --muted-foreground: #6B6B6B;
+  --muted: #E9EEEB;
+  --muted-foreground: #596B67;
 
   /* Accent — Rich Amber */
-  --accent: #E8C544;
-  --accent-foreground: #171717;
+  --accent: #12554F;
+  --accent-foreground: #FFFFFF;
 
   /* Borders & Rings */
-  --border: #D7D0C2;
-  --input: #D7D0C2;
-  --ring: #F6D25C;
+  --border: #D3DEDA;
+  --input: #D3DEDA;
+  --ring: #176B65;
 
   /* Semantic */
   --destructive: #D96C6C;
@@ -276,7 +276,7 @@
    ============================================================ */
 
 .font-display {
-  font-family: var(--font-display), "Fraunces", Georgia, serif;
+  font-family: var(--font-heading-brand), "Fraunces", Georgia, serif;
   /* Fraunces trae eje óptico: dejar que el navegador lo module con el tamaño
      es lo que evita que los titulares grandes se afilen de más y los
      pequeños se emborronen. */
@@ -461,7 +461,7 @@
 
   /* ---- SELECTION — Gold tinted ---- */
   ::selection {
-    background-color: rgba(246, 210, 92, 0.25);
+    background-color: rgba(23, 107, 101, 0.25);
     color: var(--color-foreground);
   }
 
@@ -476,33 +476,33 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #C5BEAE;
+    background: #BDCCC5;
     border-radius: 10px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #9E9585;
+    background: #6B827A;
   }
 
   /* ---- GOLD GRADIENT UTILITIES ---- */
   .gold-gradient {
     background: linear-gradient(135deg,
-        #FFECA6 0%,
-        #F6D25C 40%,
-        #E8C544 100%);
+        #176B65 0%,
+        #237F76 40%,
+        #12554F 100%);
   }
 
   .gold-gradient-subtle {
     background: linear-gradient(135deg,
-        #F8F5EF 0%,
-        #EEE8DB 100%);
+        #F0F4F2 0%,
+        #E9EEEB 100%);
   }
 
   .text-gold-gradient {
     background: linear-gradient(135deg,
-        #F6D25C 0%,
-        #E8C544 60%,
-        #9E9585 100%);
+        #176B65 0%,
+        #12554F 60%,
+        #6B827A 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -520,16 +520,16 @@
   }
 
   .luxury-card:hover {
-    border-color: rgba(246, 210, 92, 0.45);
+    border-color: rgba(23, 107, 101, 0.45);
     box-shadow: var(--shadow-md);
   }
 
   /* Premium card variant */
   .premium-card {
-    background: linear-gradient(145deg, #FFFFFF, #F8F5EF);
-    border: 1px solid rgba(246, 210, 92, 0.20);
+    background: linear-gradient(145deg, #FFFFFF, #F0F4F2);
+    border: 1px solid rgba(23, 107, 101, 0.20);
     border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow), inset 0 1px 0 rgba(246, 210, 92, 0.15);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(23, 107, 101, 0.15);
     transition: box-shadow var(--transition-base), transform var(--transition-base);
   }
 
@@ -556,11 +556,11 @@
 
   /* ---- GOLD ACCENT BORDER ---- */
   .gold-border {
-    border: 1px solid rgba(246, 210, 92, 0.30);
+    border: 1px solid rgba(23, 107, 101, 0.30);
   }
 
   .gold-ring {
-    box-shadow: 0 0 0 1px rgba(246, 210, 92, 0.30);
+    box-shadow: 0 0 0 1px rgba(23, 107, 101, 0.30);
   }
 
 
@@ -595,11 +595,11 @@
 
   /* ---- LUXURY GLOW & GLASS UTILITIES ---- */
   .gold-glow {
-    box-shadow: 0 0 25px -4px rgba(246, 210, 92, 0.35);
+    box-shadow: 0 0 25px -4px rgba(23, 107, 101, 0.35);
   }
 
   .gold-glow-subtle {
-    box-shadow: 0 0 18px -6px rgba(246, 210, 92, 0.22);
+    box-shadow: 0 0 18px -6px rgba(23, 107, 101, 0.22);
   }
 
   /* ---- MATERIAL TRANSLÚCIDO ----
@@ -641,7 +641,7 @@
   .shimmer {
     background: linear-gradient(90deg,
         var(--color-muted) 25%,
-        #F8F5EF 50%,
+        #F0F4F2 50%,
         var(--color-muted) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
@@ -705,7 +705,7 @@
     height: 1px;
     background: linear-gradient(to right,
         transparent,
-        rgba(246, 210, 92, 0.30),
+        rgba(23, 107, 101, 0.30),
         transparent);
     margin: 1.5rem 0;
   }
@@ -866,7 +866,7 @@
   }
 
   .glass-dark {
-    background: #171717;
+    background: #192F2D;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -906,4 +906,57 @@
   .surface-raised {
     border: 1px solid var(--color-border);
   }
+}
+
+/* Mitra / Ainara: editorial identity across the existing product. */
+.ainara-eyebrow { display:flex; align-items:center; gap:.6rem; font-size:.75rem; font-weight:700; letter-spacing:.14em; line-height:1.6; color:var(--color-primary); margin-bottom:.7rem; }
+.ainara-page-header { padding-bottom:1.75rem; border-bottom:1px solid var(--color-border); }
+.ainara-page-header h1 { font-family:var(--font-heading-brand), Georgia, serif; font-size:clamp(2rem,3.3vw,3.5rem); font-weight:500; line-height:1.15; letter-spacing:-.035em; }
+.ainara-page-header h1 em { font-weight:400; color:var(--color-primary); }
+.ainara-page-header > p:last-child, .ainara-page-header > div > p:last-child { color:var(--color-muted-foreground); margin-top:.75rem; }
+.ainara-panel { background:var(--color-card); border:1px solid var(--color-border); border-radius:1.25rem; padding:clamp(1.25rem,3vw,2rem); box-shadow:0 8px 32px #192f2d04; }
+.ainara-chip { border:1px solid var(--color-border); background:var(--color-secondary); color:var(--color-primary); border-radius:2rem; padding:.35rem .75rem; font-size:.875rem; white-space:nowrap; }
+.ainara-note { border-left:3px solid var(--color-primary); padding:1.5rem 2rem; background:var(--color-secondary); border-radius:0 1rem 1rem 0; }
+.ainara-wheel-summary { display:flex; align-items:center; gap:1.5rem; padding:1.75rem; background:linear-gradient(115deg,#e2eee7,#f0f4f2); border:1px solid #c4d9cd; border-radius:1.25rem; }
+.ainara-summary-icon { color:var(--color-primary); border:1px solid #a9c6b8; border-radius:50%; width:4rem; height:4rem; display:grid; place-items:center; flex-shrink:0; }
+.wheel-chart { width:100%; max-width:30rem; margin:1rem auto; }
+.ainara-sidebar { background:#edf2ee; box-shadow:none; }
+.ainara-sidebar nav { padding:1rem .75rem; }
+.ainara-sidebar nav a { min-height:2.85rem; margin-bottom:.3rem; }
+.ainara-sidebar nav a[aria-current="page"] { color:#fff; }
+.ainara-sidebar nav a[aria-current="page"] > span:first-child { background:#176B65; box-shadow:0 3px 12px #176b651a; }
+.ainara-sidebar nav a[aria-current="page"] svg { color:inherit; }
+.ainara-platform main > div > div > h1, .ainara-platform main > div > div > div > h1 { font-family:var(--font-heading-brand),Georgia,serif; font-weight:500; }
+.ainara-journal { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); column-gap:2rem; align-items:start; }
+.ainara-journal > .ainara-page-header { grid-column:1 / -1; }
+.ainara-journal-calendar { grid-column:2; grid-row:2; }
+.ainara-journal-editor { grid-column:1; grid-row:2 / span 2; }
+.ainara-journal-history { grid-column:2; }
+.ainara-journal textarea { background:#fcfdfb; border-radius:.75rem; }
+.ainara-hero { display:grid; grid-template-columns:1.15fr 1fr; gap:4rem; max-width:80rem; margin:auto; padding:4.5rem 1.5rem; align-items:center; }
+.ainara-hero-copy h1 { font-family:var(--font-heading-brand),Georgia,serif; font-size:clamp(3.5rem,6.5vw,6.75rem); font-weight:500; letter-spacing:-.05em; line-height:1.06; margin-top:2rem; }
+.ainara-hero-copy h1 em { color:var(--color-primary); font-weight:400; }
+.ainara-hero-description { margin-top:1.75rem; max-width:34rem; color:var(--color-muted-foreground); font-size:1.125rem; line-height:1.8; }
+.ainara-hero-portrait { position:relative; aspect-ratio:4/5; border-radius:10rem 10rem 1.5rem 1.5rem; overflow:hidden; background:#dce6e1; }
+.ainara-hero-portrait figcaption { position:absolute; bottom:0; left:0; right:0; padding:5rem 2rem 2rem; background:linear-gradient(transparent,#102d2be8); color:#fff; display:flex; flex-direction:column; gap:.65rem; }
+.ainara-hero-index { display:flex; flex-wrap:wrap; gap:1.5rem; margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--color-border); font-size:.875rem; color:var(--color-muted-foreground); }
+.ainara-landing section { scroll-margin-top:6rem; }
+.ainara-landing header { background:#f6f7f5ed; }
+.ainara-landing footer { background:#192f2d; color:#fff; }
+.ainara-landing footer nav { color:#d3deda; }
+.ainara-landing footer .text-foreground { color:white; }
+.ainara-platform .gold-gradient, .ainara-landing .gold-gradient { background:linear-gradient(110deg,#176B65,#30847b); }
+:focus-visible { outline:2px solid var(--color-primary); outline-offset:4px; }
+@media (max-width:767px) {
+  .ainara-hero { grid-template-columns:1fr; padding:2.5rem 1.25rem 3rem; gap:2.5rem; }
+  .ainara-hero-copy h1 { font-size:clamp(2.75rem,12vw,4.5rem); }
+  .ainara-hero-portrait { max-height:32rem; border-radius:7rem 7rem 1rem 1rem; }
+  .ainara-wheel-summary { align-items:flex-start; flex-wrap:wrap; padding:1.25rem; gap:1rem; }
+  .ainara-wheel-summary > a { width:100%; }
+  .ainara-summary-icon { width:3rem; height:3rem; }
+  .ainara-journal { display:block; }
+  .ainara-journal > * + * { margin-top:1.5rem; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }

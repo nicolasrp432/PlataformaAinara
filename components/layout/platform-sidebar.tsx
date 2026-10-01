@@ -96,7 +96,7 @@ export function PlatformSidebar({ user, streak, hasFullAccess }: PlatformSidebar
       {/* ── SIDEBAR (solo escritorio; en móvil manda MobileBottomNav) ──── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 hidden flex-col md:flex",
+          "ainara-sidebar fixed inset-y-0 left-0 z-50 hidden flex-col md:flex",
           "bg-sidebar border-r border-sidebar-border",
           "shadow-sm",
           "transition-[width] duration-300 ease-out",
@@ -202,7 +202,7 @@ export function PlatformSidebar({ user, streak, hasFullAccess }: PlatformSidebar
         )}
 
         {/* ── Navigation with animated active pill ─────────────── */}
-        <nav className="flex-1 overflow-y-auto overscroll-contain py-3 px-2">
+        <nav aria-label="Navegación principal" className="flex-1 overflow-y-auto overscroll-contain py-3 px-2">
           <div className="space-y-0.5">
             {PLATFORM_NAV.map((item) => {
               const isActive = isNavItemActive(pathname, item.href)
@@ -214,13 +214,14 @@ export function PlatformSidebar({ user, streak, hasFullAccess }: PlatformSidebar
                   href={item.href}
                   className={cn(
                     "relative flex items-center gap-3 rounded-lg px-3 py-2.5",
-                    "text-sm font-medium leading-none",
+                    "text-sm font-medium leading-snug",
                     "transition-colors duration-150",
                     isCollapsed && "justify-center px-2",
                     isActive
                       ? "text-sidebar-accent-foreground"
                       : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                   )}
+                  aria-current={isActive ? "page" : undefined}
                   title={isCollapsed ? item.name : undefined}
                 >
                   {isActive && (

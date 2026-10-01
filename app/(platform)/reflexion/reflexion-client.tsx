@@ -99,7 +99,7 @@ export function ReflexionClient({
   const inlineEntry = isMobile ? todayEntry : selectedEntry
 
   return (
-    <div className="relative mx-auto max-w-3xl space-y-6">
+    <div className="ainara-journal relative mx-auto max-w-5xl space-y-6">
       {/* Ambient glow */}
       <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-96 w-[min(24rem,100%)] -translate-x-1/2 rounded-full bg-primary/5 blur-[120px]" />
 
@@ -108,7 +108,7 @@ export function ReflexionClient({
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-col gap-3"
+        className="ainara-page-header flex flex-col gap-3"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -116,7 +116,7 @@ export function ReflexionClient({
               Diario privado
             </Badge>
             <h1 className="text-2xl font-light tracking-tight text-foreground sm:text-4xl">
-              Reflexión <span className="font-semibold text-primary">diaria</span>
+              Un momento <span className="font-semibold text-primary">para ti.</span>
             </h1>
             <p className="mt-1 font-display text-base capitalize text-muted-foreground sm:text-lg">
               {dateLabel}
@@ -141,6 +141,7 @@ export function ReflexionClient({
 
       {/* Calendario */}
       <motion.div
+        className="ainara-journal-calendar"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.12, duration: 0.4 }}
@@ -155,6 +156,7 @@ export function ReflexionClient({
 
       {/* Editor principal */}
       <motion.div
+        className="ainara-journal-editor"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.45 }}
@@ -208,7 +210,7 @@ export function ReflexionClient({
 
       {/* Historial con filtro por estado de ánimo */}
       {recent.length > 0 && (
-        <div className="space-y-3 pt-2">
+        <div className="ainara-journal-history space-y-3 pt-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="label-luxury flex items-center gap-2">
               <NotebookPen className="h-3.5 w-3.5 text-primary" />

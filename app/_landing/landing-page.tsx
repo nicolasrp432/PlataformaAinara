@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import Image from "next/image"
 import {
-  ArrowRight, Check, Menu, X, Lock, Sparkles, Quote,
+  Check, Menu, X, Lock, Sparkles, Quote,
   CalendarDays, Infinity as InfinityIcon, ChevronDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,6 @@ import {
 } from "@/lib/pricing"
 import {
   TESTIMONIALS,
-  SOCIAL_PROOF_STATS,
   PROBLEM_SIGNALS,
   METHOD_PILLARS,
   LIFETIME_INCLUDES,
@@ -82,12 +81,6 @@ export function LandingPage({ formations }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const heroRef = useRef<HTMLDivElement>(null)
 
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  })
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "18%"])
-
   const lifetime = PLANS.lifetime
   const membership = PLANS.membership
   const lifetimePrice = planPrice(lifetime)
@@ -117,7 +110,7 @@ export function LandingPage({ formations }: LandingPageProps) {
         <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style>
       </noscript>
 
-      <div className="flex min-h-screen flex-col overflow-x-clip bg-background">
+      <div className="ainara-landing flex min-h-screen flex-col overflow-x-clip bg-background">
         {/* ── CABECERA ── */}
         <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/90 backdrop-blur-xl">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -202,99 +195,22 @@ export function LandingPage({ formations }: LandingPageProps) {
         </header>
 
         <main className="flex-1">
-          {/* ── HERO ── */}
-          <section
-            ref={heroRef}
-            className="relative overflow-x-clip pb-20 pt-16 sm:pt-24 lg:pb-28 lg:pt-28"
-          >
-            <motion.div
-              aria-hidden
-              style={{ y: heroY }}
-              className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-[420px] w-[min(46rem,120%)] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]"
-            />
-
-            <motion.div
-              className="mx-auto max-w-4xl px-4 text-center sm:px-6"
-              variants={stagger}
-              initial="hidden"
-              animate="show"
-            >
-              <motion.p
-                variants={fadeUp}
-                className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary"
-              >
-                <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                Acompañamiento real, no otro curso más
-              </motion.p>
-
-              <motion.h1
-                variants={fadeUp}
-                className="font-display text-balance text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-[4.25rem]"
-              >
-                Deja de empezar de cero{" "}
-                <span className="text-gold-gradient">cada enero</span>
-              </motion.h1>
-
-              <motion.p
-                variants={fadeUp}
-                className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
-              >
-                Formaciones que sí se terminan y una mentora que conoce tu caso,
-                para que el cambio que llevas años posponiendo pase de la lista
-                de propósitos a tu semana real.
-              </motion.p>
-
-              <motion.div
-                variants={fadeUp}
-                className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
-              >
-                <Button size="lg" className="w-full sm:w-auto" onClick={openRegister}>
-                  Ver la primera clase gratis
-                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto"
-                  asChild
-                >
-                  <a href="#precios">Ver qué incluye</a>
-                </Button>
-              </motion.div>
-
-              <motion.p
-                variants={fadeUp}
-                className="mt-4 text-sm text-muted-foreground"
-              >
-                Sin tarjeta · La primera clase de cada formación es tuya
-              </motion.p>
-
-              {/*
-                Cifras de prueba social. La lista llega vacia a proposito
-                (ver lib/landing-content.ts): sin datos verificables, la
-                seccion no se pinta en lugar de inventarse numeros.
-              */}
-              {SOCIAL_PROOF_STATS.length > 0 && (
-                <motion.dl
-                  variants={fadeUp}
-                  className="mt-14 flex flex-wrap items-center justify-center gap-x-12 gap-y-8"
-                >
-                  {SOCIAL_PROOF_STATS.map(({ value, label }) => (
-                    <div key={label} className="min-w-0 text-center">
-                      <dt className="sr-only">{label}</dt>
-                      <dd>
-                        <span className="font-display block text-3xl font-semibold text-foreground">
-                          {value}
-                        </span>
-                        <span className="mt-1 block text-sm text-muted-foreground">
-                          {label}
-                        </span>
-                      </dd>
-                    </div>
-                  ))}
-                </motion.dl>
-              )}
-            </motion.div>
+          <section ref={heroRef} className="ainara-hero">
+            <div className="ainara-hero-copy">
+              <p className="ainara-eyebrow">MITRA / CON AINARA UNAMUNZAGA</p>
+              <h1>Vuelve a ti.<br /><em>Desde la raíz.</em></h1>
+              <p className="ainara-hero-description">Un espacio para conocerte, aprender y llevar el cambio a tu vida. Formaciones, reflexión y acompañamiento para avanzar a tu ritmo.</p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button size="lg" onClick={openRegister}>Explorar mi primera clase</Button>
+                <Button variant="outline" size="lg" asChild><a href="#metodo">Conocer el camino</a></Button>
+              </div>
+              <p className="mt-5 text-sm text-muted-foreground">La primera clase de cada formación, gratis y sin tarjeta.</p>
+              <div className="ainara-hero-index"><span>01 / Aprende</span><span>02 / Observa</span><span>03 / Integra</span></div>
+            </div>
+            <figure className="ainara-hero-portrait">
+              <Image src="/ainara-retrato.jpg" alt="Ainara Unamunzaga, mentora de Mitra" fill priority sizes="(max-width: 767px) 100vw, 45vw" className="object-cover" />
+              <figcaption><span className="text-sm uppercase tracking-widest">Tu mentora</span><strong className="font-display text-3xl">Ainara Unamunzaga</strong><span>Un camino propio. Un acompañamiento cercano.</span></figcaption>
+            </figure>
           </section>
 
           {/* ── TESTIMONIOS ── se oculta solo si no hay ninguno real */}
@@ -578,8 +494,7 @@ export function LandingPage({ formations }: LandingPageProps) {
 
                   <Button size="lg" className="mt-7 w-full" onClick={openRegister}>
                     Empezar gratis y decidir después
-                    <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-                  </Button>
+                    </Button>
                   <p className="mt-3 text-center text-xs text-muted-foreground">
                     Pruebas la primera clase de cada formación sin poner tarjeta
                   </p>
@@ -645,7 +560,7 @@ export function LandingPage({ formations }: LandingPageProps) {
                         <span className="font-semibold">
                           {formatPriceDisplay(SINGLE_SESSION_PRICE)}
                         </span>
-                        . La cuota se cubre con menos de media.
+                        . El acompañamiento mensual cuesta {membershipPrice}, con la mentoría incluida.
                       </p>
                     </>
                   ) : (
@@ -796,7 +711,6 @@ export function LandingPage({ formations }: LandingPageProps) {
               <motion.div variants={fadeUp} className="mt-8">
                 <Button size="lg" className="w-full sm:w-auto" onClick={openRegister}>
                   Crear mi cuenta gratis
-                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                 </Button>
               </motion.div>
               <motion.p

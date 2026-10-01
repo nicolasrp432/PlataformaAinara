@@ -103,19 +103,19 @@ export function QuestClient({ questData }: QuestClientProps) {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row items-center justify-between gap-8 p-6 sm:p-10 rounded-3xl bg-card/60 backdrop-blur-xl border border-border/50 shadow-2xl relative overflow-hidden"
+        className="ainara-page-header flex flex-col md:flex-row items-start justify-between gap-8 relative"
       >
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-[80px] pointer-events-none -z-10" />
         
         <div className="flex-1 space-y-4 text-center md:text-left">
           <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 px-3.5 py-1 text-xs tracking-widest uppercase mb-1">
-            Progreso Cósmico
+            Tu evolución
           </Badge>
           <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-foreground">
             Tus <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">Logros</span>
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base max-w-md leading-relaxed mx-auto md:mx-0">
-            Forja tu propia leyenda. Cumple misiones diarias y semanales, acumula experiencia y desbloquea insignias que marcan tu evolución interior.
+            Cada práctica cuenta. Revisa tus avances, cumple tus misiones y reconoce lo que has aprendido.
           </p>
         </div>
 

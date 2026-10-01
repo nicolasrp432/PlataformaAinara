@@ -50,7 +50,7 @@ export default async function MentorshipPage() {
   return (
     <div className="relative mx-auto max-w-5xl space-y-12 pb-16 animation-fade-in">
       {/* Header */}
-      <header className="relative z-10 flex flex-col items-center gap-4 pt-4 text-center">
+      <header className="ainara-page-header relative z-10 flex flex-col items-start gap-4 pt-4 text-left">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
           <Sparkles className="h-4 w-4" aria-hidden />
           <span>Una sola mentora, toda su atención</span>

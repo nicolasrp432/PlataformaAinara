@@ -28,6 +28,7 @@ export async function GET() {
     messages,
     profileComments,
     notifications,
+    lifeWheel,
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("daily_reflections").select("*").eq("user_id", user.id),
@@ -38,6 +39,7 @@ export async function GET() {
     supabase.from("messages").select("*").eq("sender_id", user.id),
     supabase.from("profile_comments").select("*").eq("author_id", user.id),
     supabase.from("notifications").select("*").eq("user_id", user.id),
+    supabase.from("life_wheel_entries").select("*").eq("user_id", user.id),
   ])
 
   const payload = {
@@ -60,6 +62,7 @@ export async function GET() {
     progreso: progress.data ?? [],
     inscripciones: enrollments.data ?? [],
     carta_natal: natalChart.data ?? null,
+    rueda_de_la_vida: lifeWheel.data ?? [],
     mensajes_enviados: messages.data ?? [],
     comentarios_en_perfiles: profileComments.data ?? [],
     notificaciones: notifications.data ?? [],

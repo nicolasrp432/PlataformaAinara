@@ -59,10 +59,10 @@ export function NatalChartSection({
   const element = getSignElement(sunSign)
 
   return (
-    <Card className="border-border/50 shadow-md shadow-black/5 bg-card/60 backdrop-blur-md relative overflow-hidden group">
+    <Card className="border-border bg-card relative overflow-hidden group">
       <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors duration-300 ease-out pointer-events-none" />
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl text-foreground flex items-center gap-2">
+        <CardTitle className="font-display text-xl text-foreground flex items-center gap-2">
           <Star className="w-5 h-5 text-primary" /> Diseño Cósmico
         </CardTitle>
       </CardHeader>

@@ -9,24 +9,6 @@ import {
   safeRedirectTarget,
 } from "@/lib/access"
 
-/**
- * Cookie de caché del perfil. Guarda `<userId>|<role>|<accessStatus>` en vez
- * de solo el valor: si en el mismo navegador entra otra cuenta, el id no
- * coincide y la caché se descarta en lugar de heredar los permisos de la
- * sesión anterior.
- */
-const PROFILE_CACHE_COOKIE = "x-user-access"
-const PROFILE_CACHE_MAX_AGE = 60 // segundos
-
-function parseProfileCache(raw: string | undefined, userId: string) {
-  if (!raw) return null
-  const [cachedId, role, accessStatus, lifetime] = raw.split("|")
-  if (cachedId !== userId || !role || !accessStatus || lifetime === undefined) {
-    return null
-  }
-  return { role, accessStatus, hasLifetimeAccess: lifetime === "1" }
-}
-
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
   const routeAccess = getRouteAccess(pathname)
@@ -90,39 +72,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // ── Resolver rol + estado de acceso (cacheado 60s en cookie) ───────────
-  const cached = parseProfileCache(
-    request.cookies.get(PROFILE_CACHE_COOKIE)?.value,
-    user.id
-  )
+  // Authorization must come from the database, never an unsigned browser cookie.
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role, access_status, has_lifetime_access")
+    .eq("id", user.id)
+    .single()
 
-  let role = cached?.role ?? ""
-  let accessStatus = cached?.accessStatus ?? ""
-  let hasLifetimeAccess = cached?.hasLifetimeAccess ?? false
-
-  if (!cached) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, access_status, has_lifetime_access")
-      .eq("id", user.id)
-      .single()
-
-    role = profile?.role ?? "student"
-    accessStatus = profile?.access_status ?? "pending"
-    hasLifetimeAccess = profile?.has_lifetime_access === true
-
-    supabaseResponse.cookies.set(
-      PROFILE_CACHE_COOKIE,
-      `${user.id}|${role}|${accessStatus}|${hasLifetimeAccess ? "1" : "0"}`,
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: PROFILE_CACHE_MAX_AGE,
-      }
-    )
+  if (profileError || !profile) {
+    return new NextResponse("No se pudo verificar tu acceso. Inténtalo de nuevo.", { status: 503 })
   }
+  const role = profile.role
+  const accessStatus = profile.access_status
+  const hasLifetimeAccess = profile.has_lifetime_access === true
 
   const tier = resolveAccessTier({ role, accessStatus, hasLifetimeAccess })
 
