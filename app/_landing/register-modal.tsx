@@ -21,9 +21,10 @@ import Link from "next/link"
 interface RegisterModalProps {
   open: boolean
   onClose: () => void
+  returnFocusRef: React.RefObject<HTMLElement | null>
 }
 
-export function RegisterModal({ open, onClose }: RegisterModalProps) {
+export function RegisterModal({ open, onClose, returnFocusRef }: RegisterModalProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -130,7 +131,7 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
 
   return (
     <Sheet open={open} onOpenChange={next => { if (!next) onClose() }}>
-      <SheetContent side="right" showGrabber={false} className="w-full max-w-md bg-background" contentClassName="p-0">
+      <SheetContent side="right" showGrabber={false} className="w-full max-w-md bg-background" contentClassName="p-0" onCloseAutoFocus={event => { event.preventDefault(); returnFocusRef.current?.focus() }}>
         <SheetTitle className="sr-only">Crear tu cuenta en Mitra</SheetTitle>
         <SheetDescription className="sr-only">Accede a las primeras clases gratuitas y a tu diario privado.</SheetDescription>
             {/* Header */}

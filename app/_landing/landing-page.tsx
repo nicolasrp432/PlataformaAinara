@@ -80,6 +80,7 @@ export function LandingPage({ formations }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const heroRef = useRef<HTMLDivElement>(null)
+  const registerTriggerRef = useRef<HTMLElement | null>(null)
 
   const lifetime = PLANS.lifetime
   const membership = PLANS.membership
@@ -87,7 +88,10 @@ export function LandingPage({ formations }: LandingPageProps) {
   const membershipPrice = planPrice(membership)
   const membershipOnSale = isPlanPurchasable(membership)
 
-  const openRegister = () => setRegisterOpen(true)
+  const openRegister = () => {
+    registerTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    setRegisterOpen(true)
+  }
 
   const navLinks = [
     { href: "#formaciones", label: "Formaciones" },
@@ -761,7 +765,7 @@ export function LandingPage({ formations }: LandingPageProps) {
         </footer>
       </div>
 
-      <RegisterModal open={registerOpen} onClose={() => setRegisterOpen(false)} />
+      <RegisterModal open={registerOpen} onClose={() => setRegisterOpen(false)} returnFocusRef={registerTriggerRef} />
     </>
   )
 }
