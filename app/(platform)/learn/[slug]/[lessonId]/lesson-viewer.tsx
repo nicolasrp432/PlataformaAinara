@@ -36,6 +36,7 @@ import {
 import { addLessonComment, markLessonCompleted } from "./actions"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { RichText } from "@/components/ui/rich-text"
 import { CommentThread, type ThreadedComment } from "@/components/comments/comment-thread"
 import { useUserStore } from "@/lib/store/user-store"
 import dynamic from "next/dynamic"
@@ -80,6 +81,7 @@ interface LessonViewerProps {
       watchedSeconds: number
       contentType: ContentType
       transcript: string | null
+      resources: { title: string; url: string }[]
     }
     module: {
       id: string
@@ -269,33 +271,28 @@ function CommentsPanel({
 function AssistantPanel({
   lessonId,
   formationId,
+  hasAccess,
   className,
 }: {
   lessonId: string
+  hasAccess: boolean
   formationId: string
   className?: string
 }) {
   return (
     <div className={cn("flex flex-col border border-border rounded-xl p-3.5 bg-card/60 shadow-sm", className)}>
-      <ChatPanel lessonId={lessonId} formationId={formationId} className="flex-1" />
+      {hasAccess ? <ChatPanel lessonId={lessonId} formationId={formationId} className="flex-1" /> : <div className="space-y-4 p-4"><Bot className="h-7 w-7 text-primary" /><h3 className="text-xl">Acompaña tu aprendizaje.</h3><p className="text-sm text-muted-foreground">El asistente contextual está incluido con el acceso completo a Mitra. Puedes seguir disfrutando de esta clase de muestra.</p><Button asChild><Link href="/billing">Ver opciones de acceso</Link></Button></div>}
     </div>
   )
 }
 
 /* ── Panel de Recursos ───────────────────────────────────────────────── */
 
-function ResourcesPanel() {
-  return (
-    <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 text-center space-y-1.5">
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto text-primary">
-        <Paperclip className="w-5 h-5" />
-      </div>
-      <h3 className="text-sm font-semibold text-foreground">Recursos y Cuadernos</h3>
-      <p className="text-muted-foreground text-xs max-w-sm mx-auto">
-        Los materiales descargables, ejercicios guiados y fichas de integración están activos en la pestaña de Práctica.
-      </p>
-    </div>
-  )
+function ResourcesPanel({ resources,transcript }: { resources: { title: string; url: string }[]; transcript: string | null }) {
+  return <div className="space-y-5">
+    {resources.length > 0 ? <ul className="grid gap-3 sm:grid-cols-2">{resources.map(resource => <li key={resource.url}><a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex h-full items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium hover:bg-primary/10"><Paperclip className="h-4 w-4 shrink-0 text-primary" /><span className="break-words">{resource.title}<span className="mt-1 block text-xs font-normal text-muted-foreground">Abrir material ↗</span></span></a></li>)}</ul> : <p className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">Esta lección no tiene materiales descargables añadidos.</p>}
+    {transcript && <section className="space-y-3 rounded-xl border border-border bg-card p-5"><h3 className="font-semibold">Texto de la lección</h3><RichText text={transcript} /></section>}
+  </div>
 }
 
 /* ── Componente Principal LessonViewer ───────────────────────────────── */
@@ -304,11 +301,15 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
   const router = useRouter()
   const { markLessonComplete, addXP } = useUserStore()
   const [lessonCompleted, setLessonCompleted] = useState(data.lesson.isCompleted)
+  useEffect(() => { setLessonCompleted(data.lesson.isCompleted) }, [data.lesson.isCompleted])
   const [isSaving, setIsSaving] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [comments, setComments] = useState(data.comments || [])
   const [isPending, startTransition] = useTransition()
-  const progressDebounceRef = useRef<NodeJS.Timeout | null>(null)
+  const latestPositionRef = useRef<number | null>(null)
+  const lastPersistedRef = useRef(0)
+  const completionPendingRef = useRef(false)
+  const progressQueueRef = useRef(Promise.resolve())
 
   // Bottom-sheet state (mobile)
   const [openContenido, setOpenContenido] = useState(false)
@@ -320,7 +321,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
   }, [data.comments])
 
   const { lesson, module, formation, curriculum, previousLesson, nextLesson, completedCount, totalCount } = data
-  const progressPercent = Math.round((completedCount / totalCount) * 100)
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   const totalCommentCount = comments.reduce(
     (acc, c) => acc + 1 + (c.replies?.length ?? 0),
@@ -372,54 +373,41 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
     })
   }
 
-  const saveProgress = useCallback(async (watchedSeconds: number, completed: boolean = false) => {
-    const doFetch = async () => {
-      try {
-        await fetch("/api/progress", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lessonId: lesson.id, watchedSeconds, isCompleted: completed }),
-        })
-        if (completed && !lessonCompleted) setLessonCompleted(true)
-      } catch (err) {
-        console.error("Error saving progress:", err)
-      }
+  useEffect(() => {
+    return () => {
+      const position = latestPositionRef.current
+      if (position !== null) fetch("/api/progress", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonId: lesson.id, watchedSeconds: position }) }).catch(() => {})
     }
+  }, [lesson.id])
 
-    if (completed) {
-      if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current)
-      await doFetch()
-    } else {
-      if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current)
-      progressDebounceRef.current = setTimeout(doFetch, 2000)
-    }
-  }, [lesson.id, lessonCompleted])
+  const saveProgress = useCallback((watchedSeconds: number) => {
+    latestPositionRef.current = watchedSeconds
+    if (Date.now() - lastPersistedRef.current < 10_000) return
+    lastPersistedRef.current = Date.now()
+    progressQueueRef.current = progressQueueRef.current.then(async () => {
+      const res = await fetch("/api/progress", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonId: lesson.id, watchedSeconds }) })
+      if (!res.ok) throw new Error("No se pudo guardar tu posición. Comprueba la conexión.")
+    }).catch(() => { toast.error("No se pudo guardar tu posición. Comprueba la conexión.") })
+  }, [lesson.id])
 
-  const handleMarkComplete = async () => {
+  const handleMarkComplete = async (advance = true) => {
+    if (completionPendingRef.current) return
+    completionPendingRef.current = true
     setIsSaving(true)
-    await saveProgress(lesson.durationSeconds || 0, true)
-    const result = await markLessonCompleted(lesson.id, formation.slug)
-    setIsSaving(false)
-    if (result && !result.error && !result.alreadyCompleted) {
+    try {
+      const result = await markLessonCompleted(lesson.id, formation.slug)
+      if (!("success" in result)) { toast.error(result.error); return }
+      setLessonCompleted(true)
       markLessonComplete(lesson.id)
-      addXP(result.xpEarned ?? 0, result.leveledUp ?? false)
-
-      toast.success(`¡Lección completada! +${result.xpEarned} XP`, {
-        description: result.leveledUp ? "¡Subiste de nivel! 🎉" : "Continúa integrando tu aprendizaje.",
-      })
-      if (result.certificateIssued) {
-        setTimeout(() => {
-          toast.success("🎓 ¡Certificado emitido!", {
-            description: "Has completado toda la formación. Revísalo en tu perfil.",
-            duration: 6000,
-          })
-        }, 1500)
+      if (!result.alreadyCompleted) {
+        addXP(result.xpEarned ?? 0, result.leveledUp ?? false)
+        toast.success(`Lección completada · +${result.xpEarned ?? 0} XP`, { description: result.leveledUp ? "Has subido de nivel." : "Continúa integrando tu aprendizaje." })
+        if (result.certificateIssued) toast.success("Tu certificado está disponible en el perfil.")
       }
       router.refresh()
-    }
-    if (nextLesson) {
-      router.push(`/learn/${formation.slug}/${nextLesson.id}`)
-    }
+      if (advance && nextLesson && !nextLesson.isLocked) router.push(`/learn/${formation.slug}/${nextLesson.id}`)
+    } catch { toast.error("No se pudo completar la lección. Inténtalo de nuevo.") }
+    finally { completionPendingRef.current = false; setIsSaving(false) }
   }
 
   const canMarkComplete =
@@ -483,7 +471,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                 isCompleted: lessonCompleted,
               }}
               isCompleted={lessonCompleted}
-              onComplete={handleMarkComplete}
+              onComplete={() => handleMarkComplete()}
               isSaving={isSaving}
             />
           ) : lesson.contentType === "quiz" ? (
@@ -492,6 +480,11 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               formationSlug={formation.slug}
               formationId={formation.id}
             />
+          ) : lesson.contentType === "text" ? (
+            <article className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-10">
+              <p className="ainara-eyebrow">LECTURA / INTEGRACIÓN</p>
+              <RichText text={lesson.transcript || lesson.description || "El contenido de esta lectura está en preparación."} className="text-base leading-relaxed" />
+            </article>
           ) : (
             /* Video Player / Theater Screen */
             <div className="bg-black/95 shadow-inner overflow-hidden">
@@ -504,7 +497,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                       lessonId={lesson.id}
                       initialProgress={lesson.watchedSeconds}
                       onProgress={(currentTime) => saveProgress(Math.floor(currentTime))}
-                      onComplete={() => { if (!lessonCompleted) saveProgress(lesson.durationSeconds || 0, true) }}
+                      onComplete={() => { if (!lessonCompleted) handleMarkComplete(false) }}
                       className="w-full h-full"
                     />
                   ) : (
@@ -559,7 +552,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                     </p>
                   </div>
                   <Button
-                    onClick={handleMarkComplete}
+                    onClick={() => handleMarkComplete()}
                     disabled={isSaving}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-5 rounded-lg h-9 text-xs shrink-0 shadow-sm"
                   >
@@ -618,11 +611,11 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               </TabsContent>
 
               <TabsContent value="assistant" className="mt-3.5 outline-none">
-                <AssistantPanel lessonId={lesson.id} formationId={formation.id} className="h-[440px]" />
+                <AssistantPanel hasAccess={data.hasFullAccess} lessonId={lesson.id} formationId={formation.id} className="h-[440px]" />
               </TabsContent>
 
               <TabsContent value="resources" className="mt-3.5 outline-none">
-                <ResourcesPanel />
+                <ResourcesPanel resources={lesson.resources} transcript={lesson.transcript} />
               </TabsContent>
             </Tabs>
 
@@ -723,7 +716,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
           {/* Acción principal */}
           {canMarkComplete ? (
             <Button
-              onClick={handleMarkComplete}
+              onClick={() => handleMarkComplete()}
               disabled={isSaving}
               size="sm"
               className="min-w-0 flex-[1.25] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-xl flex items-center justify-center gap-1 px-2"
@@ -803,7 +796,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
           <SheetHeader className="pb-2">
             <SheetTitle className="text-left text-sm font-semibold">Asistente IA Ainara</SheetTitle>
           </SheetHeader>
-          <AssistantPanel lessonId={lesson.id} formationId={formation.id} className="flex-1 min-h-0" />
+          <AssistantPanel hasAccess={data.hasFullAccess} lessonId={lesson.id} formationId={formation.id} className="flex-1 min-h-0" />
         </SheetContent>
       </Sheet>
     </div>

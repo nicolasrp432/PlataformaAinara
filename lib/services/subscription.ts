@@ -62,12 +62,13 @@ export async function resolveUserId(params: {
   if (!params.customerId) return null
 
   const supabase = supabaseAdmin()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("id")
     .eq("stripe_customer_id", params.customerId)
     .maybeSingle()
 
+  if (error) throw new Error("No se pudo resolver el usuario del pago")
   return data?.id ?? null
 }
 
@@ -83,7 +84,7 @@ export async function syncSubscription(params: {
   const supabase = supabaseAdmin()
   const item = subscription.items.data[0]
 
-  await supabase.from("subscriptions").upsert(
+  const { error: subscriptionError } = await supabase.from("subscriptions").upsert(
     {
       user_id: userId,
       stripe_customer_id: subscription.customer as string,
@@ -95,14 +96,16 @@ export async function syncSubscription(params: {
     },
     { onConflict: "user_id" }
   )
+  if (subscriptionError) throw new Error("No se pudo guardar la suscripción")
 
   const nextAccess = accessStatusForSubscription(subscription.status)
   if (!nextAccess) return null
 
-  await supabase
+  const { error: profileError } = await supabase
     .from("profiles")
     .update({ access_status: nextAccess })
     .eq("id", userId)
+  if (profileError) throw new Error("No se pudo actualizar el acceso de la suscripción")
 
   return nextAccess
 }
@@ -126,7 +129,7 @@ export async function grantLifetimeAccess(params: {
   const { userId, session } = params
   const supabase = supabaseAdmin()
 
-  await supabase.from("one_time_purchases").upsert(
+  const { error: purchaseError } = await supabase.from("one_time_purchases").upsert(
     {
       user_id: userId,
       stripe_customer_id:
@@ -140,9 +143,11 @@ export async function grantLifetimeAccess(params: {
     },
     { onConflict: "stripe_session_id" }
   )
+  if (purchaseError) throw new Error("No se pudo registrar la compra")
 
-  await supabase
+  const { error: profileError } = await supabase
     .from("profiles")
     .update({ has_lifetime_access: true })
     .eq("id", userId)
+  if (profileError) throw new Error("No se pudo conceder el acceso permanente")
 }

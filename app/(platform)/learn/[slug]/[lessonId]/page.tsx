@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: PageProps) {
   const supabase = await createClient()
   
   const { data: lesson } = await supabase
-    .from("lessons")
+    .from("lesson_catalog")
     .select("title")
     .eq("id", lessonId)
     .single()
@@ -52,5 +52,5 @@ export default async function LessonViewerPage({ params }: PageProps) {
     )
   }
 
-  return <LessonViewer data={data} currentUserId={user.id} />
+  return <LessonViewer key={lessonId} data={data} currentUserId={user.id} />
 }

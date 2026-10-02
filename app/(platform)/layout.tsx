@@ -53,9 +53,9 @@ export default async function PlatformLayout({
 
   const userData = {
     id: user.id,
-    full_name: user.user_metadata?.full_name || profile?.full_name || "Usuario",
+    full_name: profile?.full_name || user.user_metadata?.full_name || "Usuario",
     email: user.email || "",
-    avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url,
+    avatarUrl: profile?.avatar_url || user.user_metadata?.avatar_url,
     role: profile?.role || "student",
     level: profile?.level || 1,
     xp: profile?.xp ?? 0,
@@ -64,7 +64,7 @@ export default async function PlatformLayout({
   const streak = profile?.streak_days || 0
 
   return (
-    <UserStoreProvider>
+    <UserStoreProvider key={user.id}>
       {/* Hydrate client store with server-fetched user data */}
       <HydrateStore
         xp={profile?.xp ?? 0}

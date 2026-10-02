@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { RichText } from "@/components/ui/rich-text"
+import { SseDecoder } from "@/lib/ai-stream"
 
 interface Message {
   id: string
@@ -38,14 +40,37 @@ const QUICK_SUGGESTIONS = [
 
 export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([])
+  const [isRestoring,setIsRestoring] = useState(true)
+  const [historyError,setHistoryError] = useState<string | null>(null)
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const requestRef = useRef<AbortController | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    requestRef.current?.abort()
+    setMessages([])
+    setConversationId(null)
+    setIsStreaming(false)
+    setIsRestoring(true)
+    setHistoryError(null)
+    const abort = new AbortController()
+    const query = new URLSearchParams()
+    if (lessonId) query.set("lessonId",lessonId)
+    if (formationId) query.set("formationId",formationId)
+    fetch(`/api/ai/chat?${query}`,{ signal: abort.signal })
+      .then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.error ?? "No se pudo recuperar el historial."); return data })
+      .then(data => { if (!abort.signal.aborted) { setConversationId(data.conversationId); setMessages(data.messages ?? []) } })
+      .catch(error => { if (!abort.signal.aborted) setHistoryError(error.message) })
+      .finally(() => { if (!abort.signal.aborted) setIsRestoring(false) })
+    return () => { abort.abort(); requestRef.current?.abort(); requestRef.current = null }
+  }, [lessonId, formationId])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    const area = scrollRef.current
+    if (area) area.scrollTop = area.scrollHeight
   }, [messages])
 
   const handleCopyMessage = async (id: string, text: string) => {
@@ -66,95 +91,60 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
 
   const sendMessage = async (textToSend: string) => {
     const trimmed = textToSend.trim()
-    if (!trimmed || isStreaming) return
-
-    const userMsg: Message = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-      rawPrompt: trimmed,
-    }
-    const assistantId = `assistant-${Date.now()}`
-
-    setMessages((prev) => [
-      ...prev,
-      userMsg,
+    if (!trimmed || requestRef.current || isRestoring) return
+    const abort = new AbortController()
+    requestRef.current = abort
+    const assistantId = crypto.randomUUID()
+    setMessages(prev => [...prev,
+      { id: crypto.randomUUID(), role: "user", content: trimmed, rawPrompt: trimmed },
       { id: assistantId, role: "assistant", content: "", rawPrompt: trimmed },
     ])
     setInput("")
     setIsStreaming(true)
-
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
     try {
       const res = await fetch("/api/ai/chat", {
-        method: "POST",
+        method: "POST", signal: abort.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: trimmed, conversationId, lessonId, formationId }),
       })
-
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: "El servicio no está disponible en este momento." }))
-        const errorMsg = data?.error ?? "No se pudo conectar con el asistente."
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  content: errorMsg,
-                  isError: true,
-                }
-              : m
-          )
-        )
-        toast.error(errorMsg)
-        return
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? "El asistente no está disponible ahora.")
       }
-
+      if (!res.body) throw new Error("No se recibió una respuesta.")
       const convId = res.headers.get("X-Conversation-Id")
-      if (convId && !conversationId) setConversationId(convId)
-
-      const reader = res.body!.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ""
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split("\n")
-        buffer = lines.pop() ?? ""
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue
-          const data = line.slice(6)
-          if (data === "[DONE]") break
-          try {
-            const { text } = JSON.parse(data)
-            if (text) {
-              setMessages((prev) =>
-                prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + text } : m))
-              )
-            }
-          } catch {
-            /* skip malformed chunks */
+      if (convId) setConversationId(convId)
+      reader = res.body.getReader()
+      const parser = new SseDecoder()
+      let completed = false
+      let received = false
+      const consume = (events: string[]) => {
+        for (const event of events) {
+          if (event === "[DONE]") { completed = true; break }
+          const data = JSON.parse(event)
+          if (data.error) throw new Error(data.error)
+          if (typeof data.text === "string" && data.text) {
+            received = true
+            setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: m.content + data.text } : m))
           }
         }
       }
-    } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? {
-                ...m,
-                content: "Hubo un corte en la conexión. Por favor reintenta tu pregunta.",
-                isError: true,
-              }
-            : m
-        )
-      )
-      toast.error("Error de conexión al enviar el mensaje.")
+      while (!completed) {
+        const { done, value } = await reader.read()
+        if (done) { consume(parser.finish()); break }
+        consume(parser.push(value))
+      }
+      if (!completed || !received) throw new Error("La respuesta quedó incompleta. Puedes reintentar tu pregunta.")
+    } catch (error) {
+      if (requestRef.current !== abort) return
+      const message = abort.signal.aborted ? "Respuesta detenida." : error instanceof Error ? error.message : "Error de conexión. Inténtalo de nuevo."
+      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: m.content ? `${m.content}\n\n${message}` : message, isError: true } : m))
+      if (!abort.signal.aborted) toast.error(message)
     } finally {
-      setIsStreaming(false)
+      await reader?.cancel().catch(() => {})
+      reader?.releaseLock()
+      if (requestRef.current === abort) { requestRef.current = null; setIsStreaming(false) }
     }
   }
 
@@ -169,7 +159,7 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       handleSubmit()
     }
@@ -177,16 +167,18 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
 
   return (
     <div className={cn("flex flex-col min-h-0", className)}>
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border pb-2 text-xs text-muted-foreground"><span>{isRestoring ? "Recuperando tu conversación…" : "Conversación privada"}</span><button type="button" className="rounded-md px-2 py-1 text-primary hover:bg-primary/10" disabled={isStreaming || isRestoring} onClick={() => { setMessages([]); setConversationId(null); setHistoryError(null) }}>Nueva conversación</button></div>
+      {historyError && <p role="alert" className="pt-2 text-xs text-warning-strong">{historyError}</p>}
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-3.5 space-y-4 px-1">
-        {messages.length === 0 && (
+      <div ref={scrollRef} role="log" aria-label="Conversación con el asistente" className="flex-1 overflow-y-auto py-3.5 space-y-4 px-1">
+        {messages.length === 0 && !isRestoring && (
           <div className="text-center py-8 text-muted-foreground space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto text-primary shadow-inner">
               <Bot className="h-6 w-6" />
             </div>
             <div>
               <p className="font-semibold text-foreground text-sm flex items-center justify-center gap-1.5">
-                <span>Asistente Ainara</span>
+                <span>Asistente Mitra</span>
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
               </p>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto leading-relaxed">
@@ -250,13 +242,11 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
                 )}
               >
                 {msg.content ? (
-                  <div className="whitespace-pre-wrap leading-relaxed space-y-2">
-                    {msg.content}
-                  </div>
+                  <RichText text={msg.content} />
                 ) : (
                   <span className="flex gap-2 items-center text-muted-foreground text-xs py-1">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span>Conectando con la sabiduría interior...</span>
+                    <span>Preparando tu respuesta…</span>
                   </span>
                 )}
               </div>
@@ -289,7 +279,7 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
                     <button
                       type="button"
                       onClick={() => handleRetry(msg.rawPrompt)}
-                      disabled={isStreaming}
+                      disabled={isStreaming || isRestoring}
                       className="inline-flex items-center gap-1 text-primary hover:underline py-0.5 px-1 rounded font-medium"
                     >
                       <RotateCcw className="h-3 w-3" />
@@ -307,20 +297,24 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
 
       {/* Input */}
       <div className="border-t border-border pt-3 pb-1">
+        {isStreaming && <Button type="button" variant="outline" size="sm" className="mb-2" onClick={() => requestRef.current?.abort()}>Detener respuesta</Button>}
+        <p className="mb-3 text-xs text-muted-foreground">Asistente de IA para aprender. Puede equivocarse; contrasta sus respuestas con la clase.</p>
         <form onSubmit={handleSubmit} className="flex gap-2 items-end">
           <Textarea
+            aria-label="Tu pregunta al asistente"
+            maxLength={6000}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Pregunta lo que necesites a Ainara..."
+            placeholder="Escribe tu pregunta…"
             rows={1}
-            disabled={isStreaming}
+            disabled={isStreaming || isRestoring}
             className="resize-none min-h-[42px] max-h-32 bg-card rounded-lg border-border/80 px-3.5 py-2.5 text-xs sm:text-sm focus-visible:ring-primary/20 placeholder:text-muted-foreground/60"
           />
           <Button
             type="submit"
             size="icon"
-            disabled={isStreaming || !input.trim()}
+            disabled={isStreaming || isRestoring || !input.trim()}
             className="shrink-0 rounded-lg h-10 w-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-transform active:scale-95"
             title="Enviar mensaje"
           >

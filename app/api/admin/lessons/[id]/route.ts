@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { revalidateTag } from "next/cache"
+import { lessonResourcesSchema } from "@/lib/validations/lesson-resources"
 import { CACHE_TAGS } from "@/lib/cache"
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -52,11 +53,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const body = await request.json()
+  const body = await request.json().catch(() => null)
+  if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Datos inválidos" },{ status: 400 })
   const allowed = ["title", "description", "video_url", "duration_seconds", "xp_reward", "is_free", "is_published", "content_type", "sort_order", "transcript"]
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
   for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key]
+  }
+
+  if (body.resources !== undefined) {
+    const parsed = lessonResourcesSchema.safeParse(body.resources)
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Recursos inválidos" },{ status: 400 })
+    updates.resources = parsed.data
   }
 
   const { data, error } = await supabase

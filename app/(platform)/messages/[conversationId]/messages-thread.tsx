@@ -22,6 +22,7 @@ import {
   sendMessageAction,
   markConversationReadAction,
   getLatestMessagesAction,
+  getOlderMessagesAction,
 } from "../actions"
 import { playMessageChime } from "@/components/messages/audio-chime"
 import { getInitials, cn } from "@/lib/utils"
@@ -103,9 +104,16 @@ export function MessagesThread({
   const [otherLastRead, setOtherLastRead] = React.useState<string | null>(
     otherUser?.last_read_at ?? null
   )
+  const [otherOnline, setOtherOnline] = React.useState(false)
   const [isOtherTyping, setIsOtherTyping] = React.useState(false)
   const [showScrollBottom, setShowScrollBottom] = React.useState(false)
 
+  const [hasOlder,setHasOlder] = React.useState(initialMessages.length >= 100)
+  const [loadingOlder,setLoadingOlder] = React.useState(false)
+  const pollCursorRef = React.useRef<{ created_at: string; id: string }>(initialMessages.at(-1) ?? { created_at: "1970-01-01T00:00:00.000Z",id: "00000000-0000-4000-8000-000000000000" })
+  const messagesRef = React.useRef(messages)
+  React.useEffect(() => { messagesRef.current = messages }, [messages])
+  const sendingRef = React.useRef(false)
   const scrollAreaRef = React.useRef<HTMLDivElement>(null)
   const bottomRef = React.useRef<HTMLDivElement>(null)
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
@@ -117,7 +125,8 @@ export function MessagesThread({
 
   // Desplazamiento automático al fondo
   const scrollToBottom = React.useCallback((behavior: ScrollBehavior = "smooth") => {
-    bottomRef.current?.scrollIntoView({ behavior })
+    const area = scrollAreaRef.current
+    requestAnimationFrame(() => area?.scrollTo({ top: area.scrollHeight, behavior }))
   }, [])
 
   // Desplazarse al cargar
@@ -137,31 +146,15 @@ export function MessagesThread({
   React.useEffect(() => {
     const supabase = createClient()
     const channel = supabase.channel(`chat:${conversationId}`, {
-      config: { broadcast: { self: false } },
+      config: { private: true, broadcast: { self: false }, presence: { key: currentUserId } },
     })
 
     channelRef.current = channel
 
-    // 1. Transporte Broadcast Instantáneo: Mensaje nuevo
-    channel.on("broadcast", { event: "new_message" }, (event) => {
-      const newMsg = event.payload as Message
-      if (newMsg.sender_id === currentUserId) return
-
-      playMessageChime()
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === newMsg.id)) return prev
-        return [...prev, newMsg]
-      })
-
-      // Marcar como leído
-      markConversationReadAction(conversationId)
-      scrollToBottom("smooth")
-    })
-
     // 2. Transporte Broadcast: Indicador de escritura
     channel.on("broadcast", { event: "typing" }, (event) => {
       const payload = event.payload as { userId: string }
-      if (payload.userId !== currentUserId) {
+      if (payload.userId === otherUser?.id) {
         setIsOtherTyping(true)
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
         typingTimeoutRef.current = setTimeout(() => {
@@ -173,7 +166,7 @@ export function MessagesThread({
     // 3. Transporte Broadcast: Recibo de lectura
     channel.on("broadcast", { event: "read" }, (event) => {
       const payload = event.payload as { readAt: string; userId: string }
-      if (payload.userId !== currentUserId) {
+      if (payload.userId === otherUser?.id) {
         setOtherLastRead(payload.readAt)
       }
     })
@@ -197,6 +190,8 @@ export function MessagesThread({
         }
         if (raw.sender_id === currentUserId) return
 
+        const area = scrollAreaRef.current
+        const pinned = !area || area.scrollHeight - area.scrollTop - area.clientHeight < 200
         setMessages((prev) => {
           if (prev.some((m) => m.id === raw.id)) return prev
           const msgWithProfile: Message = {
@@ -211,31 +206,53 @@ export function MessagesThread({
           }
           return [...prev, msgWithProfile]
         })
-        scrollToBottom("smooth")
+        if (document.visibilityState === "visible") markConversationReadAction(conversationId).catch(() => {})
+        playMessageChime()
+        if (pinned) scrollToBottom("smooth")
       }
     )
 
-    channel.subscribe()
+    channel.on("presence", { event: "sync" }, () => {
+      setOtherOnline(Boolean(otherUser && channel.presenceState()[otherUser.id]?.length))
+    })
+    channel.on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_participants", filter: `conversation_id=eq.${conversationId}` }, payload => {
+      const row = payload.new as { user_id: string; last_read_at: string | null }
+      if (row.user_id === otherUser?.id) setOtherLastRead(row.last_read_at)
+    })
+    channel.subscribe(status => { if (status === "SUBSCRIBED") channel.track({ userId: currentUserId }); else setOtherOnline(false) })
 
     // 5. Smart Polling & Tab Focus Synchronization
+    let active = true
+    let syncing = false
     const syncLatest = async () => {
-      if (messages.length === 0) return
-      const lastMsg = messages[messages.length - 1]
-      const res = await getLatestMessagesAction(conversationId, lastMsg.created_at)
-      if (res?.messages && res.messages.length > 0) {
-        setMessages((prev) => {
-          const ids = new Set(prev.map((m) => m.id))
-          const missing = (res.messages as unknown as Message[]).filter((m) => !ids.has(m.id))
-          if (missing.length === 0) return prev
-          return [...prev, ...missing]
-        })
-        scrollToBottom("smooth")
-      }
+      if (syncing || !active) return
+      syncing = true
+      try {
+        for (let page = 0; page < 5 && active; page++) {
+          const res = await getLatestMessagesAction(conversationId,pollCursorRef.current)
+          if (!active || res.error || !res.messages.length) break
+          const received = res.messages as unknown as Message[]
+          pollCursorRef.current = received.at(-1)!
+          const area = scrollAreaRef.current
+          const pinned = !area || area.scrollHeight - area.scrollTop - area.clientHeight < 200
+          setMessages(prev => {
+            const ids = new Set(prev.map(message => message.id))
+            const missing = received.filter(message => !ids.has(message.id))
+            if (!missing.length) return prev
+            return [...prev,...missing].sort((a,b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+          })
+          if (pinned) scrollToBottom("smooth")
+          if (document.visibilityState === "visible") markConversationReadAction(conversationId).catch(() => {})
+          if (res.messages.length < 50) break
+        }
+      } catch { /* Retry when the connection returns. */ }
+      finally { syncing = false }
     }
 
     const handleFocus = () => {
+      if (document.visibilityState !== "visible") return
       syncLatest()
-      markConversationReadAction(conversationId)
+      markConversationReadAction(conversationId).catch(() => {})
     }
 
     window.addEventListener("focus", handleFocus)
@@ -249,17 +266,37 @@ export function MessagesThread({
     }, 5000)
 
     return () => {
+      active = false
       supabase.removeChannel(channel)
       window.removeEventListener("focus", handleFocus)
       document.removeEventListener("visibilitychange", handleFocus)
       clearInterval(pollInterval)
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     }
-  }, [conversationId, currentUserId, otherUser, messages, scrollToBottom])
+  }, [conversationId, currentUserId, otherUser, scrollToBottom])
+
+  const loadOlder = async () => {
+    const first = messagesRef.current.find(message => !message.id.startsWith("opt-"))
+    if (!first || loadingOlder) return
+    setLoadingOlder(true)
+    const area = scrollAreaRef.current
+    const oldHeight = area?.scrollHeight ?? 0
+    const oldTop = area?.scrollTop ?? 0
+    try {
+      const result = await getOlderMessagesAction(conversationId,first)
+      if (result.error) { toast.error(result.error); return }
+      setHasOlder(result.messages.length === 50)
+      setMessages(prev => { const ids = new Set(prev.map(message => message.id)); return [...(result.messages as unknown as Message[]).filter(message => !ids.has(message.id)),...prev] })
+      requestAnimationFrame(() => { if (area) area.scrollTop = oldTop + area.scrollHeight - oldHeight })
+    } catch { toast.error("No se pudieron cargar los mensajes anteriores.") }
+    finally { setLoadingOlder(false) }
+  }
 
   // Difundir evento de escritura
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setBody(e.target.value)
+    e.target.style.height = "auto"
+    e.target.style.height = `${Math.min(e.target.scrollHeight,128)}px`
 
     const now = Date.now()
     if (now - lastTypingBroadcastRef.current > 1500) {
@@ -275,7 +312,8 @@ export function MessagesThread({
   // Enviar mensaje
   const handleSendText = async (textToSend: string) => {
     const trimmed = textToSend.trim()
-    if (!trimmed || isPending) return
+    if (!trimmed || sendingRef.current) return
+    sendingRef.current = true
 
     const optimisticId = `opt-${Date.now()}`
     const nowIso = new Date().toISOString()
@@ -289,6 +327,7 @@ export function MessagesThread({
 
     setMessages((prev) => [...prev, optimisticMessage])
     setBody("")
+    if (textareaRef.current) textareaRef.current.style.height = ""
     setIsPending(true)
     scrollToBottom("smooth")
 
@@ -309,28 +348,24 @@ export function MessagesThread({
         const confirmed = result.message as Message
         // Reemplazar optimista con mensaje confirmado por el servidor
         setMessages((prev) =>
-          prev.map((m) => (m.id === optimisticId ? confirmed : m))
+          prev.filter(m => m.id !== confirmed.id).map((m) => (m.id === optimisticId ? confirmed : m))
         )
 
-        // Difundir broadcast instantáneo a la sala de chat
-        channelRef.current?.send({
-          type: "broadcast",
-          event: "new_message",
-          payload: confirmed,
-        })
+
       }
     } catch {
       toast.error("Error al enviar el mensaje. Inténtalo de nuevo.")
       setBody(trimmed)
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
     } finally {
+      sendingRef.current = false
       setIsPending(false)
       textareaRef.current?.focus()
     }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       handleSendText(body)
     }
@@ -369,15 +404,14 @@ export function MessagesThread({
                     {getInitials(otherUser.full_name ?? "?")}
                   </AvatarFallback>
                 </Avatar>
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+                {otherOnline && <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success-solid ring-2 ring-background" />}
               </div>
               <div className="min-w-0">
                 <span className="text-sm font-bold truncate block group-hover:text-primary transition-colors leading-tight text-foreground">
                   {otherUser.full_name}
                 </span>
                 <span className="text-3xs text-muted-foreground block leading-tight flex items-center gap-1 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>En línea · Ver perfil</span>
+                  <span>{otherOnline ? "Conectado al chat · Ver perfil" : "Ver perfil"}</span>
                 </span>
               </div>
             </Link>
@@ -396,7 +430,7 @@ export function MessagesThread({
       <div
         ref={scrollAreaRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4"
       >
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center text-muted-foreground space-y-4">
@@ -433,6 +467,8 @@ export function MessagesThread({
             </div>
           </div>
         )}
+
+        {hasOlder && <div className="flex justify-center py-3"><Button variant="outline" size="sm" onClick={loadOlder} disabled={loadingOlder}>{loadingOlder ? "Cargando…" : "Cargar mensajes anteriores"}</Button></div>}
 
         {/* Agrupación de mensajes con separadores de fecha */}
         {messages.map((msg, index) => {
@@ -579,11 +615,12 @@ export function MessagesThread({
         <div className="flex gap-2 items-end">
           <Textarea
             ref={textareaRef}
+            aria-label="Escribe un mensaje"
             value={body}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             rows={1}
-            placeholder="Escribe un mensaje… (Enter para enviar, Shift+Enter para salto)"
+            placeholder="Escribe un mensaje…"
             maxLength={2000}
             className="flex-1 resize-none bg-background/70 border-border/70 text-sm min-h-[44px] max-h-32 rounded-xl px-3.5 py-2.5 focus-visible:ring-primary/20 leading-relaxed"
           />

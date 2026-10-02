@@ -33,6 +33,7 @@ const fraunces = Fraunces({
 // (globals.css define --font-mono como ui-monospace, sin referenciarla).
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")),
   title: {
     default: "Mitra | Desde la raíz",
     template: "%s | Mitra",

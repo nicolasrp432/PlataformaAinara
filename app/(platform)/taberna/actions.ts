@@ -2,6 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
+import { getAccessTier } from "@/lib/data-access"
+import { hasFullAccess } from "@/lib/access"
 import { createNotification } from "@/lib/services/notifications"
 
 export async function createReflection(formData: FormData) {
@@ -12,9 +15,14 @@ export async function createReflection(formData: FormData) {
     return { error: "Debes iniciar sesión para publicar en La Taberna." }
   }
 
-  const content = formData.get("content") as string
-  if (!content || content.trim() === "") {
-    return { error: "El contenido no puede estar vacío." }
+  if (!hasFullAccess(await getAccessTier(user.id))) return { error: "La comunidad requiere acceso completo." }
+  const parsed = z.object({ content: z.string().trim().min(1,"El contenido no puede estar vacío.").max(4000,"Máximo 4000 caracteres."), parentId: z.string().uuid().nullable() })
+    .safeParse({ content: formData.get("content"),parentId: formData.get("parent_id") || null })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Publicación inválida." }
+  const { content,parentId } = parsed.data
+  if (parentId) {
+    const { data: parent } = await supabase.from("reflections").select("id").eq("id",parentId).eq("is_public",true).is("lesson_id",null).maybeSingle()
+    if (!parent) return { error: "La publicación original no está disponible." }
   }
 
   // Rate limit: 1 publicación cada 15 segundos por usuario
@@ -28,7 +36,6 @@ export async function createReflection(formData: FormData) {
     return { error: "Espera unos segundos antes de publicar de nuevo." }
   }
 
-  const parentId = formData.get("parent_id") as string | null
 
   const { error } = await supabase
     .from("reflections")
@@ -40,7 +47,7 @@ export async function createReflection(formData: FormData) {
     })
 
   if (error) {
-    return { error: "Error al publicar: " + error.message }
+    return { error: "No se pudo publicar. Vuelve a intentarlo." }
   }
 
   // Si es una respuesta a otra reflexión, notificar al autor original
@@ -85,11 +92,13 @@ export async function resonarReflection(reflectionId: string) {
     return { error: "Debes iniciar sesión para resonar." }
   }
 
+  if (!z.string().uuid().safeParse(reflectionId).success || !hasFullAccess(await getAccessTier(user.id))) return { error: "Publicación no disponible." }
+
   // Use atomic SQL increment via RPC to avoid race conditions
-  const { error } = await supabase.rpc("increment_reflection_likes", {
+  const { data: count,error } = await supabase.rpc("resonate_reflection", {
     p_reflection_id: reflectionId,
   })
 
   if (error) return { error: error.message }
-  return { success: true }
+  return { success: true,count: Number(count ?? 0) }
 }

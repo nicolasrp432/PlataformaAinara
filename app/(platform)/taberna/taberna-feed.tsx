@@ -230,7 +230,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
           const raw = payload.new as ReflectionInsertPayload
 
           const { data: profile } = await supabase
-            .from("profiles")
+            .from("member_profiles")
             .select("id, full_name, avatar_url, role")
             .eq("id", raw.user_id)
             .single()
@@ -619,6 +619,8 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
                             className="mt-3.5 space-y-2 bg-muted/20 p-3 rounded-lg border border-border/50"
                           >
                             <Textarea
+                              aria-label={`Tu respuesta a ${authorName}`}
+                              maxLength={4000}
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
                               placeholder={`Escribe tu respuesta a @${authorName}...`}

@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Mail, Search, Inbox } from "lucide-react"
 import { getInitials, cn } from "@/lib/utils"
+import { listConversationsAction } from "./actions"
 import { NewMessageDialog } from "./new-message-dialog"
 
 export interface ConversationItem {
@@ -66,119 +67,34 @@ export function ConversationsInbox({
   React.useEffect(() => {
     const supabase = createClient()
 
-    // 1. Canal de difusión personal
-    const personalChannel = supabase.channel(`inbox:${currentUserId}`)
-
-    personalChannel
-      .on("broadcast", { event: "direct_message" }, (event) => {
-        const payload = event.payload as {
-          conversationId: string
-          senderId: string
-          senderName: string
-          senderAvatar?: string | null
-          body: string
-        }
-
-        setConversations((prev) => {
-          const existingIdx = prev.findIndex(
-            (c) => c.conversationId === payload.conversationId
-          )
-          const now = new Date().toISOString()
-          const isActive = activeConversationId === payload.conversationId
-
-          if (existingIdx !== -1) {
-            const updated = [...prev]
-            const target = updated[existingIdx]
-            updated[existingIdx] = {
-              ...target,
-              lastMessage: {
-                body: payload.body,
-                created_at: now,
-                sender_id: payload.senderId,
-              },
-              lastMessageAt: now,
-              unreadCount: isActive ? 0 : target.unreadCount + 1,
-            }
-            return updated.sort(
-              (a, b) =>
-                new Date(b.lastMessageAt ?? 0).getTime() -
-                new Date(a.lastMessageAt ?? 0).getTime()
-            )
-          }
-
-          // Si es una conversación nueva no listada aún
-          const newConv: ConversationItem = {
-            conversationId: payload.conversationId,
-            otherUser: {
-              id: payload.senderId,
-              full_name: payload.senderName,
-              avatar_url: payload.senderAvatar ?? null,
-            },
-            lastMessage: {
-              body: payload.body,
-              created_at: now,
-              sender_id: payload.senderId,
-            },
-            unreadCount: isActive ? 0 : 1,
-            lastMessageAt: now,
-          }
-          return [newConv, ...prev]
-        })
-      })
+    let active = true
+    let loading = false
+    let debounce: ReturnType<typeof setTimeout> | undefined
+    const sync = async () => {
+      if (loading || document.visibilityState !== "visible") return
+      loading = true
+      try {
+        const result = await listConversationsAction()
+        if (active && result.conversations) setConversations(result.conversations)
+      } catch { /* Keep the last confirmed inbox during a network interruption. */ }
+      finally { loading = false }
+    }
+    const schedule = () => { clearTimeout(debounce); debounce = setTimeout(sync, 150) }
+    const channel = supabase.channel(`inbox:${currentUserId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, schedule)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${currentUserId}` }, schedule)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_participants", filter: `user_id=eq.${currentUserId}` }, schedule)
       .subscribe()
-
-    // 2. Canal de postgres_changes en mensajes para actualizar snippet
-    const messagesChannel = supabase
-      .channel(`inbox-messages:${currentUserId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload) => {
-          const raw = payload.new as {
-            id: string
-            conversation_id: string
-            sender_id: string
-            body: string
-            created_at: string
-          }
-
-          setConversations((prev) => {
-            const idx = prev.findIndex((c) => c.conversationId === raw.conversation_id)
-            if (idx === -1) return prev
-
-            const updated = [...prev]
-            const current = updated[idx]
-            const isActive = activeConversationId === raw.conversation_id
-            const isOwn = raw.sender_id === currentUserId
-
-            updated[idx] = {
-              ...current,
-              lastMessage: {
-                body: raw.body,
-                created_at: raw.created_at,
-                sender_id: raw.sender_id,
-              },
-              lastMessageAt: raw.created_at,
-              unreadCount: isActive || isOwn ? 0 : current.unreadCount + 1,
-            }
-
-            return updated.sort(
-              (a, b) =>
-                new Date(b.lastMessageAt ?? 0).getTime() -
-                new Date(a.lastMessageAt ?? 0).getTime()
-            )
-          })
-        }
-      )
-      .subscribe()
-
+    const interval = setInterval(sync, 15_000)
+    window.addEventListener("focus", schedule)
+    document.addEventListener("visibilitychange", schedule)
     return () => {
-      supabase.removeChannel(personalChannel)
-      supabase.removeChannel(messagesChannel)
+      active = false
+      clearTimeout(debounce)
+      clearInterval(interval)
+      window.removeEventListener("focus", schedule)
+      document.removeEventListener("visibilitychange", schedule)
+      supabase.removeChannel(channel)
     }
   }, [currentUserId, activeConversationId])
 
@@ -219,6 +135,7 @@ export function ConversationsInbox({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
+            aria-label="Buscar conversaciones"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por persona o mensaje…"

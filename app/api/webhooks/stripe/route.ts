@@ -28,37 +28,41 @@ export async function POST(req: NextRequest) {
 
   const supabase = supabaseAdmin()
 
-  // ── Idempotencia: Stripe reintenta/reenvía eventos. Insertamos el event.id;
-  // si ya existe (23505) lo ignoramos. Defensivo: si la tabla aún no existe
-  // (migración 0008 no aplicada, 42P01) procesamos como hasta ahora.
+  // Record completion only AFTER processing succeeds, so a failed attempt can retry.
   try {
-    const { error: dupError } = await supabase
-      .from("stripe_processed_events")
-      .insert({ event_id: event.id })
-    if (dupError) {
-      if (dupError.code === "23505") {
-        return NextResponse.json({ received: true, duplicate: true })
-      }
-      console.warn("[stripe webhook] idempotency skipped:", dupError.message)
-    }
-  } catch (e) {
-    console.warn("[stripe webhook] idempotency error:", e)
-  }
-
-  try {
+    const { data: processed, error } = await supabase.from("stripe_processed_events")
+      .select("event_id").eq("event_id", event.id).maybeSingle()
+    if (error) throw new Error("No se pudo comprobar el evento")
+    if (processed) return NextResponse.json({ received: true, duplicate: true })
     switch (event.type) {
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session
+        if (!session.metadata?.mentorship_session_id) break
+        const { error } = await supabase.from("mentorship_sessions")
+          .update({ status: "cancelled", hold_expires_at: null })
+          .eq("id",session.metadata.mentorship_session_id).eq("status","pending").eq("payment_reference",session.id)
+        if (error) throw new Error("No se pudo liberar la reserva caducada")
+        break
+      }
+      case "checkout.session.async_payment_succeeded":
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session
 
-        // Reserva puntual de mentoría (pago único, no suscripción).
+        if (session.mode === "payment" && session.payment_status !== "paid") break
+        // A late payment cannot displace another person's confirmed booking.
         if (session.mode === "payment" && session.metadata?.mentorship_session_id) {
-          await supabase
-            .from("mentorship_sessions")
-            .update({
-              status: "confirmed",
-              payment_reference: session.id,
-            })
-            .eq("id", session.metadata.mentorship_session_id)
+          const { data: confirmed, error } = await supabase.rpc("confirm_mentorship_payment", {
+            p_session_id: session.metadata.mentorship_session_id, p_reference: session.id,
+          })
+          if (error) throw new Error("No se pudo confirmar la reserva")
+          if (!confirmed) {
+            const intent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id
+            if (!intent) throw new Error("Pago sin referencia para devolución")
+            await stripe.refunds.create({ payment_intent: intent }, { idempotencyKey: `mentorship-conflict-${session.id}` })
+            const { error: cancelled } = await supabase.from("mentorship_sessions")
+              .update({ status: "cancelled", hold_expires_at: null }).eq("id",session.metadata.mentorship_session_id).eq("status","pending")
+            if (cancelled) throw new Error("No se pudo registrar la devolución")
+          }
           break
         }
 
@@ -68,7 +72,7 @@ export async function POST(req: NextRequest) {
         })
         if (!userId) {
           console.warn("[stripe webhook] sesión sin usuario resoluble:", session.id)
-          break
+          throw new Error("Usuario del pago no encontrado")
         }
 
         // Pago único: acceso permanente. Se recupera la sesión con las líneas
@@ -109,7 +113,9 @@ export async function POST(req: NextRequest) {
           break
         }
 
-        await syncSubscription({ userId, subscription: sub })
+        // Retrieve current state so an older delivery cannot undo a newer renewal.
+        const current = await stripe.subscriptions.retrieve(sub.id)
+        await syncSubscription({ userId, subscription: current })
         break
       }
 
@@ -137,6 +143,8 @@ export async function POST(req: NextRequest) {
       default:
         break
     }
+    const { error: recorded } = await supabase.from("stripe_processed_events").insert({ event_id: event.id })
+    if (recorded && recorded.code !== "23505") throw new Error("No se pudo registrar el evento procesado")
   } catch (error) {
     // Devolver 500 hace que Stripe reintente, que es lo correcto ante un
     // fallo transitorio de la base de datos.

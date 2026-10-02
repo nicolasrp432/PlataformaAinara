@@ -16,9 +16,9 @@ export async function GET(
     .from("quizzes")
     .select(`
       id, title, description, passing_score, xp_reward,
-      quiz_questions (
-        id, question, type, explanation, sort_order,
-        quiz_options ( id, option_text, sort_order )
+      quiz_questions:quiz_prompts (
+        id, question, type, sort_order,
+        quiz_options:quiz_choices ( id, option_text, sort_order )
       )
     `)
     .eq("lesson_id", lessonId)

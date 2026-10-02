@@ -75,8 +75,8 @@ export async function upsertDailyReflection(formData: FormData) {
   // XP solo la primera vez del día actual.
   let xpAwarded = 0
   if (isToday && !existing) {
-    const result = await awardXP(user.id, 25)
-    if (result) xpAwarded = 25
+    const result = await awardXP(user.id, 25, "daily_reflection", entryDate)
+    if (result) xpAwarded = result.xpEarned
   }
 
   revalidatePath("/reflexion")

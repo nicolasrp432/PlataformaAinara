@@ -1,12 +1,11 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { supabaseAdmin } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 const commentSchema = z.object({
-  content: z.string().min(1).max(1000),
+  content: z.string().trim().min(1).max(1000),
 })
 
 export async function addProfileCommentAction(profileId: string, formData: FormData) {
@@ -14,10 +13,11 @@ export async function addProfileCommentAction(profileId: string, formData: FormD
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "No autorizado" }
 
+  if (!z.string().uuid().safeParse(profileId).success) return { error: "Perfil inválido" }
   const parsed = commentSchema.safeParse({ content: formData.get("content") })
   if (!parsed.success) return { error: "Comentario inválido" }
 
-  const admin = supabaseAdmin()
+  const admin = supabase
   const { error } = await admin
     .from("profile_comments")
     .insert({ profile_id: profileId, author_id: user.id, content: parsed.data.content })

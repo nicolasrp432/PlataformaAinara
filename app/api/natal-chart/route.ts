@@ -3,19 +3,14 @@ import { createClient } from "@/lib/supabase/server"
 import { natalChartDataSchema, toNatalChartRow } from "@/lib/validations/natal-chart"
 
 // GET /api/natal-chart            -> carta natal del usuario autenticado
-// GET /api/natal-chart?userId=xxx -> carta natal de otro usuario (lectura pública)
+// Birth data and charts are private, including when a userId is supplied.
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
-  const userId = request.nextUrl.searchParams.get("userId")
-
-  let targetId = userId
-  if (!targetId) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 })
-    }
-    targetId = user.id
-  }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: "No autenticado" },{ status: 401 })
+  const requested = request.nextUrl.searchParams.get("userId")
+  if (requested && requested !== user.id) return NextResponse.json({ error: "Carta no disponible" },{ status: 404 })
+  const targetId = user.id
 
   const { data, error } = await supabase
     .from("natal_charts")
@@ -24,7 +19,7 @@ export async function GET(request: NextRequest) {
     .maybeSingle()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: "No se pudo consultar la carta natal" }, { status: 503 })
   }
 
   return NextResponse.json({ data })

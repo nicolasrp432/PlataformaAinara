@@ -1058,3 +1058,18 @@
 @media(max-width:1023px) { .admin-stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .admin-stat:nth-child(2) { border-right:0; } .admin-stat:nth-child(-n+2) { border-bottom:1px solid var(--color-border); } }
 @media(max-width:767px) { .admin-stat { padding:1.25rem; } .admin-toolbar > div:first-child { width:100%; } .admin-toolbar input { width:100%; } }
 .ainara-admin main h1 { font-family:var(--font-heading-brand),Georgia,serif; font-weight:500; }
+
+/* Shared workspace finish: retain the original gold details and functional panels. */
+.workspace-header { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; }
+.workspace-header-actions { flex-shrink:0; display:flex; gap:.75rem; }
+.workspace-description { max-width:42rem; }
+.rich-text { overflow-wrap:anywhere; }
+.rich-text > * + * { margin-top:1rem; }
+.rich-text ul,.rich-text ol { padding-left:1.25rem; }
+.rich-text ul { list-style:disc; }
+.rich-text ol { list-style:decimal; }
+.rich-text li + li { margin-top:.4rem; }
+.rich-text h3 { font-weight:600; font-size:1.15em; }
+.messaging-workspace { height:calc(100dvh - 12rem); min-height:26rem; border:1px solid var(--color-border); border-radius:1.5rem; background:var(--color-card); }
+@media(min-width:768px) { .messaging-workspace { height:calc(100dvh - 7rem); min-height:30rem; } }
+@media(max-width:639px) { .workspace-header { align-items:flex-start; flex-direction:column; } }

@@ -18,6 +18,7 @@ import {
   Award,
   MessageSquare,
   Bell,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +57,7 @@ const groups = [
   {
     label: "Gestión",
     items: [
+      { name: "Agenda de mentoría", href: "/mentorship", icon: CalendarDays },
       { name: "Certificados", href: "/admin/certificates", icon: Award },
       { name: "Notificaciones", href: "/admin/notifications", icon: Bell },
       { name: "Comentarios", href: "/admin/comments", icon: MessageSquare },

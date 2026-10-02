@@ -1,66 +1,13 @@
-"use server"
-
+import "server-only"
 import { createClient } from "@/lib/supabase/server"
-
-export interface XPAwardResult {
-  newXP: number
-  newLevel: number
-  streakDays: number
-  leveledUp: boolean
-}
-
-export async function awardXP(
-  userId: string,
-  xpAmount: number
-): Promise<XPAwardResult | null> {
-  if (!userId || xpAmount <= 0) return null
-
-  const supabase = await createClient()
-
-  const { data: profile, error: fetchError } = await supabase
-    .from("profiles")
-    .select("xp, level, streak_days, last_activity_date")
-    .eq("id", userId)
-    .single()
-
-  if (fetchError || !profile) return null
-
-  const previousLevel = profile.level || 1
-  const currentXP = profile.xp ?? 0
-  const newXP = currentXP + xpAmount
-  const newLevel = Math.floor(newXP / 500) + 1
-  const leveledUp = newLevel > previousLevel
-
-  const todayStr = new Date().toISOString().split("T")[0]
-  const lastStr = profile.last_activity_date
-    ? new Date(profile.last_activity_date).toISOString().split("T")[0]
-    : null
-
-  let streakDays = profile.streak_days || 0
-  if (lastStr !== todayStr) {
-    const diffDays = lastStr
-      ? Math.round(
-          (new Date(todayStr).getTime() - new Date(lastStr).getTime()) /
-            86400000
-        )
-      : 999
-    streakDays = diffDays === 1 ? streakDays + 1 : 1
-  }
-
-  const { error: updateError } = await supabase
-    .from("profiles")
-    .update({
-      xp: newXP,
-      level: newLevel,
-      streak_days: streakDays,
-      last_activity_date: new Date().toISOString(),
-    })
-    .eq("id", userId)
-
-  if (updateError) {
-    console.error("[xpService] Failed to update XP for user", userId, updateError.message)
-    return null
-  }
-
-  return { newXP, newLevel, streakDays, leveledUp }
+import { supabaseAdmin } from "@/lib/supabase/admin"
+export interface XPAwardResult { newXP: number; newLevel: number; streakDays: number; leveledUp: boolean; xpEarned: number }
+/** Only trusted server code may choose an award. The ledger prevents duplicate rewards. */
+export async function awardXP(userId: string, xpAmount: number, source: string, sourceId: string): Promise<XPAwardResult | null> {
+  const client = await createClient()
+  const { data: { user } } = await client.auth.getUser()
+  if (user?.id !== userId || xpAmount <= 0) return null
+  const { data,error } = await supabaseAdmin().rpc("award_activity_xp", { p_user_id: userId,p_amount: xpAmount,p_source: source,p_source_id: sourceId })
+  if (error) return null
+  return data as XPAwardResult
 }

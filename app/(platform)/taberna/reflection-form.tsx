@@ -169,6 +169,8 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
             </Avatar>
             <div className="flex-1 space-y-2.5">
               <Textarea
+                aria-label="Tu publicación en la comunidad"
+                maxLength={MAX_CHARS}
                 placeholder="¿Qué comprendiste hoy? ¿Qué inquietud deseas debatir con la comunidad? Escribe con honestidad..."
                 className="min-h-[96px] resize-none bg-background/80 rounded-lg border-border/80 px-3.5 py-2.5 text-sm leading-relaxed placeholder:text-muted-foreground/60 focus-visible:ring-primary/20"
                 value={content}

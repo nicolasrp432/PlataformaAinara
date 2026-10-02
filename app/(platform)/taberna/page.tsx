@@ -3,6 +3,7 @@ import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { getAuthUser, getUserProfile, getReflections } from "@/lib/data-access"
 import { hasFullAccess, resolveAccessTier } from "@/lib/access"
+import { PageHeader } from "@/components/layout/page-header"
 import { TabernaFeed } from "./taberna-feed"
 
 /**
@@ -56,20 +57,13 @@ export default async function TabernaPage() {
   }
 
   const currentUser = {
-    full_name: user.user_metadata?.full_name || profile?.full_name || "Aventurero",
-    avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url || null,
+    full_name: profile?.full_name || user.user_metadata?.full_name || "Aventurero",
+    avatarUrl: (profile ? profile.avatar_url : user.user_metadata?.avatar_url) ?? null,
   }
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto pb-10 relative">
-      <div className="ainara-page-header flex flex-col gap-2 relative z-10 mb-8">
-        <h1 className="text-3xl font-light tracking-tight text-foreground sm:text-4xl">
-          Un camino <em className="text-primary">compartido.</em>
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base max-w-xl">
-          Comparte tus preguntas, escucha otras experiencias y encuentra compañía en el proceso.
-        </p>
-      </div>
+      <PageHeader eyebrow="La Taberna · Comunidad" title={<>Un camino <em>compartido.</em></>} description="Comparte tus preguntas, escucha otras experiencias y encuentra compañía en el proceso." />
 
       <Suspense fallback={<FeedSkeleton />}>
         <Feed currentUser={currentUser} />

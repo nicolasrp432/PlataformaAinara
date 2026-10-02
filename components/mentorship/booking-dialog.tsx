@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState, useEffect, useMemo, useTransition } from "react"
 import {
   Dialog,
@@ -29,6 +30,7 @@ interface MentorBookingProps {
     full_name?: string | null
     session_price?: number | null
     session_duration_minutes?: number | null
+    included?: boolean
   }
   triggerLabel?: string
   triggerClassName?: string
@@ -50,6 +52,9 @@ function formatDateLabel(dateKey: string): string {
 }
 
 export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName }: MentorBookingProps) {
+  const router = useRouter()
+  const [loadError,setLoadError] = useState<string | null>(null)
+  const [timezone,setTimezone] = useState("Europe/Madrid")
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [slots, setSlots] = useState<Slot[]>([])
@@ -67,18 +72,15 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
     setSelectedDate(null)
     setSelectedSlot(null)
     setRequestSent(false)
-    fetch(`/api/mentorship/slots?mentorId=${encodeURIComponent(mentor.id)}&days=14`)
-      .then((res) => {
-        if (!res.ok) return { slots: [] }
-        return res.json()
-      })
-      .then((data) => {
-        setSlots(data.slots ?? [])
-      })
-      .catch(() => {
-        setSlots([])
-      })
-      .finally(() => setLoading(false))
+    setLoadError(null)
+    const abort = new AbortController()
+    if (mentor.id === "default-mentor") { setSlots([]); setLoading(false); return }
+    fetch(`/api/mentorship/slots?mentorId=${encodeURIComponent(mentor.id)}&days=14`, { signal: abort.signal })
+      .then(async res => { const data = await res.json(); if (!res.ok) throw new Error(data.error ?? "No se pudo consultar la agenda."); return data })
+      .then(data => { if (!abort.signal.aborted) { setSlots(data.slots ?? []); setTimezone(data.timezone ?? "Europe/Madrid") } })
+      .catch(error => { if (!abort.signal.aborted) { setSlots([]); setLoadError(error.message) } })
+      .finally(() => { if (!abort.signal.aborted) setLoading(false) })
+    return () => abort.abort()
   }, [open, mentor.id])
 
   const slotsByDate = useMemo(() => {
@@ -110,6 +112,10 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
           toast.error(data.error ?? "Error al iniciar la reserva.")
           return
         }
+        if (data.included) {
+          toast.success("Tu sesión está reservada e incluida en la suscripción.")
+          setOpen(false); router.refresh(); return
+        }
         if (data.url) {
           window.location.href = data.url
         }
@@ -121,17 +127,19 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
 
   const handleCustomRequest = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!notes.trim()) {
+    if (notes.trim().length < 10) {
       toast.error("Por favor, describe brevemente qué te gustaría trabajar.")
       return
     }
     startTransition(async () => {
-      // Simular registro de solicitud
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setRequestSent(true)
-      toast.success("¡Solicitud de mentoría enviada con éxito!", {
-        description: "Ainara revisará tu caso y te contactará para coordinar tu sesión privada.",
-      })
+      try {
+        const res = await fetch("/api/mentorship/request",{ method: "POST",headers: { "Content-Type": "application/json" },body: JSON.stringify({ mentorId: mentor.id === "default-mentor" ? undefined : mentor.id,notes }) })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? "No se pudo enviar la solicitud.")
+        setRequestSent(true)
+        toast.success("Tu solicitud de mentoría está guardada.")
+      } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo enviar la solicitud.") }
+
     })
   }
 
@@ -139,7 +147,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
     ? slotsByDate.find(([d]) => d === selectedDate)?.[1] ?? []
     : []
   const mentorName = mentor.name ?? mentor.full_name ?? "Ainara"
-  const isEmpty = !loading && slotsByDate.length === 0
+  const isEmpty = !loading && !loadError && slotsByDate.length === 0
 
   const title = `Sesión Privada con ${mentorName}`
   const description = "Recibe guía estratégica 1 a 1 para acelerar tu transformación."
@@ -163,6 +171,8 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
         </div>
       )}
 
+      {loadError && <p role="alert" className="rounded-xl border border-danger-border bg-danger-soft p-4 text-sm text-danger-strong">{loadError} Cierra el panel y vuelve a abrirlo para reintentar.</p>}
+      {!loading && !loadError && slots.length > 0 && <p className="text-xs text-muted-foreground">Horarios en {timezone}. La reserva se guarda con su zona horaria.</p>}
       {/* Si no hay slots pre-configurados, permitir solicitud directa de sesión */}
       {isEmpty && !requestSent && (
         <form onSubmit={handleCustomRequest} className="space-y-4">
@@ -177,10 +187,12 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
+            <label htmlFor="mentorship-request-notes" className="text-xs font-semibold text-foreground">
               ¿Qué área o reto deseas transformar?
             </label>
             <Textarea
+              id="mentorship-request-notes"
+              maxLength={1000}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Escribe aquí tu objetivo, dudas o lo que necesitas enfocar..."
@@ -195,7 +207,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
             </div>
             <Button
               type="submit"
-              disabled={isSubmitting || !notes.trim()}
+              disabled={isSubmitting || notes.trim().length < 10}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg text-xs h-9 px-5"
             >
               {isSubmitting ? (
@@ -221,7 +233,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
           </div>
           <h3 className="text-base font-bold text-foreground">¡Solicitud recibida!</h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            Hemos registrado tu solicitud con {mentorName}. Te enviaremos una propuesta de fechas y horas disponibles a tu correo.
+            Tu solicitud está guardada para que el equipo de mentoría pueda revisar tu objetivo y coordinar contigo la sesión.
           </p>
           <Button
             onClick={() => setOpen(false)}
@@ -307,6 +319,8 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
                 3. ¿Qué te gustaría trabajar? (opcional)
               </h3>
               <Textarea
+                aria-label="Objetivo de la sesión (opcional)"
+                maxLength={1000}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
@@ -337,7 +351,7 @@ export function MentorshipBookingDialog({ mentor, triggerLabel, triggerClassName
                 ) : (
                   <ArrowRight className="w-3.5 h-3.5 ml-1.5 order-2" />
                 )}
-                {isSubmitting ? "Procesando..." : "Confirmar y Reservar"}
+                {isSubmitting ? "Procesando..." : mentor.included ? "Confirmar sesión incluida" : `Reservar · ${mentor.session_price ?? 150} €`}
               </Button>
             </div>
           )}

@@ -20,16 +20,18 @@ export function ResonanceButton({ reflectionId, initialCount }: ResonanceButtonP
     setCount((c) => c + 1)
     setResonated(true)
     startTransition(async () => {
-      const result = await resonarReflection(reflectionId)
-      if (result.error) {
-        setCount((c) => c - 1)
-        setResonated(false)
-      }
+      try {
+        const result = await resonarReflection(reflectionId)
+        if (typeof result.count === "number") setCount(result.count)
+        else { setCount(initialCount); setResonated(false) }
+      } catch { setCount(initialCount); setResonated(false) }
     })
   }
 
   return (
     <button
+      aria-label={`Resonar con esta reflexión. ${count} resonancias`}
+      aria-pressed={resonated}
       onClick={handleResonar}
       disabled={resonated || isPending}
       className={cn(

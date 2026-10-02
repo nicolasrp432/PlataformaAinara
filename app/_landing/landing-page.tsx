@@ -11,7 +11,7 @@ import {
   Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SenderoLogo } from "@/components/ui/logo";
+import { BrandLockup } from "@/components/ui/brand";
 import { MediaImage } from "@/components/media/media-image";
 import { MENTOR_PROFILE, MENTOR_EXPERIENCE_LABEL } from "@/lib/mentor";
 import { PLANS, planPrice } from "@/lib/pricing";
@@ -55,10 +55,7 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
         <header className="sales-header">
           <div className="sales-container flex h-20 items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-3">
-              <span className="gold-gradient grid h-10 w-10 place-items-center rounded-full text-primary-foreground">
-                <SenderoLogo className="h-5 w-5" />
-              </span>
-              <span className="font-display text-2xl">Mitra</span>
+              <BrandLockup size="md" />
             </Link>
             <nav
               aria-label="Secciones"

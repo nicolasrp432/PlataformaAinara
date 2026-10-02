@@ -1,3 +1,4 @@
+import { lessonResources } from "@/lib/lesson-resources"
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { cache } from "react"
@@ -160,7 +161,7 @@ export const getFormationsInProgress = cache(async (userId: string) => {
         thumbnail_url,
         modules (
           id,
-          lessons (id)
+          lessons:lesson_catalog (id)
         )
       )
     `
@@ -267,7 +268,7 @@ const getPublishedFormationsBase = unstable_cache(
       *,
       modules (
         id,
-        lessons (id)
+        lessons:lesson_catalog (id)
       )
     `
       )
@@ -403,7 +404,7 @@ export const getReflections = cache(async () => {
   const userIds = [...new Set(allRows.map((r) => r.user_id))]
 
   const { data: profiles } = await supabase
-    .from("profiles")
+    .from("member_profiles")
     .select("id, full_name, avatar_url, role")
     .in("id", userIds)
 
@@ -461,12 +462,12 @@ export const getFormationBySlug = cache(
 
     // Sort modules and lessons by sort_order
     formation.modules = formation.modules
-      ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+      ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0) || String(a.id).localeCompare(String(b.id)))
       .map((mod: any) => ({
         ...mod,
         lessons:
           mod.lessons?.sort(
-            (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)
+            (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0) || String(a.id).localeCompare(String(b.id))
           ) || [],
       })) || []
 
@@ -569,8 +570,8 @@ export const getLessonPageData = cache(
         id, title, slug,
         modules (
           id, title, sort_order,
-          lessons (
-            id, title, description, duration_seconds, video_url, is_free, sort_order, xp_reward, content_type, transcript
+          lessons:lesson_catalog (
+            id, title, duration_seconds, is_free, sort_order, xp_reward, content_type
           )
         )
       `)
@@ -581,12 +582,12 @@ export const getLessonPageData = cache(
 
     // Sort modules and lessons
     formation.modules = formation.modules
-      ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+      ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0) || String(a.id).localeCompare(String(b.id)))
       .map((mod: any) => ({
         ...mod,
         lessons:
           mod.lessons?.sort(
-            (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)
+            (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0) || String(a.id).localeCompare(String(b.id))
           ) || [],
       })) || []
 
@@ -632,7 +633,7 @@ export const getLessonPageData = cache(
           .single(),
         supabase
           .from("user_progress")
-          .select("lesson_id, is_completed, watched_seconds")
+          .select("lesson_id, is_completed, watched_seconds,last_position_seconds")
           .eq("user_id", userId)
           .in("lesson_id", lessonIds),
         supabase
@@ -649,7 +650,7 @@ export const getLessonPageData = cache(
     const [{ data: commentProfiles }, { data: rawReactions }] = await Promise.all([
       commentUserIds.length > 0
         ? supabase
-            .from("profiles")
+            .from("member_profiles")
             .select("id, full_name, avatar_url")
             .in("id", commentUserIds)
         : Promise.resolve({ data: [] as { id: string; full_name: string | null; avatar_url: string | null }[] }),
@@ -740,6 +741,11 @@ export const getLessonPageData = cache(
       return lockedPayload
     }
 
+    const { data: content, error: contentError } = await supabase.from("lessons")
+      .select("description,video_url,transcript,resources").eq("id",lessonId).single()
+    if (contentError || !content) return null
+    currentLesson = { ...currentLesson, ...content }
+
     const completedLessons =
       userProgress?.filter((p) => p.is_completed).map((p) => p.lesson_id) || []
     const currentProgress = userProgress?.find(
@@ -790,7 +796,8 @@ export const getLessonPageData = cache(
         durationSeconds: currentLesson.duration_seconds,
         xpReward: currentLesson.xp_reward ?? 50,
         isCompleted: completedLessons.includes(currentLesson.id),
-        watchedSeconds: currentProgress?.watched_seconds || 0,
+        watchedSeconds: currentProgress?.last_position_seconds ?? currentProgress?.watched_seconds ?? 0,
+        resources: lessonResources(currentLesson.resources),
         contentType: (currentLesson.content_type ?? "video") as ContentType,
         transcript: currentLesson.transcript as string | null,
       },

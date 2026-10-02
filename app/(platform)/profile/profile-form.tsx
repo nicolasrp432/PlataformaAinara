@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, CheckCircle2, Upload } from "lucide-react"
@@ -17,6 +18,7 @@ interface ProfileFormProps {
     birth_date?: string | null
     birth_time?: string | null
     birth_city?: string | null
+    bio?: string | null
   }
 }
 
@@ -57,9 +59,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (isUploadingAvatar || isPending) return
     setMessage(null)
     const formData = new FormData(e.currentTarget)
-    
+
     startTransition(async () => {
       try {
         const result = await updateProfile(formData)
@@ -92,21 +95,22 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
               <Label htmlFor="full_name" className="text-sm font-medium">
                 Nombre de Aventurero
               </Label>
-              <Input 
-                id="full_name" 
-                name="full_name" 
-                defaultValue={initialData.full_name} 
-                placeholder="Ej. Alex Rivera" 
+              <Input
+                id="full_name"
+                name="full_name"
+                maxLength={100}
+                defaultValue={initialData.full_name}
+                placeholder="Ej. Alex Rivera"
                 className="bg-background/50 border-border/50 focus:border-primary/50"
-                required 
+                required
               />
                <p className="text-xs text-muted-foreground">
                 Este nombre será visible en la Comunidad y tus logros.
               </p>
             </div>
-            
+
             <div className="grid gap-2">
-              <Label className="text-sm font-medium">Avatar</Label>
+              <Label htmlFor="avatar_url" className="text-sm font-medium">Avatar</Label>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -146,19 +150,21 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
               </p>
             </div>
 
+            <div className="grid gap-2"><Label htmlFor="bio">Sobre ti</Label><Textarea id="bio" name="bio" rows={3} maxLength={500} defaultValue={initialData.bio ?? ""} placeholder="Comparte algo sobre tu camino y lo que te interesa." /><p className="text-xs text-muted-foreground">Esta presentación aparece en tu perfil de comunidad según tu visibilidad.</p></div>
+
             {/* Carta Natal Fields */}
             <div className="pt-4 border-t border-border/50">
-              <h3 className="text-md font-medium text-primary mb-4">Información de Carta Natal</h3>
+              <h3 className="text-md font-medium text-primary mb-2">Información de Carta Natal</h3><p className="mb-4 text-xs text-muted-foreground">La fecha, hora, lugar y carta natal permanecen en tu espacio privado.</p>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="birth_date" className="text-sm font-medium">
                     Fecha de Nacimiento
                   </Label>
-                  <Input 
-                    id="birth_date" 
-                    name="birth_date" 
+                  <Input
+                    id="birth_date"
+                    name="birth_date"
                     type="date"
-                    defaultValue={initialData.birth_date || ""} 
+                    defaultValue={initialData.birth_date || ""}
                     className="bg-background/50 border-border/50 focus:border-primary/50"
                   />
                 </div>
@@ -166,11 +172,11 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   <Label htmlFor="birth_time" className="text-sm font-medium">
                     Hora Exacta
                   </Label>
-                  <Input 
-                    id="birth_time" 
-                    name="birth_time" 
+                  <Input
+                    id="birth_time"
+                    name="birth_time"
                     type="time"
-                    defaultValue={initialData.birth_time || ""} 
+                    defaultValue={initialData.birth_time || ""}
                     className="bg-background/50 border-border/50 focus:border-primary/50"
                   />
                 </div>
@@ -179,12 +185,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 <Label htmlFor="birth_city" className="text-sm font-medium">
                   Ciudad y País de Nacimiento
                 </Label>
-                <Input 
-                  id="birth_city" 
-                  name="birth_city" 
+                <Input
+                  id="birth_city"
+                  name="birth_city"
                   type="text"
                   placeholder="Ej. Madrid, España"
-                  defaultValue={initialData.birth_city || ""} 
+                  defaultValue={initialData.birth_city || ""}
                   className="bg-background/50 border-border/50 focus:border-primary/50"
                 />
               </div>
@@ -193,8 +199,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
           {message && (
             <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
-              message.type === 'error' 
-                ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
+              message.type === 'error'
+                ? 'bg-red-500/10 text-red-500 border border-red-500/20'
                 : 'bg-success-soft text-success border border-success'
             }`}>
               {message.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
@@ -203,9 +209,9 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           )}
 
           <div className="flex justify-end border-t border-border/50 pt-4">
-            <Button 
-              type="submit" 
-              disabled={isPending} 
+            <Button
+              type="submit"
+              disabled={isPending || isUploadingAvatar}
               className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[140px] shadow-sm transition-[transform,background-color,border-color,color,box-shadow,opacity]"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}

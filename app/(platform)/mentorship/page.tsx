@@ -1,5 +1,9 @@
 import { Metadata } from "next"
 import { requireContentAccess } from "@/lib/guards"
+import Link from "next/link"
+import { getUserMentorshipSessions } from "@/lib/services/mentorship"
+import { PageHeader } from "@/components/layout/page-header"
+import { MentorshipWorkspace, type MentorshipWorkspaceData } from "@/components/mentorship/mentorship-workspace"
 import { getAccessTier } from "@/lib/data-access"
 import { hasIncludedMentoring } from "@/lib/access"
 import { createClient } from "@/lib/supabase/server"
@@ -47,21 +51,19 @@ export default async function MentorshipPage() {
       dbMentor?.session_duration_minutes ?? DEFAULT_SESSION_MINUTES,
   }
 
+  const [sessions,workspace,requests] = await Promise.all([
+    getUserMentorshipSessions(user.id),
+    tier === "staff" ? supabase.rpc("mentorship_workspace") : Promise.resolve({ data: null,error: null }),
+    supabase.from("mentorship_requests").select("id,notes,status,created_at").eq("user_id",user.id).order("created_at",{ ascending: false }).limit(5),
+  ])
+  const upcoming = sessions.filter(session => new Date(session.scheduled_at).getTime() > Date.now() && (session.status === "confirmed" || (session.status === "pending" && session.hold_expires_at && new Date(session.hold_expires_at).getTime() > Date.now())))
+
   return (
     <div className="relative mx-auto max-w-5xl space-y-12 pb-16 animation-fade-in">
-      {/* Header */}
-      <header className="ainara-page-header relative z-10 flex flex-col items-start gap-4 pt-4 text-left">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-          <Sparkles className="h-4 w-4" aria-hidden />
-          <span>Una sola mentora, toda su atención</span>
-        </div>
-        <h1 className="text-balance text-4xl font-light tracking-tight text-foreground sm:text-6xl">
-          Mentoría <span className="font-semibold text-primary">1 a 1</span>
-        </h1>
-        <p className="max-w-2xl text-balance text-base leading-relaxed text-muted-foreground sm:text-xl">
-          {MENTOR_PROFILE.tagline}
-        </p>
-      </header>
+      <PageHeader eyebrow="Acompañamiento personal" title={<>Mentoría <em>1 a 1.</em></>} description={MENTOR_PROFILE.tagline} />
+      {tier === "staff" && (workspace.error ? <p role="alert" className="text-sm text-danger-strong">No se pudo cargar la agenda del equipo. Vuelve a intentarlo.</p> : workspace.data && <MentorshipWorkspace data={workspace.data as MentorshipWorkspaceData} />)}
+      {upcoming.length > 0 && <section className="space-y-3"><h2 className="text-2xl">Tus próximos encuentros</h2><div className="grid gap-3 sm:grid-cols-2">{upcoming.map(session => <article key={session.id} className="space-y-3 rounded-2xl border border-primary/20 bg-card p-5"><p className="font-semibold">{new Date(session.scheduled_at).toLocaleString("es-ES",{ timeZone: session.timezone,dateStyle: "medium",timeStyle: "short" })}</p><p className="text-sm text-muted-foreground">{session.timezone} · {session.duration_minutes} min · {session.status === "confirmed" ? "Confirmada" : "Pendiente de pago"}</p>{session.status === "confirmed" && session.meeting_link?.startsWith("https://") ? <a className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={session.meeting_link} target="_blank" rel="noopener noreferrer">Abrir videollamada</a> : <p className="text-xs text-muted-foreground">{session.status === "confirmed" ? "El equipo añadirá aquí el enlace del encuentro." : "La reserva se confirma al completar el pago."}</p>}</article>)}</div><Link href="/profile?tab=mentorship" className="text-sm text-primary underline">Ver el historial de sesiones</Link></section>}
+      {!!requests.data?.length && <section className="space-y-3"><h2 className="text-xl">Tus solicitudes</h2>{requests.data.map(request => <div key={request.id} className="rounded-xl border border-border bg-card p-4"><p className="break-words text-sm">{request.notes}</p><p className="mt-2 text-xs text-muted-foreground">{({ pending: "Pendiente de revisión",contacted: "En coordinación",closed: "Cerrada" } as Record<string,string>)[request.status]}</p></div>)}</section>}
 
       <MentorHero mentor={mentor} includedInMembership={includedInMembership} />
 
@@ -94,7 +96,7 @@ export default async function MentorshipPage() {
         {[
           { icon: ShieldCheck, title: "Pago seguro", desc: "Procesado por Stripe" },
           { icon: Heart, title: "Confidencial", desc: "Espacio íntimo y privado" },
-          { icon: Clock, title: "Flexible", desc: "Cancelación 24h antes" },
+          { icon: Clock, title: "Flexible", desc: "Elige entre los horarios disponibles" },
         ].map((item) => (
           <div
             key={item.title}
@@ -112,7 +114,7 @@ export default async function MentorshipPage() {
       </div>
 
       {/* Asistente IA */}
-      <Card className="group relative flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-primary/25 bg-card/60 p-4 shadow-2xl shadow-black/5 backdrop-blur-xl sm:min-h-[520px] sm:p-8">
+      <Card className="group relative flex h-[min(620px,80dvh)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-primary/25 bg-card/60 p-4 shadow-2xl shadow-black/5 backdrop-blur-xl sm:min-h-[520px] sm:p-8">
         <div
           aria-hidden
           className="pointer-events-none absolute right-0 top-0 h-64 w-[min(16rem,100%)] rounded-full bg-primary/5 blur-[100px]"

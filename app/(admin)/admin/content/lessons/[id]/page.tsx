@@ -25,6 +25,8 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { LessonResourcesEditor } from "@/components/admin/lesson-resources-editor"
+import { lessonResources } from "@/lib/lesson-resources"
 import { VideoUploader } from "@/components/admin/video-uploader"
 import type { Lesson as BaseLesson } from "@/types"
 
@@ -78,7 +80,7 @@ export default function LessonEditorPage() {
         return res.json()
       })
       .then((data) => {
-        setLesson(data)
+        setLesson({ ...data,resources: lessonResources(data.resources).map(resource => ({ ...resource,type: "link" })) })
         setLoading(false)
       })
       .catch(() => {
@@ -112,6 +114,7 @@ export default function LessonEditorPage() {
           content_type: lesson.content_type,
           sort_order: lesson.sort_order,
           transcript: lesson.transcript ?? null,
+          resources: lesson.resources ?? [],
         }),
       })
 
@@ -409,15 +412,7 @@ export default function LessonEditorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <h3 className="font-medium mb-2">No hay recursos todavia</h3>
-                <p className="text-sm text-muted-foreground">
-                  Disponible en una proxima version
-                </p>
-              </div>
+              <LessonResourcesEditor value={lesson.resources ?? []} onChange={resources => setLesson({ ...lesson,resources })} />
             </CardContent>
           </Card>
         </TabsContent>
