@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -752,6 +753,9 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
           contentClassName="px-4 pb-6">
           <SheetHeader className="pb-2">
             <SheetTitle className="text-left text-sm font-semibold">Temario del Curso</SheetTitle>
+            <SheetDescription className="sr-only">
+              Navega por las lecciones y consulta tu progreso en el curso.
+            </SheetDescription>
           </SheetHeader>
           <div className="overflow-y-auto max-h-[70vh] pb-4" onClick={(e) => {
             const target = e.target as HTMLElement
@@ -771,6 +775,9 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
           contentClassName="px-4 pb-6">
           <SheetHeader className="pb-2">
             <SheetTitle className="text-left text-sm font-semibold">Comunidad ({totalCommentCount})</SheetTitle>
+            <SheetDescription className="sr-only">
+              Lee y publica comentarios de la comunidad sobre esta lección.
+            </SheetDescription>
           </SheetHeader>
           <div className="overflow-y-auto max-h-[70vh] pb-4">
             <CommentsPanel
@@ -795,6 +802,9 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
         >
           <SheetHeader className="pb-2">
             <SheetTitle className="text-left text-sm font-semibold">Asistente IA Ainara</SheetTitle>
+            <SheetDescription className="sr-only">
+              Consulta al asistente sobre el contenido de esta lección.
+            </SheetDescription>
           </SheetHeader>
           <AssistantPanel hasAccess={data.hasFullAccess} lessonId={lesson.id} formationId={formation.id} className="flex-1 min-h-0" />
         </SheetContent>

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -307,6 +308,9 @@ export function ReflexionClient({
                 month: "long",
               })}
             </SheetTitle>
+            <SheetDescription className="sr-only">
+              Consulta o edita tu reflexión correspondiente al día seleccionado.
+            </SheetDescription>
           </SheetHeader>
           <EntryEditor
             key={`sheet-${selected}`}

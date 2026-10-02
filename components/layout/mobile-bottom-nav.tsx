@@ -18,6 +18,7 @@ import { SPRING_UI } from "@/lib/motion"
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -183,6 +184,9 @@ export function MobileBottomNav({ user, streak, hasFullAccess }: MobileBottomNav
               <Sparkles className="h-4 w-4 text-primary" />
               Explorar Plataforma
             </SheetTitle>
+            <SheetDescription className="sr-only">
+              Navegación secundaria, estado de la cuenta y opciones de sesión.
+            </SheetDescription>
           </SheetHeader>
 
           {/* Tarjeta de resumen de usuario con nivel y XP */}
