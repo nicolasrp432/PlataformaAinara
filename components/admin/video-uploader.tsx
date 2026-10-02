@@ -27,6 +27,8 @@ interface VideoUploaderProps {
   }) => void
   onUploadError?: (error: Error) => void
   className?: string
+  uploadPurpose?: "lesson" | "community_testimonial"
+  disabled?: boolean
 }
 
 type UploadStatus = 
@@ -51,6 +53,8 @@ export function VideoUploader({
   onUploadComplete,
   onUploadError,
   className,
+  uploadPurpose = "lesson",
+  disabled = false,
 }: VideoUploaderProps) {
   const [uploadState, setUploadState] = useState<UploadState>({
     status: currentVideoUrl ? "ready" : "idle",
@@ -159,6 +163,7 @@ export function VideoUploader({
         body: JSON.stringify({
           fileName: file.name,
           lessonId,
+          uploadPurpose,
         }),
       })
       
@@ -224,7 +229,7 @@ export function VideoUploader({
       })
       onUploadError?.(error as Error)
     }
-  }, [lessonId, onUploadError, pollVideoStatus])
+  }, [lessonId, onUploadError, pollVideoStatus, uploadPurpose])
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -241,16 +246,16 @@ export function VideoUploader({
     e.stopPropagation()
     setDragActive(false)
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (!disabled && e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleUpload(e.dataTransfer.files[0])
     }
-  }, [handleUpload])
+  }, [disabled, handleUpload])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (!disabled && e.target.files && e.target.files[0]) {
       handleUpload(e.target.files[0])
     }
-  }, [handleUpload])
+  }, [disabled, handleUpload])
 
   const cancelUpload = useCallback(() => {
     if (uploadRef.current) {
@@ -273,6 +278,7 @@ export function VideoUploader({
         type="file"
         accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
         onChange={handleFileSelect}
+        disabled={disabled}
         className="hidden"
       />
       
@@ -324,15 +330,18 @@ export function VideoUploader({
         <div
           className={cn(
             "border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors",
-            dragActive 
-              ? "border-primary bg-primary/5" 
-              : "border-border hover:border-primary/50 hover:bg-muted/50"
+            disabled
+              ? "cursor-not-allowed opacity-50"
+              : dragActive
+                ? "border-primary bg-primary/5"
+                : "border-border hover:border-primary/50 hover:bg-muted/50"
           )}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !disabled && fileInputRef.current?.click()}
+          aria-disabled={disabled}
         >
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <Upload className="h-8 w-8 text-muted-foreground" />

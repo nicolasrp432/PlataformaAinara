@@ -18,3 +18,6 @@ export const INITIAL_SCORES: LifeWheelInput["scores"] = { health: 5, relationshi
 export function wheelAverage(scores: LifeWheelInput["scores"]) {
   return LIFE_AREAS.reduce((sum, area) => sum + scores[area.key], 0) / LIFE_AREAS.length
 }
+export function selectLifeWheelEntry(entries: LifeWheelEntry[], id: string) {
+  return entries.find(entry => entry.id === id) ?? null
+}

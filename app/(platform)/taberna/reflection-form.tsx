@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Send, Sparkles } from "lucide-react"
+import { CircleHelp, Heart, Lightbulb, Loader2, Quote, Send, Sparkles, Target } from "lucide-react"
 import { createReflection } from "./actions"
+import type { ReflectionCategory } from "@/lib/reflection-categories"
 
 type ReflectionAuthor = {
   id?: string
@@ -22,6 +23,7 @@ type ReflectionItem = {
   created_at: string
   likes_count: number
   parent_id: string | null
+  category: ReflectionCategory
   profiles: ReflectionAuthor | ReflectionAuthor[] | null
   lessons: { title: string } | null
 }
@@ -36,11 +38,12 @@ interface ReflectionFormProps {
   onOptimisticReflection?: (reflection: OptimisticReflectionUpdate) => void
 }
 
-const TOPIC_PRESETS = [
-  { label: "💡 Revelación", tag: "#revelación" },
-  { label: "❓ Pregunta", tag: "#pregunta" },
-  { label: "🎯 Práctica", tag: "#práctica" },
-  { label: "✨ Gratitud", tag: "#gratitud" },
+const CATEGORY_OPTIONS: { id: ReflectionCategory; label: string; icon: typeof Lightbulb }[] = [
+  { id: "reflection", label: "Reflexión", icon: Lightbulb },
+  { id: "question", label: "Pregunta", icon: CircleHelp },
+  { id: "practice", label: "Práctica", icon: Target },
+  { id: "gratitude", label: "Gratitud", icon: Heart },
+  { id: "testimonial", label: "Testimonio", icon: Quote },
 ]
 
 const MAX_CHARS = 1500
@@ -49,7 +52,7 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
   const [isPending, startTransition] = useTransition()
   const [content, setContent] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [category, setCategory] = useState<ReflectionCategory>("reflection")
 
   // Cargar borrador de sessionStorage
   useEffect(() => {
@@ -68,22 +71,6 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
     }
   }, [])
 
-  const handleApplyTag = (tag: string) => {
-    if (activeTag === tag) {
-      // Quitar tag si ya estaba
-      setActiveTag(null)
-      setContent((prev) => prev.replace(`${tag} `, "").replace(tag, "").trim())
-      return
-    }
-
-    setActiveTag(tag)
-    const cleanContent = content
-      .replace(/#(revelación|pregunta|práctica|gratitud)\s*/gi, "")
-      .trim()
-
-    setContent(`${tag} ${cleanContent}`)
-  }
-
   const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault()
     const trimmed = content.trim()
@@ -97,14 +84,15 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
       created_at: new Date().toISOString(),
       likes_count: 0,
       parent_id: null,
+      category,
       profiles: { full_name: user.full_name, avatar_url: user.avatarUrl, role: "student" },
       lessons: null,
     })
     setContent("")
-    setActiveTag(null)
 
     const formData = new FormData()
     formData.append("content", trimmed)
+    formData.append("category", category)
 
     startTransition(async () => {
       try {
@@ -139,19 +127,22 @@ export function ReflectionForm({ user, onOptimisticReflection }: ReflectionFormP
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-            {TOPIC_PRESETS.map((item) => {
-              const isSelected = content.toLowerCase().includes(item.tag)
+            {CATEGORY_OPTIONS.map((item) => {
+              const isSelected = category === item.id
+              const Icon = item.icon
               return (
                 <button
-                  key={item.label}
+                  key={item.id}
                   type="button"
-                  onClick={() => handleApplyTag(item.tag)}
+                  onClick={() => setCategory(item.id)}
+                  aria-pressed={isSelected}
                   className={`text-2xs font-semibold px-2.5 py-1 rounded-md border transition-all duration-150 active:scale-95 shrink-0 ${
                     isSelected
                       ? "border-primary bg-primary/20 text-primary font-bold shadow-xs"
                       : "border-border/70 bg-background/60 hover:bg-primary/10 hover:border-primary/30 text-muted-foreground hover:text-foreground"
                   }`}
                 >
+                  <Icon className="mr-1 inline h-3 w-3" aria-hidden="true" />
                   {item.label}
                 </button>
               )
