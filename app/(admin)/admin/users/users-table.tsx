@@ -15,6 +15,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -260,6 +261,9 @@ function UserActions({ user }: { user: UserRow }) {
           <SheetContent side="bottom">
             <SheetHeader>
               <SheetTitle>{user.full_name || "Usuario"}</SheetTitle>
+              <SheetDescription className="sr-only">
+                Gestiona el acceso, la suscripción, el rol y la contraseña de este usuario.
+              </SheetDescription>
             </SheetHeader>
             <div className="space-y-1">
               <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Acceso permanente</p>
