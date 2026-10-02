@@ -1,14 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { Star, Sparkles, ChevronDown, Sun, Moon, ArrowUp } from "lucide-react"
+import { Star, Sparkles, ChevronDown, Sun, Moon, ArrowUp, Download, Loader2, Printer } from "lucide-react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { getSignSymbol, getSignElement } from "@/lib/utils/astrology"
 import { NatalChartModal } from "./NatalChartModal"
+import { NatalChartReport } from "./natal-chart-report"
+import { fetchNatalChartForReport, natalChartPdfFilename } from "@/lib/natal-chart-report"
 import type { NatalChartRecord } from "@/types"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface NatalChartSectionProps {
   chart: NatalChartRecord | null
@@ -33,6 +37,30 @@ export function NatalChartSection({
 }: NatalChartSectionProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [reportChart, setReportChart] = useState<NatalChartRecord | null>(null)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      // Se vuelve a leer desde la API autenticada: nunca inspeccionamos el iframe.
+      const savedChart = await fetchNatalChartForReport()
+      setReportChart(savedChart)
+      setReportOpen(true)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo preparar el informe.")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const printReport = () => {
+    const previousTitle = document.title
+    document.title = natalChartPdfFilename().replace(/\.pdf$/, "")
+    window.addEventListener("afterprint", () => { document.title = previousTitle }, { once: true })
+    window.print()
+  }
 
   const handleOpenInteractive = () => {
     if (!chart) return
@@ -165,10 +193,16 @@ export function NatalChartSection({
           <div className="pt-1">
             <div className="flex flex-col sm:flex-row gap-3">
               {chart && (
-                <Button onClick={handleOpenInteractive} className="gap-2 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm hover:shadow">
-                  <Sparkles className="w-4 h-4" />
-                  Abrir Carta Interactiva (IA)
-                </Button>
+                <>
+                  <Button onClick={handleOpenInteractive} className="gap-2 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm hover:shadow">
+                    <Sparkles className="w-4 h-4" />
+                    Abrir Carta Interactiva (IA)
+                  </Button>
+                  <Button onClick={handleExport} disabled={exporting} variant="outline" className="gap-2 w-full sm:w-auto">
+                    {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    Exportar PDF
+                  </Button>
+                </>
               )}
               <Button onClick={() => setModalOpen(true)} variant={chart ? "outline" : "default"} className="gap-2 w-full sm:w-auto">
                 {chart ? "Recalcular mi carta natal" : "Calcular mi carta natal"}
@@ -187,6 +221,24 @@ export function NatalChartSection({
       </CardContent>
 
       {editable && <NatalChartModal open={modalOpen} onOpenChange={setModalOpen} />}
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="max-h-[94vh] max-w-4xl overflow-y-auto p-0 print:fixed print:inset-0 print:max-h-none print:max-w-none print:overflow-visible">
+          <DialogHeader className="sticky top-0 z-10 border-b bg-background px-6 py-4 print:hidden">
+            <DialogTitle>Vista previa del informe</DialogTitle>
+            <DialogDescription>En el diálogo de impresión elige «Guardar como PDF». El nombre sugerido es {natalChartPdfFilename()}.</DialogDescription>
+            <Button onClick={printReport} className="mt-2 w-fit gap-2"><Printer className="h-4 w-4" />Guardar como PDF</Button>
+          </DialogHeader>
+          {reportChart && <NatalChartReport chart={reportChart} userName={userName} />}
+        </DialogContent>
+      </Dialog>
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          #mitra-natal-chart-report, #mitra-natal-chart-report * { visibility: visible !important; }
+          #mitra-natal-chart-report { position: fixed !important; inset: 0 !important; }
+          @page { size: A4; margin: 0; }
+        }
+      `}</style>
     </Card>
   )
 }
