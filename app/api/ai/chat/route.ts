@@ -16,6 +16,24 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+type ChatNotFoundCode =
+  | "CONVERSATION_NOT_FOUND"
+  | "LESSON_NOT_FOUND"
+  | "FORMATION_NOT_FOUND";
+
+function notFound(
+  code: ChatNotFoundCode,
+  error: string,
+  context: Record<string, string | undefined>,
+) {
+  console.warn("[ai/chat] resource_not_found", {
+    event: "ai_chat_resource_not_found",
+    code,
+    ...context,
+  });
+  return NextResponse.json({ error, code }, { status: 404 });
+}
+
 async function connectProvider(
   systemPrompt: string,
   messages: Array<{ role: string; content: string }>,
@@ -143,19 +161,34 @@ export async function POST(req: NextRequest) {
       try {
         owned = await getOwnedAiConversation(user.id, conversationId);
       } catch {
-        return NextResponse.json(
-          { error: "Conversación no disponible." },
-          { status: 404 },
+        return notFound(
+          "CONVERSATION_NOT_FOUND",
+          "Conversación no disponible.",
+          { userId: user.id, conversationId },
         );
       }
       if (
         (lessonId && lessonId !== owned.lesson_id) ||
         (formationId && formationId !== owned.formation_id)
-      )
+      ) {
+        console.warn("[ai/chat] conversation_context_mismatch", {
+          event: "ai_chat_conversation_context_mismatch",
+          code: "CONVERSATION_CONTEXT_MISMATCH",
+          userId: user.id,
+          conversationId,
+          lessonId,
+          formationId,
+          conversationLessonId: owned.lesson_id,
+          conversationFormationId: owned.formation_id,
+        });
         return NextResponse.json(
-          { error: "El contexto no pertenece a esta conversación." },
-          { status: 400 },
+          {
+            error: "El contexto no pertenece a esta conversación.",
+            code: "CONVERSATION_CONTEXT_MISMATCH",
+          },
+          { status: 409 },
         );
+      }
       lessonId = owned.lesson_id ?? undefined;
       formationId = owned.formation_id ?? undefined;
     }
@@ -168,9 +201,10 @@ export async function POST(req: NextRequest) {
         .eq("is_published", true)
         .maybeSingle();
       if (error || !data)
-        return NextResponse.json(
-          { error: "Lección no disponible." },
-          { status: 404 },
+        return notFound(
+          "LESSON_NOT_FOUND",
+          "Lección no disponible.",
+          { userId: user.id, lessonId },
         );
     }
     if (formationId) {
@@ -181,9 +215,10 @@ export async function POST(req: NextRequest) {
         .eq("is_published", true)
         .maybeSingle();
       if (error || !data)
-        return NextResponse.json(
-          { error: "Formación no disponible." },
-          { status: 404 },
+        return notFound(
+          "FORMATION_NOT_FOUND",
+          "Formación no disponible.",
+          { userId: user.id, formationId },
         );
     }
     const hasProvider = [

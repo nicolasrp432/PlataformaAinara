@@ -11,6 +11,9 @@ const ids = {
   me: "10000000-0000-4000-8000-000000000001",
   other: "10000000-0000-4000-8000-000000000002",
   conversation: "20000000-0000-4000-8000-000000000001",
+  lesson: "30000000-0000-4000-8000-000000000001",
+  otherLesson: "30000000-0000-4000-8000-000000000002",
+  formation: "40000000-0000-4000-8000-000000000001",
 };
 function query(table) {
   const filter = {};
@@ -62,7 +65,7 @@ function query(table) {
         data:
           state.owner === filter.user_id
             ? selected
-              ? { id: ids.conversation, lesson_id: null, formation_id: null }
+              ? { id: ids.conversation, lesson_id: state.conversationLesson ?? null, formation_id: state.conversationFormation ?? null }
               : []
             : null,
         error: null,
@@ -77,7 +80,12 @@ function query(table) {
     }
     if (table === "profiles")
       return { data: { full_name: "Ana", level: 1 }, error: null };
-    if (table === "formations") return { data: [], error: null };
+    if (table === "lessons")
+      return { data: state.lessonPublished ? { id: filter.id } : null, error: null };
+    if (table === "formations")
+      return selected
+        ? { data: state.formationPublished ? { id: filter.id } : null, error: null }
+        : { data: [], error: null };
     return { data: null, error: null };
   }
   return q;
@@ -116,6 +124,9 @@ async function main() {
   });
   const { POST, GET } = require(outputDir + "/api-route.cjs");
   const { NextRequest } = require(path.join(root, "node_modules/next/server"));
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
   global.__client = {
     auth: {
       getUser: async () => ({
@@ -130,7 +141,7 @@ async function main() {
       body: JSON.stringify(data),
     });
   const reset = () => {
-    state = { user: true, owner: ids.me, created: 0, saved: [], calls: [] };
+    state = { user: true, owner: ids.me, lessonPublished: true, formationPublished: true, created: 0, saved: [], calls: [] };
     global.__tier = "member";
     for (const k of [
       "GEMINI_API_KEY",
@@ -153,11 +164,28 @@ async function main() {
   global.fetch = () => {
     throw Error("Provider must never see an unowned conversation");
   };
-  assert.equal(
-    (await POST(request({ message: "Hola", conversationId: ids.conversation })))
-      .status,
-    404,
-  );
+  let notFoundResponse = await POST(request({ message: "Hola", conversationId: ids.conversation }));
+  assert.equal(notFoundResponse.status, 404);
+  assert.equal((await notFoundResponse.json()).code, "CONVERSATION_NOT_FOUND");
+  assert.ok(warnings.some((entry) => entry[1]?.code === "CONVERSATION_NOT_FOUND"));
+  reset();
+  state.lessonPublished = false;
+  notFoundResponse = await POST(request({ message: "Hola", lessonId: ids.lesson }));
+  assert.equal(notFoundResponse.status, 404);
+  assert.equal((await notFoundResponse.json()).code, "LESSON_NOT_FOUND");
+  assert.ok(warnings.some((entry) => entry[1]?.code === "LESSON_NOT_FOUND"));
+  reset();
+  state.formationPublished = false;
+  notFoundResponse = await POST(request({ message: "Hola", formationId: ids.formation }));
+  assert.equal(notFoundResponse.status, 404);
+  assert.equal((await notFoundResponse.json()).code, "FORMATION_NOT_FOUND");
+  assert.ok(warnings.some((entry) => entry[1]?.code === "FORMATION_NOT_FOUND"));
+  reset();
+  state.conversationLesson = ids.lesson;
+  let response = await POST(request({ message: "Hola", conversationId: ids.conversation, lessonId: ids.otherLesson }));
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).code, "CONVERSATION_CONTEXT_MISMATCH");
+  assert.ok(warnings.some((entry) => entry[1]?.code === "CONVERSATION_CONTEXT_MISMATCH"));
   reset();
   assert.equal((await POST(request({ message: "Hola" }))).status, 503);
   assert.equal(state.created, 0);
@@ -174,7 +202,7 @@ async function main() {
       { status: 200 },
     );
   };
-  let response = await POST(request({ message: "Ayúdame con mi práctica" }));
+  response = await POST(request({ message: "Ayúdame con mi práctica" }));
   assert.equal(response.status, 200);
   let body = await response.text();
   assert.match(body, /Respuesta real/);
@@ -206,8 +234,9 @@ async function main() {
   response = await GET(new NextRequest("http://localhost/api/ai/chat"));
   assert.equal(response.status, 200);
   assert.equal((await response.json()).conversationId, ids.conversation);
+  console.warn = originalWarn;
   console.log(
-    "AI route: auth, paid access, ownership, missing provider, fallback, real persistence, empty/failed SSE and private history verified with simulated providers.",
+    "AI route: auth, paid access, distinct deleted/unpublished 404s, context mismatch, missing provider, fallback, real persistence, empty/failed SSE and private history verified with simulated providers.",
   );
 }
 main()

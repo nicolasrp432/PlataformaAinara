@@ -8,6 +8,12 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { RichText } from "@/components/ui/rich-text"
 import { SseDecoder } from "@/lib/ai-stream"
+import {
+  aiChatContextKey,
+  conversationIdForContext,
+  isUnavailableConversationCode,
+  type AiConversationRef,
+} from "@/lib/ai-chat-client"
 
 interface Message {
   id: string
@@ -44,15 +50,18 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
   const [historyError,setHistoryError] = useState<string | null>(null)
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [conversation, setConversation] = useState<AiConversationRef>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const requestRef = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const contextKey = aiChatContextKey(lessonId, formationId)
+  const contextKeyRef = useRef(contextKey)
+  contextKeyRef.current = contextKey
   useEffect(() => {
     requestRef.current?.abort()
     setMessages([])
-    setConversationId(null)
+    setConversation(null)
     setIsStreaming(false)
     setIsRestoring(true)
     setHistoryError(null)
@@ -62,11 +71,11 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
     if (formationId) query.set("formationId",formationId)
     fetch(`/api/ai/chat?${query}`,{ signal: abort.signal })
       .then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.error ?? "No se pudo recuperar el historial."); return data })
-      .then(data => { if (!abort.signal.aborted) { setConversationId(data.conversationId); setMessages(data.messages ?? []) } })
-      .catch(error => { if (!abort.signal.aborted) setHistoryError(error.message) })
+      .then(data => { if (!abort.signal.aborted && contextKeyRef.current === contextKey) { setConversation(data.conversationId ? { id: data.conversationId, contextKey } : null); setMessages(data.messages ?? []) } })
+      .catch(error => { if (!abort.signal.aborted && contextKeyRef.current === contextKey) setHistoryError(error.message) })
       .finally(() => { if (!abort.signal.aborted) setIsRestoring(false) })
     return () => { abort.abort(); requestRef.current?.abort(); requestRef.current = null }
-  }, [lessonId, formationId])
+  }, [lessonId, formationId, contextKey])
 
   useEffect(() => {
     const area = scrollRef.current
@@ -93,6 +102,7 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
     const trimmed = textToSend.trim()
     if (!trimmed || requestRef.current || isRestoring) return
     const abort = new AbortController()
+    const requestContextKey = contextKey
     requestRef.current = abort
     const assistantId = crypto.randomUUID()
     setMessages(prev => [...prev,
@@ -106,21 +116,27 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
       const res = await fetch("/api/ai/chat", {
         method: "POST", signal: abort.signal,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed, conversationId, lessonId, formationId }),
+        body: JSON.stringify({ message: trimmed, conversationId: conversationIdForContext(conversation, requestContextKey), lessonId, formationId }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        throw new Error(data?.error ?? "El asistente no está disponible ahora.")
+        const error = new Error(data?.error ?? "El asistente no está disponible ahora.") as Error & { code?: string }
+        error.code = data?.code
+        throw error
       }
       if (!res.body) throw new Error("No se recibió una respuesta.")
       const convId = res.headers.get("X-Conversation-Id")
-      if (convId) setConversationId(convId)
+      if (convId && contextKeyRef.current === requestContextKey) setConversation({ id: convId, contextKey: requestContextKey })
       reader = res.body.getReader()
       const parser = new SseDecoder()
       let completed = false
       let received = false
       const consume = (events: string[]) => {
         for (const event of events) {
+          if (contextKeyRef.current !== requestContextKey) {
+            abort.abort()
+            throw new DOMException("La navegación canceló la solicitud anterior.", "AbortError")
+          }
           if (event === "[DONE]") { completed = true; break }
           const data = JSON.parse(event)
           if (data.error) throw new Error(data.error)
@@ -138,6 +154,11 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
       if (!completed || !received) throw new Error("La respuesta quedó incompleta. Puedes reintentar tu pregunta.")
     } catch (error) {
       if (requestRef.current !== abort) return
+      const code = error instanceof Error ? (error as Error & { code?: string }).code : undefined
+      if (isUnavailableConversationCode(code)) {
+        setConversation(null)
+        setInput(trimmed)
+      }
       const message = abort.signal.aborted ? "Respuesta detenida." : error instanceof Error ? error.message : "Error de conexión. Inténtalo de nuevo."
       setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: m.content ? `${m.content}\n\n${message}` : message, isError: true } : m))
       if (!abort.signal.aborted) toast.error(message)
@@ -167,7 +188,7 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
 
   return (
     <div className={cn("flex flex-col min-h-0", className)}>
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border pb-2 text-xs text-muted-foreground"><span>{isRestoring ? "Recuperando tu conversación…" : "Conversación privada"}</span><button type="button" className="rounded-md px-2 py-1 text-primary hover:bg-primary/10" disabled={isStreaming || isRestoring} onClick={() => { setMessages([]); setConversationId(null); setHistoryError(null) }}>Nueva conversación</button></div>
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border pb-2 text-xs text-muted-foreground"><span>{isRestoring ? "Recuperando tu conversación…" : "Conversación privada"}</span><button type="button" className="rounded-md px-2 py-1 text-primary hover:bg-primary/10" disabled={isStreaming || isRestoring} onClick={() => { setMessages([]); setConversation(null); setHistoryError(null) }}>Nueva conversación</button></div>
       {historyError && <p role="alert" className="pt-2 text-xs text-warning-strong">{historyError}</p>}
       {/* Messages */}
       <div ref={scrollRef} role="log" aria-label="Conversación con el asistente" className="flex-1 overflow-y-auto py-3.5 space-y-4 px-1">
