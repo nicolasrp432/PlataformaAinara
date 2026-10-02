@@ -18,20 +18,23 @@ export type BrandMarkSize = keyof typeof MARK_SIZES
 export function BrandMark({
   size = "sm",
   className,
+  variant = "mono",
 }: {
   size?: BrandMarkSize
   className?: string
+  variant?: "mono" | "brand"
 }) {
   const s = MARK_SIZES[size]
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center gold-gradient shadow-sm text-primary-foreground",
+        "flex shrink-0 items-center justify-center shadow-sm",
+        variant === "mono" ? "bg-foreground text-background" : "bg-[#29251e] text-white",
         s.tile,
         className
       )}
     >
-      <MitraLogo className={s.icon} />
+      <MitraLogo className={s.icon} variant={variant} />
     </div>
   )
 }
@@ -65,15 +68,17 @@ export function Wordmark({
 export function BrandLockup({
   size = "sm",
   withTagline = false,
+  markVariant = "mono",
   className,
 }: {
   size?: BrandMarkSize
   withTagline?: boolean
+  markVariant?: "mono" | "brand"
   className?: string
 }) {
   return (
     <div className={cn("flex items-center gap-2.5 min-w-0", className)}>
-      <BrandMark size={size} />
+      <BrandMark size={size} variant={markVariant} />
       <div className="min-w-0 flex flex-col justify-center">
         <Wordmark size={size} className="block" />
         {withTagline && (

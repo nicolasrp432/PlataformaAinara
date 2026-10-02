@@ -23,7 +23,8 @@ import {
 } from "@/lib/landing-content";
 import { SignupProvider, SignupButton } from "./signup-provider";
 import { ExperiencePreview } from "./experience-preview";
-import { FloatingVisual, Reveal } from "./landing-motion";
+import { Reveal } from "./landing-motion";
+import { HeroVisual } from "./hero-visual";
 
 interface Formation {
   id: string;
@@ -123,13 +124,7 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
                 <span>Integra en tu vida</span>
               </div>
             </Reveal>
-            <FloatingVisual className="ainara-hero-art">
-              <div className="hero-orbit hero-orbit-one" />
-              <div className="hero-orbit hero-orbit-two" />
-              <div className="hero-sun"><Sparkles size={28} /><span>Tu proceso<br />empieza aquí</span></div>
-              <div className="hero-card hero-card-one"><Compass size={20}/><span>Dirección</span></div>
-              <div className="hero-card hero-card-two"><NotebookPen size={20}/><span>Intención</span></div>
-            </FloatingVisual>
+            <HeroVisual />
           </section>
           <div className="sales-trust-strip">
             <div className="sales-container grid gap-5 sm:grid-cols-3">
