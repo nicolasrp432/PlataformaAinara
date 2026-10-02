@@ -51,6 +51,15 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Mitra" }],
   creator: "Mitra",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", type: "image/x-icon", sizes: "16x16 32x32 48x48" },
+    ],
+    apple: [
+      { url: "/apple-icon", type: "image/png", sizes: "180x180" },
+    ],
+  },
   openGraph: {
     type: "website",
     locale: "es_ES",
