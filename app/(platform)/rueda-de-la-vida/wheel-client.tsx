@@ -1,14 +1,15 @@
 "use client"
 import { useState, useTransition } from "react"
 import Link from "next/link"
-import { Compass, Check, LockKeyhole } from "lucide-react"
+import { Compass, Check, Download, LockKeyhole, PencilLine } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { WheelChart } from "@/components/life-wheel/wheel-chart"
-import { INITIAL_SCORES, LIFE_AREAS, wheelAverage, type LifeAreaKey, type LifeWheelEntry } from "@/lib/life-wheel"
+import { LifeWheelReport } from "@/components/life-wheel/life-wheel-report"
+import { INITIAL_SCORES, LIFE_AREAS, selectLifeWheelEntry, wheelAverage, type LifeAreaKey, type LifeWheelEntry } from "@/lib/life-wheel"
 import { saveLifeWheel } from "./actions"
 
 export function LifeWheelClient({ entries, unavailable = false }: { entries: LifeWheelEntry[]; unavailable?: boolean }) {
@@ -20,6 +21,7 @@ export function LifeWheelClient({ entries, unavailable = false }: { entries: Lif
   const [comparison, setComparison] = useState(entries[0]?.id ?? "none")
   const [pending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [reportEntry, setReportEntry] = useState<LifeWheelEntry | null>(null)
   const previous = history.find(entry => entry.id === comparison)
   const complete = rated.length === LIFE_AREAS.length
   const average = wheelAverage(scores)
@@ -32,12 +34,31 @@ export function LifeWheelClient({ entries, unavailable = false }: { entries: Lif
     startTransition(async () => {
       const result = await saveLifeWheel({ scores, focus, intention })
       if (result.error) { toast.error(result.error); return }
-      if (result.entry) { setHistory(current => [result.entry!, ...current].slice(0, 24)); setSaved(true); toast.success("Tu momento presente ha quedado guardado.") }
+      if (result.entry) { setHistory(current => [result.entry!, ...current].slice(0, 24)); setSaved(true); setReportEntry(result.entry); toast.success("Tu momento presente ha quedado guardado.") }
     })
   }
+  function openReport(id: string) {
+    const entry = selectLifeWheelEntry(history, id)
+    if (entry) setReportEntry(entry)
+  }
+  function printReport() {
+    if (!reportEntry) return
+    const originalTitle = document.title
+    document.title = `mitra-rueda-de-la-vida-${reportEntry.created_at.slice(0, 10)}.pdf`
+    window.addEventListener("afterprint", () => { document.title = originalTitle }, { once: true })
+    window.print()
+  }
+  if (reportEntry) return <div className="life-wheel-report-view space-y-6">
+    <div className="life-wheel-report-actions flex flex-wrap items-center justify-between gap-3">
+      <Button variant="outline" onClick={() => setReportEntry(null)}><PencilLine size={16} /> Volver al formulario</Button>
+      <Button onClick={printReport}><Download size={16} /> Descargar PDF</Button>
+    </div>
+    <LifeWheelReport entry={reportEntry} />
+  </div>
   return <div className="space-y-8">
     <header className="ainara-page-header"><p className="ainara-eyebrow"><Compass size={16} /> AUTOCONOCIMIENTO</p><h1>Tu vida, en perspectiva.</h1><p>No necesitas una rueda perfecta. Solo una mirada honesta a cómo estás hoy.</p></header>
     {unavailable && <p role="alert" className="rounded-xl border border-warning-border bg-warning-soft p-4 text-warning-strong">El historial no está disponible en este momento. Puedes explorar la rueda, pero el guardado está desactivado hasta que se restablezca el servicio.</p>}
+    {history.length > 0 && <section className="ainara-panel flex flex-col gap-4 sm:flex-row sm:items-end" aria-labelledby="wheel-history-title"><div className="grow"><label id="wheel-history-title" htmlFor="wheel-history" className="mb-2 block text-sm font-medium">Informes guardados</label><Select onValueChange={openReport}><SelectTrigger id="wheel-history"><SelectValue placeholder="Selecciona una evaluación" /></SelectTrigger><SelectContent>{history.map(entry => <SelectItem key={entry.id} value={entry.id}>{new Date(entry.created_at).toLocaleString("es-ES", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</SelectItem>)}</SelectContent></Select></div><p className="max-w-md text-sm text-muted-foreground">Selecciona una instantánea para abrir su informe independiente y guardarlo como PDF.</p></section>}
     <div className="grid items-start gap-6 xl:grid-cols-[.9fr_1.1fr]">
       <section className="ainara-panel xl:sticky xl:top-8" aria-label="Tu mapa actual">
         <div className="flex items-center justify-between gap-3"><h2 className="font-display">Tu momento presente</h2><span className="ainara-chip">{rated.length}/8 áreas</span></div>
