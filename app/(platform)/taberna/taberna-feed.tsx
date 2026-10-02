@@ -12,10 +12,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Loader2, MessageSquare, Share2, ChevronDown, ChevronUp } from "lucide-react"
+import { CircleHelp, Heart, Lightbulb, Loader2, MessageCircle, MessageSquare, Quote, Share2, Sparkles, Target, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { startConversationAction } from "@/app/(platform)/messages/actions"
+import type { ReflectionCategory } from "@/lib/reflection-categories"
 
 type ReflectionAuthor = {
   id?: string
@@ -30,6 +31,7 @@ type ReflectionReply = {
   created_at: string
   likes_count: number
   parent_id: string | null
+  category: ReflectionCategory
   profiles: ReflectionAuthor | ReflectionAuthor[] | null
   lessons: null
 }
@@ -40,6 +42,7 @@ type ReflectionItem = {
   created_at: string
   likes_count: number
   parent_id: string | null
+  category: ReflectionCategory
   profiles: ReflectionAuthor | ReflectionAuthor[] | null
   lessons: { title: string } | null
   replies?: ReflectionReply[]
@@ -54,6 +57,7 @@ type ReflectionInsertPayload = {
   created_at: string
   likes_count: number | null
   parent_id: string | null
+  category: ReflectionCategory
 }
 
 function formatTimeAgo(dateStr: string) {
@@ -75,12 +79,21 @@ interface TabernaFeedProps {
   currentUser: { full_name: string; avatarUrl: string | null }
 }
 
-const FEED_FILTERS = [
-  { id: "all", label: "🌟 Todas" },
-  { id: "revelacion", label: "💡 Revelaciones", match: "#revelación" },
-  { id: "pregunta", label: "❓ Preguntas", match: "#pregunta" },
-  { id: "practica", label: "🎯 Práctica", match: "#práctica" },
-  { id: "gratitud", label: "✨ Gratitud", match: "#gratitud" },
+type FeedFilter = {
+  id: "all" | ReflectionCategory
+  name: string
+  description: string
+  icon: typeof Sparkles
+  color: string
+}
+
+const FEED_FILTERS: FeedFilter[] = [
+  { id: "all", name: "Todas", description: "Toda la comunidad", icon: Sparkles, color: "text-primary bg-primary/10" },
+  { id: "reflection", name: "Reflexiones", description: "Ideas y aprendizajes", icon: Lightbulb, color: "text-amber-700 bg-amber-500/10 dark:text-amber-300" },
+  { id: "question", name: "Preguntas", description: "Dudas para conversar", icon: CircleHelp, color: "text-sky-700 bg-sky-500/10 dark:text-sky-300" },
+  { id: "practice", name: "Prácticas", description: "Acciones y ejercicios", icon: Target, color: "text-emerald-700 bg-emerald-500/10 dark:text-emerald-300" },
+  { id: "gratitude", name: "Gratitud", description: "Motivos para agradecer", icon: Heart, color: "text-rose-700 bg-rose-500/10 dark:text-rose-300" },
+  { id: "testimonial", name: "Testimonios", description: "Experiencias del camino", icon: Quote, color: "text-violet-700 bg-violet-500/10 dark:text-violet-300" },
 ]
 
 export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProps) {
@@ -88,7 +101,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
   const [reflections, setReflections] = useState<ReflectionItem[]>(
     initialReflections.map((r) => ({ ...r, replies: r.replies || [] }))
   )
-  const [activeFilter, setActiveFilter] = useState("all")
+  const [activeFilter, setActiveFilter] = useState<FeedFilter["id"]>("all")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState("")
   const [isPendingReply, startReplyTransition] = useTransition()
@@ -171,6 +184,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     e.preventDefault()
     const trimmed = replyText.trim()
     if (!trimmed) return
+    const parentCategory = reflections.find((item) => item.id === reflectionId)?.category ?? "reflection"
 
     const optimisticReply: ReflectionReply = {
       id: `temp-${Date.now()}`,
@@ -178,6 +192,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
       created_at: new Date().toISOString(),
       likes_count: 0,
       parent_id: reflectionId,
+      category: parentCategory,
       profiles: { full_name: currentUser.full_name, avatar_url: currentUser.avatarUrl, role: "student" },
       lessons: null,
     }
@@ -195,6 +210,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     const formData = new FormData()
     formData.append("content", trimmed)
     formData.append("parent_id", reflectionId)
+    formData.append("category", parentCategory)
 
     startReplyTransition(async () => {
       const result = await createReflection(formData)
@@ -241,6 +257,7 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
             created_at: raw.created_at,
             likes_count: raw.likes_count ?? 0,
             parent_id: raw.parent_id ?? null,
+            category: raw.category,
             profiles: profile ?? null,
             lessons: null,
           }
@@ -283,12 +300,18 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     }
   }, [])
 
-  // Filtrado de reflexiones
+  const categoryCounts = reflections.reduce<Record<ReflectionCategory, number>>(
+    (counts, reflection) => {
+      counts[reflection.category] += 1
+      return counts
+    },
+    { reflection: 0, question: 0, practice: 0, gratitude: 0, testimonial: 0 }
+  )
+
+  // La categoría persistida es la única fuente del filtrado; los hashtags siguen siendo contenido.
   const filteredReflections = reflections.filter((r) => {
     if (activeFilter === "all") return true
-    const targetFilter = FEED_FILTERS.find((f) => f.id === activeFilter)
-    if (!targetFilter?.match) return true
-    return r.content.toLowerCase().includes(targetFilter.match)
+    return r.category === activeFilter
   })
 
   // Renderizar hashtags clickeables en el texto
@@ -296,19 +319,13 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
     const parts = text.split(/(#[\wáéíóúÁÉÍÓÚñÑ]+)/g)
     return parts.map((part, index) => {
       if (part.startsWith("#")) {
-        const clean = part.toLowerCase()
-        const matchedFilter = FEED_FILTERS.find((f) => f.match && clean.includes(f.match))
         return (
-          <button
+          <span
             key={index}
-            type="button"
-            onClick={() => {
-              if (matchedFilter) setActiveFilter(matchedFilter.id)
-            }}
-            className="font-semibold text-primary hover:underline hover:opacity-80 transition-opacity inline-block mr-0.5"
+            className="font-semibold text-primary inline-block mr-0.5"
           >
             {part}
-          </button>
+          </span>
         )
       }
       return <span key={index}>{part}</span>
@@ -321,28 +338,38 @@ export function TabernaFeed({ initialReflections, currentUser }: TabernaFeedProp
 
       <div className="space-y-4">
         {/* Cabecera y Filtros */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-border/70 pb-3">
+        <div className="space-y-3 border-b border-border/70 pb-4">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
               Voces de la Comunidad
             </h2>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
+          <div className="flex snap-x snap-mandatory items-stretch gap-2 overflow-x-auto pb-2" role="group" aria-label="Filtrar publicaciones por categoría" tabIndex={0}>
             {FEED_FILTERS.map((filter) => {
               const isSelected = activeFilter === filter.id
+              const Icon = filter.icon
+              const count = filter.id === "all" ? reflections.length : categoryCounts[filter.id]
               return (
                 <button
                   key={filter.id}
+                  type="button"
                   onClick={() => setActiveFilter(filter.id)}
+                  aria-pressed={isSelected}
+                  aria-label={`${filter.name}: ${filter.description}. ${count} publicaciones`}
                   className={cn(
-                    "text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all duration-150 active:scale-95 shrink-0",
+                    "group min-w-[148px] snap-start rounded-xl border p-3 text-left transition-all duration-150 active:scale-[.98] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     isSelected
-                      ? "border-primary bg-primary/15 text-primary shadow-xs"
-                      : "border-border/70 bg-card/50 text-muted-foreground hover:bg-card hover:text-foreground"
+                      ? "border-primary/50 bg-primary/10 shadow-sm"
+                      : "border-border/60 bg-card/60 hover:border-primary/30 hover:bg-card"
                   )}
                 >
-                  {filter.label}
+                  <span className="flex items-center justify-between gap-3">
+                    <span className={cn("rounded-lg p-1.5", filter.color)}><Icon className="h-4 w-4" aria-hidden="true" /></span>
+                    <span className="rounded-full bg-background/80 px-2 py-0.5 text-2xs font-bold tabular-nums text-muted-foreground">{count}</span>
+                  </span>
+                  <span className="mt-2 block text-xs font-bold text-foreground">{filter.name}</span>
+                  <span className="mt-0.5 block text-3xs text-muted-foreground">{filter.description}</span>
                 </button>
               )
             })}

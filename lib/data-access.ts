@@ -383,7 +383,7 @@ export const getReflections = cache(async () => {
 
   const { data: topLevel } = await supabase
     .from("reflections")
-    .select("id, user_id, lesson_id, content, is_public, likes_count, created_at, parent_id")
+    .select("id, user_id, lesson_id, content, category, is_public, likes_count, created_at, parent_id")
     .eq("is_public", true)
     .is("parent_id", null)
     .order("created_at", { ascending: false })
@@ -395,7 +395,7 @@ export const getReflections = cache(async () => {
 
   const { data: replies } = await supabase
     .from("reflections")
-    .select("id, user_id, lesson_id, content, is_public, likes_count, created_at, parent_id")
+    .select("id, user_id, lesson_id, content, category, is_public, likes_count, created_at, parent_id")
     .eq("is_public", true)
     .in("parent_id", topLevelIds)
     .order("created_at", { ascending: true })
