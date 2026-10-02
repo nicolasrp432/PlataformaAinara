@@ -23,6 +23,7 @@ import {
 } from "@/lib/landing-content";
 import { SignupProvider, SignupButton } from "./signup-provider";
 import { ExperiencePreview } from "./experience-preview";
+import { FloatingVisual, Reveal } from "./landing-motion";
 
 interface Formation {
   id: string;
@@ -59,7 +60,7 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
             </Link>
             <nav
               aria-label="Secciones"
-              className="hidden gap-7 text-sm lg:flex"
+              className="sales-nav hidden text-sm lg:flex"
             >
               {navigation.map((item) => (
                 <a key={item.href} href={item.href}>
@@ -95,7 +96,7 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
         </header>
         <main>
           <section className="ainara-hero">
-            <div className="ainara-hero-copy">
+            <Reveal className="ainara-hero-copy">
               <Label>MITRA / DESDE LA RAÍZ</Label>
               <h1>
                 El cambio empieza
@@ -121,26 +122,14 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
                 <span>Escucha tu momento</span>
                 <span>Integra en tu vida</span>
               </div>
-            </div>
-            <figure className="ainara-hero-portrait">
-              <Image
-                src={MENTOR_PROFILE.portrait}
-                alt="Ainara Unamunzaga, fundadora y mentora de Mitra"
-                fill
-                priority
-                sizes="(max-width: 767px) 100vw, 45vw"
-                className="object-cover"
-              />
-              <figcaption>
-                <span className="text-sm uppercase tracking-widest">
-                  Un acompañamiento cercano
-                </span>
-                <strong className="font-display text-3xl">
-                  Ainara Unamunzaga
-                </strong>
-                <span>{MENTOR_EXPERIENCE_LABEL}</span>
-              </figcaption>
-            </figure>
+            </Reveal>
+            <FloatingVisual className="ainara-hero-art">
+              <div className="hero-orbit hero-orbit-one" />
+              <div className="hero-orbit hero-orbit-two" />
+              <div className="hero-sun"><Sparkles size={28} /><span>Tu proceso<br />empieza aquí</span></div>
+              <div className="hero-card hero-card-one"><Compass size={20}/><span>Dirección</span></div>
+              <div className="hero-card hero-card-two"><NotebookPen size={20}/><span>Intención</span></div>
+            </FloatingVisual>
           </section>
           <div className="sales-trust-strip">
             <div className="sales-container grid gap-5 sm:grid-cols-3">
@@ -314,7 +303,11 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
             )}
           </section>
           <section id="mentora" className="sales-section sales-dark">
-            <div className="sales-container grid items-center gap-10 lg:grid-cols-[.65fr_1fr]">
+            <div className="sales-container grid items-center gap-12 lg:grid-cols-[.85fr_.7fr_1fr]">
+              <Reveal className="mentor-frame">
+                <div className="mentor-frame-image"><Image src={MENTOR_PROFILE.portrait} alt="Ainara Unamunzaga, fundadora y mentora de Mitra" fill sizes="(max-width: 1023px) 100vw, 42vw" className="object-cover" /></div>
+                <div className="mentor-frame-note"><Sparkles size={18}/><span>Presencia, escucha y dirección</span></div>
+              </Reveal>
               <div>
                 <Label>QUIÉN TE ACOMPAÑA</Label>
                 <h2 className="sales-title">
