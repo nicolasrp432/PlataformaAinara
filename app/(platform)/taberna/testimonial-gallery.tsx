@@ -11,7 +11,11 @@ export function TestimonialGallery({ testimonials }: { testimonials: Testimonial
     const reason = window.prompt("¿Por qué quieres denunciar este testimonio?")
     if (!reason) return
     const response = await fetch("/api/community/testimonials/report", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ testimonialId: id, reason }) })
-    response.ok ? toast.success("Denuncia enviada al equipo") : toast.error("No se pudo enviar la denuncia")
+    if (response.ok) {
+      toast.success("Denuncia enviada al equipo")
+    } else {
+      toast.error("No se pudo enviar la denuncia")
+    }
   }
   if (!testimonials.length) return null
   return <section aria-labelledby="community-stories"><h2 id="community-stories" className="mb-4 text-2xl font-semibold">Historias de la comunidad</h2>

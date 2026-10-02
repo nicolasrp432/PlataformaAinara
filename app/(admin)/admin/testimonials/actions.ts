@@ -53,18 +53,20 @@ export async function saveTestimonialAction(input: unknown) {
 
   const value = parsed.data
   const { error } = await supabaseAdmin().from("community_testimonials").insert({
+    author_id: user.id,
     uploaded_by: user.id,
     subject_name: value.subjectName,
     testimonial_text: value.testimonialText || null,
+    caption: value.testimonialText || value.subjectName,
     video_id: value.videoId,
-    video_url: value.videoUrl,
+    playback_url: value.videoUrl,
     thumbnail_url: value.thumbnail || null,
-    duration_seconds: Math.round(value.duration),
+    duration_seconds: value.duration,
     audience: value.audience,
-    consent_accepted_at: value.isThirdParty
+    consent_granted_at: value.isThirdParty
       ? new Date(`${value.authorizationAcceptedAt}T12:00:00.000Z`).toISOString()
       : new Date().toISOString(),
-    consent_legal_version: TESTIMONIAL_LEGAL_VERSION,
+    consent_version: TESTIMONIAL_LEGAL_VERSION,
     consent_method: value.isThirdParty
       ? "written_third_party_authorization"
       : "uploader_checkbox",

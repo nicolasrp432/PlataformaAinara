@@ -488,7 +488,7 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
             </article>
           ) : (
             /* Video Player / Theater Screen */
-            <div className="bg-black/95 shadow-inner overflow-hidden">
+            <div className="overflow-hidden bg-black/95 shadow-inner md:px-6 md:py-6">
               <div className="w-full max-w-5xl mx-auto">
                 <div className="aspect-video w-full">
                   {lesson.videoUrl ? (
