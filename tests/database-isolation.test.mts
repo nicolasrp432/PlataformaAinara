@@ -77,6 +77,7 @@ for (const file of [
   "0024_mentorship_bookings.sql",
   "0025_learning_integrity.sql",
   "0026_community_integrity.sql",
+  "0027_community_testimonials.sql",
 ]) {
   await db.exec(
     await readFile(new URL(`../migrations/${file}`, import.meta.url), "utf8"),
@@ -618,4 +619,32 @@ test("authority migrations can be reapplied without reopening legacy permissions
       0,
     ),
   );
+});
+
+test("testimonial drafts, moderation and published visibility are isolated by RLS", async () => {
+  let testimonial = "";
+  await asUser(B, async () => {
+    testimonial = (await scalar(`INSERT INTO community_testimonials(author_id,caption,consent_version,consent_granted_at)
+      VALUES('${B}','Mi proceso','2026-10-02',now()) RETURNING id`))!.id;
+    assert.equal((await scalar("SELECT count(*)::int AS n FROM community_testimonials"))!.n, 1);
+    await assert.rejects(db.exec(`UPDATE community_testimonials SET status='published' WHERE id='${testimonial}'`));
+  });
+  await asUser(C, async () => {
+    assert.equal((await scalar("SELECT count(*)::int AS n FROM community_testimonials"))!.n, 0);
+    await db.exec(`UPDATE community_testimonials SET caption='intrusión' WHERE id='${testimonial}'`);
+  });
+  await asUser(B, async () => assert.equal((await scalar(`SELECT caption FROM community_testimonials WHERE id='${testimonial}'`))!.caption, "Mi proceso"));
+  await asUser(admin, async () => {
+    await db.exec(`UPDATE community_testimonials SET status='published',reviewed_by='${admin}',reviewed_at=now(),
+      playback_url='https://example.test/video.m3u8' WHERE id='${testimonial}'`);
+  });
+  await asUser(C, async () => {
+    assert.equal((await scalar("SELECT count(*)::int AS n FROM community_testimonials WHERE status='published'"))!.n, 1);
+  });
+  await asUser(admin, async () => {
+    await db.exec(`UPDATE community_testimonials SET status='archived' WHERE id='${testimonial}'`);
+  });
+  await asUser(C, async () => {
+    assert.equal((await scalar("SELECT count(*)::int AS n FROM community_testimonials"))!.n, 0);
+  });
 });
