@@ -5,6 +5,8 @@ import { getAccessTier } from "@/lib/data-access";
 import { hasFullAccess } from "@/lib/access";
 import { aiChatSchema } from "@/lib/validations/ai-chat";
 import { SseDecoder, providerText } from "@/lib/ai-stream";
+import { aiErrorResponse, logAiError } from "@/lib/ai-errors";
+import { readAiEnvironment } from "@/lib/env/ai";
 import {
   buildSystemPrompt,
   createAiConversation,
@@ -39,36 +41,22 @@ async function connectProvider(
   messages: Array<{ role: string; content: string }>,
   signal: AbortSignal,
 ) {
-  const geminiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.GOOGLE_GENAI_API_KEY;
-  const groqKey = process.env.GROQ_API_KEY;
+  const environment = readAiEnvironment();
   const attempts: Array<{
     provider: "gemini" | "groq";
     model: string;
     key: string;
   }> = [];
-  if (geminiKey?.trim())
-    for (const model of new Set(
-      [process.env.GEMINI_MODEL, "gemini-2.5-flash"].filter(Boolean),
-    ))
-      attempts.push({
-        provider: "gemini",
-        model: model!,
-        key: geminiKey.trim(),
-      });
-  if (groqKey?.trim())
-    for (const model of new Set(
-      [
-        process.env.GROQ_MODEL,
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-      ].filter(Boolean),
-    ))
-      attempts.push({ provider: "groq", model: model!, key: groqKey.trim() });
+  if (environment.geminiKey)
+    attempts.push({ provider: "gemini", model: environment.geminiModel, key: environment.geminiKey });
+  if (environment.groqKey)
+    attempts.push({ provider: "groq", model: environment.groqModel, key: environment.groqKey });
+  let timedOut = false;
   for (const attempt of attempts) {
-    if (signal.aborted) break;
+    if (signal.aborted) {
+      timedOut = true;
+      break;
+    }
     const { provider, model, key } = attempt;
     const contents: Array<{ role: string; parts: Array<{ text: string }> }> =
       [];
@@ -113,16 +101,18 @@ async function connectProvider(
           ),
         },
       );
-      if (response.ok && response.body) return { response, provider };
+      if (response.ok && response.body) return { response, provider, model };
       await response.body?.cancel();
-      console.warn(`[ai/chat] ${provider}: ${response.status}`);
-    } catch {
-      if (!signal.aborted) console.warn(`[ai/chat] ${provider} no disponible`);
+      logAiError({ code: "AI_PROVIDER_UNAVAILABLE", provider, model, status: response.status, cause: "http" });
+    } catch (error) {
+      const timeout = attemptAbort.signal.aborted || signal.aborted;
+      timedOut ||= timeout;
+      logAiError({ code: timeout ? "AI_TIMEOUT" : "AI_PROVIDER_UNAVAILABLE", provider, model, cause: error });
     } finally {
       clearTimeout(headerTimeout);
     }
   }
-  return null;
+  return { failure: timedOut ? "AI_TIMEOUT" as const : "AI_PROVIDER_UNAVAILABLE" as const };
 }
 
 export async function POST(req: NextRequest) {
@@ -221,24 +211,23 @@ export async function POST(req: NextRequest) {
           { userId: user.id, formationId },
         );
     }
-    const hasProvider = [
-      process.env.GEMINI_API_KEY,
-      process.env.GOOGLE_API_KEY,
-      process.env.GOOGLE_GENAI_API_KEY,
-      process.env.GROQ_API_KEY,
-    ].some((key) => key?.trim());
-    if (!hasProvider)
-      return NextResponse.json(
-        {
-          error:
-            "El asistente no está disponible ahora. Puedes continuar la clase o volver a intentarlo más tarde.",
-        },
-        { status: 503 },
-      );
+    if (!readAiEnvironment().configured) {
+      logAiError({ code: "AI_NOT_CONFIGURED" });
+      return aiErrorResponse("AI_NOT_CONFIGURED", "El asistente no está disponible ahora. Puedes continuar la clase o volver a intentarlo más tarde.");
+    }
     const prompt = await buildSystemPrompt(lessonId, formationId);
-    const history = conversationId
-      ? await getConversationHistory(user.id, conversationId)
-      : [];
+    let history: Array<{ role: "user" | "assistant"; content: string }> = [];
+    let historyWarning = false;
+    if (conversationId) {
+      try {
+        history = await getConversationHistory(user.id, conversationId);
+      } catch (error) {
+        logAiError({ code: "AI_HISTORY_UNAVAILABLE", provider: "database", cause: error });
+        // Do not append to a conversation whose history was unavailable.
+        conversationId = undefined;
+        historyWarning = true;
+      }
+    }
     const messages = [
       { role: "system", content: prompt },
       ...history,
@@ -251,14 +240,12 @@ export async function POST(req: NextRequest) {
       AbortSignal.timeout(55_000),
     ]);
     const upstream = await connectProvider(prompt, messages, signal);
-    if (!upstream)
-      return NextResponse.json(
-        {
-          error:
-            "El asistente está temporalmente ocupado. Inténtalo de nuevo en unos minutos.",
-        },
-        { status: 503 },
-      );
+    if ("failure" in upstream) {
+      const failure = upstream.failure ?? "AI_PROVIDER_UNAVAILABLE";
+      return aiErrorResponse(failure, failure === "AI_TIMEOUT"
+        ? "El asistente tardó demasiado en responder. Inténtalo de nuevo."
+        : "El asistente está temporalmente ocupado. Inténtalo de nuevo en unos minutos.");
+    }
     try {
       conversationId ??= await createAiConversation(
         user.id,
@@ -269,7 +256,8 @@ export async function POST(req: NextRequest) {
     } catch (error) {
       abort.abort();
       await upstream.response.body?.cancel().catch(() => {});
-      throw error;
+      logAiError({ code: "AI_PERSISTENCE_UNAVAILABLE", provider: "database", cause: error });
+      return aiErrorResponse("AI_PERSISTENCE_UNAVAILABLE", "No se pudo guardar la conversación. Inténtalo de nuevo.");
     }
     const reader = upstream.response.body!.getReader();
     const encoder = new TextEncoder();
@@ -307,16 +295,21 @@ export async function POST(req: NextRequest) {
             throw new Error(
               "No se recibió una respuesta. Prueba con otra pregunta.",
             );
-          await saveAiMessage(user.id, convId, "assistant", fullText);
+          try {
+            await saveAiMessage(user.id, convId, "assistant", fullText);
+          } catch (error) {
+            logAiError({ code: "AI_PERSISTENCE_UNAVAILABLE", provider: "database", cause: error });
+            emit(JSON.stringify({
+              code: "AI_PERSISTENCE_UNAVAILABLE",
+              error: "La respuesta llegó, pero no se pudo guardar. Puedes volver a intentarlo.",
+            }));
+            return;
+          }
           emit("[DONE]");
-        } catch {
-          if (!signal.aborted)
-            emit(
-              JSON.stringify({
-                error:
-                  "La respuesta se interrumpió. Puedes volver a intentarlo.",
-              }),
-            );
+        } catch (error) {
+          const code = signal.aborted ? "AI_TIMEOUT" : "AI_STREAM_INTERRUPTED";
+          logAiError({ code, provider: upstream.provider, model: upstream.model, cause: error });
+          emit(JSON.stringify({ code, error: "La respuesta se interrumpió. Puedes volver a intentarlo." }));
         } finally {
           await reader.cancel().catch(() => {});
           reader.releaseLock();
@@ -337,14 +330,13 @@ export async function POST(req: NextRequest) {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-store",
         "X-Conversation-Id": convId,
+        ...(historyWarning ? { "X-AI-Warning": "AI_HISTORY_UNAVAILABLE" } : {}),
         "X-Accel-Buffering": "no",
       },
     });
-  } catch {
-    return NextResponse.json(
-      { error: "No se pudo recuperar tu conversación. Inténtalo de nuevo." },
-      { status: 503 },
-    );
+  } catch (error) {
+    logAiError({ code: "AI_DATABASE_UNAVAILABLE", provider: "database", cause: error });
+    return aiErrorResponse("AI_DATABASE_UNAVAILABLE", "No se pudo preparar la conversación. Inténtalo de nuevo.");
   }
 }
 
@@ -406,13 +398,8 @@ export async function GET(req: NextRequest) {
       { conversationId: conversation.id, messages: (messages ?? []).reverse() },
       { headers: { "Cache-Control": "no-store" } },
     );
-  } catch {
-    return NextResponse.json(
-      {
-        error:
-          "No se pudo recuperar el historial. Puedes empezar una conversación nueva.",
-      },
-      { status: 503 },
-    );
+  } catch (error) {
+    logAiError({ code: "AI_HISTORY_UNAVAILABLE", provider: "database", cause: error });
+    return aiErrorResponse("AI_HISTORY_UNAVAILABLE", "No se pudo recuperar el historial. Puedes empezar una conversación nueva.");
   }
 }

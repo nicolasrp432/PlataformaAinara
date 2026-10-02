@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { saveNatalChart } from "@/app/(platform)/profile/actions"
-import type { NatalChartData } from "@/types"
+import { natalChartMessageSchema } from "@/lib/validations/natal-chart"
 
 interface NatalChartModalProps {
   open: boolean
@@ -44,14 +44,14 @@ export function NatalChartModal({ open, onOpenChange }: NatalChartModalProps) {
       }
       if (event.origin !== cartaOrigin) return
 
-      const payload = event.data
-      if (!payload || payload.type !== "natal-chart-calculated") return
+      const payload = natalChartMessageSchema.safeParse(event.data)
+      if (!payload.success) return
       if (savingRef.current) return
 
       savingRef.current = true
       setSaving(true)
       try {
-        const result = await saveNatalChart(payload.data as NatalChartData)
+        const result = await saveNatalChart(payload.data.data)
         if (result?.error) {
           toast.error(result.error)
         } else {

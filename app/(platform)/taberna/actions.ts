@@ -6,6 +6,7 @@ import { z } from "zod"
 import { getAccessTier } from "@/lib/data-access"
 import { hasFullAccess } from "@/lib/access"
 import { createNotification } from "@/lib/services/notifications"
+import { REFLECTION_CATEGORIES } from "@/lib/reflection-categories"
 
 export async function createReflection(formData: FormData) {
   const supabase = await createClient()
@@ -16,10 +17,17 @@ export async function createReflection(formData: FormData) {
   }
 
   if (!hasFullAccess(await getAccessTier(user.id))) return { error: "La comunidad requiere acceso completo." }
-  const parsed = z.object({ content: z.string().trim().min(1,"El contenido no puede estar vacío.").max(4000,"Máximo 4000 caracteres."), parentId: z.string().uuid().nullable() })
-    .safeParse({ content: formData.get("content"),parentId: formData.get("parent_id") || null })
+  const parsed = z.object({
+    content: z.string().trim().min(1,"El contenido no puede estar vacío.").max(4000,"Máximo 4000 caracteres."),
+    parentId: z.string().uuid().nullable(),
+    category: z.enum(REFLECTION_CATEGORIES),
+  }).safeParse({
+    content: formData.get("content"),
+    parentId: formData.get("parent_id") || null,
+    category: formData.get("category") || "reflection",
+  })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Publicación inválida." }
-  const { content,parentId } = parsed.data
+  const { content,parentId,category } = parsed.data
   if (parentId) {
     const { data: parent } = await supabase.from("reflections").select("id").eq("id",parentId).eq("is_public",true).is("lesson_id",null).maybeSingle()
     if (!parent) return { error: "La publicación original no está disponible." }
@@ -42,6 +50,7 @@ export async function createReflection(formData: FormData) {
     .insert({
       user_id: user.id,
       content: content.trim(),
+      category,
       is_public: true,
       ...(parentId ? { parent_id: parentId } : {}),
     })

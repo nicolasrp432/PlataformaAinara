@@ -1,0 +1,23 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title description">
+  <title id="title">Mitra, asistente de aprendizaje</title>
+  <desc id="description">Personaje ilustrado no humano, de forma redondeada, rostro amable y un libro abierto.</desc>
+  <g fill="none">
+    <circle cx="512" cy="512" r="430" fill="#BB7F54" opacity=".08"/>
+    <circle cx="512" cy="512" r="370" fill="#BB7F54" opacity=".1"/>
+    <circle cx="512" cy="512" r="315" fill="#BB7F54" opacity=".13"/>
+  </g>
+  <ellipse cx="248" cy="712" rx="153" ry="82" fill="#899C7E"/>
+  <ellipse cx="777" cy="707" rx="153" ry="82" fill="#A08165"/>
+  <rect x="255" y="245" width="514" height="560" rx="230" fill="#FAF2E1" stroke="#664D3F" stroke-width="18"/>
+  <rect x="315" y="337" width="394" height="303" rx="140" fill="#FFFDF5" stroke="#CFAC87" stroke-width="10"/>
+  <path d="M512 250v-85" stroke="#664D3F" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="512" cy="140" r="35" fill="#E5A75E" stroke="#664D3F" stroke-width="10"/>
+  <path d="M270 405 159 352l18 203 102 40zM754 405l111-53-18 203-102 40z" fill="#E5A75E" stroke="#664D3F" stroke-width="12" stroke-linejoin="round"/>
+  <circle cx="419" cy="474" r="29" fill="#4B413C"/><circle cx="605" cy="474" r="29" fill="#4B413C"/>
+  <circle cx="414" cy="462" r="8" fill="#fff"/><circle cx="600" cy="462" r="8" fill="#fff"/>
+  <ellipse cx="377" cy="534" rx="29" ry="15" fill="#E69D82" opacity=".65"/><ellipse cx="647" cy="534" rx="29" ry="15" fill="#E69D82" opacity=".65"/>
+  <path d="M451 526q61 80 122 0" fill="none" stroke="#664D3F" stroke-width="13" stroke-linecap="round"/>
+  <path d="m512 742-115-54v-60l115 47 115-47v60z" fill="#FFFDF2" stroke="#664D3F" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M512 675v67" stroke="#664D3F" stroke-width="7"/>
+  <g fill="#E5A75E"><circle cx="205" cy="250" r="14"/><circle cx="810" cy="230" r="10"/><circle cx="165" cy="690" r="9"/><circle cx="855" cy="700" r="13"/></g>
+</svg>

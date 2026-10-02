@@ -1079,6 +1079,37 @@
 @media(max-width:767px) { .admin-stat { padding:1.25rem; } .admin-toolbar > div:first-child { width:100%; } .admin-toolbar input { width:100%; } }
 .ainara-admin main h1 { font-family:var(--font-heading-brand),Georgia,serif; font-weight:500; }
 
+/* Printable, control-free snapshot of a saved life-wheel evaluation. */
+.life-wheel-report { width:min(100%,210mm); min-height:270mm; margin-inline:auto; padding:14mm; color:#29251E; background:#FFFCF4; border:1px solid #D8CFBE; border-radius:1.25rem; box-shadow:var(--shadow-md); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.life-wheel-report-header { display:flex; align-items:flex-start; justify-content:space-between; gap:2rem; padding-bottom:1.25rem; border-bottom:1px solid #D8CFBE; }
+.life-wheel-report-header > div:last-child { text-align:right; }
+.life-wheel-report-header h1 { font-family:var(--font-heading-brand),Georgia,serif; font-size:2rem; line-height:1.2; }
+.life-wheel-report-header time,.life-wheel-report-kicker { color:#625C52; font-size:.8rem; }
+.life-wheel-report-kicker { color:#7A5F0C; text-transform:uppercase; letter-spacing:.12em; font-weight:700; }
+.life-wheel-report-chart { width:min(100%,105mm); margin:.5rem auto -1rem; }
+.wheel-chart-export { display:block; width:100%; height:auto; overflow:visible; shape-rendering:geometricPrecision; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.life-wheel-report-legend { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.75rem 0; border-block:1px solid #D8CFBE; font-size:.85rem; }
+.life-wheel-report-legend span { display:flex; align-items:center; gap:.5rem; }
+.life-wheel-report-legend i { display:block; width:1.25rem; height:.5rem; border-radius:999px; background:#B8902E; }
+.life-wheel-report-scores { display:grid; grid-template-columns:1fr 1fr; gap:0 2rem; margin-top:1rem; }
+.life-wheel-report-scores > div { display:flex; justify-content:space-between; gap:1rem; padding:.5rem 0; border-bottom:1px solid #E8E1D5; font-size:.8rem; }
+.life-wheel-report-scores span { display:flex; align-items:center; gap:.5rem; }
+.life-wheel-report-scores i { width:.55rem; height:.55rem; border-radius:50%; }
+.life-wheel-report-reflection { display:grid; grid-template-columns:1fr 2fr; gap:1rem; margin-top:1.25rem; }
+.life-wheel-report-reflection section { padding:1rem; border:1px solid #D8CFBE; border-radius:.75rem; background:#F8F2E6; }
+.life-wheel-report-reflection p { color:#7A5F0C; font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.life-wheel-report-reflection h2 { margin-top:.4rem; font-family:var(--font-heading-brand),Georgia,serif; font-size:1rem; line-height:1.4; overflow-wrap:anywhere; }
+.life-wheel-report footer { margin-top:1.25rem; color:#625C52; text-align:center; font-size:.7rem; }
+@media(max-width:639px) { .life-wheel-report { padding:1.25rem; min-height:0; } .life-wheel-report-header { flex-direction:column; } .life-wheel-report-header > div:last-child { text-align:left; } .life-wheel-report-scores,.life-wheel-report-reflection { grid-template-columns:1fr; } }
+@page { size:A4 portrait; margin:0; }
+@media print {
+  html,body { width:210mm; min-height:297mm; margin:0!important; background:#FFFCF4!important; }
+  body * { visibility:hidden!important; }
+  .life-wheel-report,.life-wheel-report * { visibility:visible!important; }
+  .life-wheel-report { position:absolute; inset:0; width:210mm; min-height:297mm; margin:0; padding:12mm 14mm; border:0; border-radius:0; box-shadow:none; }
+  .life-wheel-report-actions { display:none!important; }
+}
+
 /* Shared workspace finish: retain the original gold details and functional panels. */
 .workspace-header { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; }
 .workspace-header-actions { flex-shrink:0; display:flex; gap:.75rem; }

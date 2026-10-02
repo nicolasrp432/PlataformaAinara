@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { INITIAL_SCORES, wheelAverage } from "../lib/life-wheel.ts"
+import { readFile } from "node:fs/promises"
+import { INITIAL_SCORES, selectLifeWheelEntry, wheelAverage, type LifeWheelEntry } from "../lib/life-wheel.ts"
 import { lifeWheelSchema } from "../lib/validations/life-wheel.ts"
 const valid = { scores: { ...INITIAL_SCORES }, focus: "health", intention: "Caminar veinte minutos" }
 test("validates all eight ratings and trims the intention", () => {
@@ -19,4 +20,19 @@ test("rejects unknown priorities, empty/oversized intentions and injected user i
   for (const input of [{ ...valid, focus: "unknown" }, { ...valid, intention: "  " }, { ...valid, intention: "x".repeat(501) }, { ...valid, user_id: "someone-else" }]) {
     assert.equal(lifeWheelSchema.safeParse(input).success, false)
   }
+})
+test("selects an immutable history snapshot without copying it into editable state", () => {
+  const entry: LifeWheelEntry = { id: "own-entry", created_at: "2026-10-02T10:00:00.000Z", ...valid }
+  assert.equal(selectLifeWheelEntry([entry], "own-entry"), entry)
+  assert.equal(selectLifeWheelEntry([entry], "another-account-entry"), null)
+})
+test("the printable report contains every requested field and no interactive controls", async () => {
+  const report = await readFile(new URL("../components/life-wheel/life-wheel-report.tsx", import.meta.url), "utf8")
+  for (const content of ["BrandLockup", "Rueda de la vida", "created_at", "WheelChart", "LIFE_AREAS.map", "wheelAverage", "Área de foco", "Mi intención"])
+    assert.match(report, new RegExp(content))
+  assert.doesNotMatch(report, /<(button|Button|Select|input|Textarea)\b/)
+  const client = await readFile(new URL("../app/(platform)/rueda-de-la-vida/wheel-client.tsx", import.meta.url), "utf8")
+  assert.match(client, /setReportEntry\(entry\)/)
+  assert.match(client, /Descargar PDF/)
+  assert.match(client, /mitra-rueda-de-la-vida-\$\{reportEntry\.created_at\.slice\(0, 10\)\}\.pdf/)
 })

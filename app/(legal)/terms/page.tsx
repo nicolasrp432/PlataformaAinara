@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalDoc title="Términos y Condiciones" updatedAt="agosto de 2026">
+    <LegalDoc title="Términos y Condiciones" updatedAt="2 de octubre de 2026">
       <p>
         Estas condiciones regulan el uso de {CONTROLLER.brand} (
         {CONTROLLER.site}), titularidad de {CONTROLLER.name}. Al crear una cuenta
@@ -120,6 +120,37 @@ export default function TermsPage() {
         Lo que <strong>tú</strong> publicas sigue siendo tuyo. Al publicarlo en la
         comunidad nos concedes una licencia no exclusiva para mostrarlo dentro de
         la plataforma, que termina cuando lo borras.
+      </p>
+      <h3 id="licencia-testimonios">Licencia de testimonios audiovisuales</h3>
+      <p>
+        Si decides aportar un testimonio, conservas todos tus derechos y concedes
+        a {CONTROLLER.name} una licencia <strong>no exclusiva, gratuita,
+        revocable, no sublicenciable salvo a proveedores técnicos y limitada</strong>{" "}
+        a alojar, reproducir, comunicar públicamente y realizar adaptaciones
+        estrictamente técnicas de tu imagen, voz, texto y vídeo. La licencia solo
+        cubre la finalidad, audiencia, canales y plazo que aceptes expresamente en
+        el formulario independiente. No permite vender el testimonio, cederlo para
+        campañas de terceros, crear imitaciones de tu voz o imagen, ni ampliar su
+        uso sin pedir una nueva autorización.
+      </p>
+      <p>
+        El envío queda pendiente de moderación: podemos no publicarlo o retirarlo
+        por privacidad, seguridad, legalidad, exactitud o normas de convivencia.
+        Los ajustes de formato, duración o subtitulado no cambiarán el sentido;
+        cualquier edición sustancial requerirá tu aprobación. El testimonio no se
+        publicará automáticamente y se solicitará revisión jurídica previa,
+        especialmente si menciona salud mental, diagnósticos, tratamientos o
+        resultados personales.
+      </p>
+      <p>
+        Puedes retirar la licencia y solicitar la eliminación escribiendo a{" "}
+        <a href={`mailto:${CONTROLLER.email}?subject=Retirada%20de%20testimonio`}>
+          {CONTROLLER.email}
+        </a>. Dejaremos de usar el contenido y lo retiraremos según la{" "}
+        <Link href="/privacy#testimonios-audiovisuales">Política de Privacidad</Link>.
+        La retirada no afecta a tratamientos anteriores que fueran legítimos ni
+        obliga a alterar materiales ya distribuidos fuera de nuestro control,
+        aunque adoptaremos medidas razonables para solicitar su retirada.
       </p>
 
       <h2>7. Normas de convivencia</h2>

@@ -7,6 +7,7 @@ const fs = require("node:fs");
 const outputDir = root + "/.next/qa-" + process.pid;
 fs.mkdirSync(outputDir, { recursive: true });
 let state;
+const originalConsoleError = console.error;
 const ids = {
   me: "10000000-0000-4000-8000-000000000001",
   other: "10000000-0000-4000-8000-000000000002",
@@ -58,6 +59,7 @@ function query(table) {
   async function resolve() {
     if (table === "ai_conversations") {
       if (inserted) {
+        if (state.persistenceFailure) return { data: null, error: new Error("db") };
         state.created++;
         return { data: { id: ids.conversation }, error: null };
       }
@@ -73,10 +75,13 @@ function query(table) {
     }
     if (table === "ai_messages") {
       if (inserted) {
+        if (state.persistenceFailure) return { data: null, error: new Error("db") };
         state.saved.push(inserted);
         return { data: inserted, error: null };
       }
-      return { data: [], error: null };
+      return state.historyFailure
+        ? { data: null, error: new Error("db") }
+        : { data: [], error: null };
     }
     if (table === "profiles")
       return { data: { full_name: "Ana", level: 1 }, error: null };
@@ -135,13 +140,14 @@ async function main() {
     },
     from: query,
   };
-  const request = (data) =>
+  const request = (data, signal) =>
     new NextRequest("http://localhost/api/ai/chat", {
       method: "POST",
       body: JSON.stringify(data),
+      signal,
     });
   const reset = () => {
-    state = { user: true, owner: ids.me, lessonPublished: true, formationPublished: true, created: 0, saved: [], calls: [] };
+    state = { user: true, owner: ids.me, created: 0, saved: [], calls: [], logs: [] };
     global.__tier = "member";
     for (const k of [
       "GEMINI_API_KEY",
@@ -152,6 +158,7 @@ async function main() {
       delete process.env[k];
   };
   reset();
+  console.error = (...args) => state.logs.push(args);
   state.user = false;
   assert.equal((await POST(request({ message: "Hola" }))).status, 401);
   reset();
@@ -187,7 +194,9 @@ async function main() {
   assert.equal((await response.json()).code, "CONVERSATION_CONTEXT_MISMATCH");
   assert.ok(warnings.some((entry) => entry[1]?.code === "CONVERSATION_CONTEXT_MISMATCH"));
   reset();
-  assert.equal((await POST(request({ message: "Hola" }))).status, 503);
+  const missing = await POST(request({ message: "Hola privado" }));
+  assert.equal(missing.status, 503);
+  assert.equal((await missing.json()).code, "AI_NOT_CONFIGURED");
   assert.equal(state.created, 0);
   assert.equal(state.saved.length, 0);
   reset();
@@ -210,6 +219,35 @@ async function main() {
   assert.equal(state.saved[1].content, "Respuesta real");
   assert.ok(state.calls.every((c) => !c.url.includes("qa-not-real")));
   assert.equal(state.calls[0].headers["x-goog-api-key"], "qa-not-real");
+  assert.ok(state.calls.some((call) => String(call.url).includes("api.groq.com")));
+  reset();
+  process.env.GROQ_API_KEY = "secret-provider-key";
+  global.fetch = async () => new Response("private provider response", { status: 500 });
+  response = await POST(request({ message: "super secret prompt" }));
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).code, "AI_PROVIDER_UNAVAILABLE");
+  assert.doesNotMatch(JSON.stringify(state.logs), /super secret prompt|secret-provider-key|private provider response/);
+  reset();
+  process.env.GROQ_API_KEY = "qa-not-real";
+  response = await POST(request({ message: "private timeout" }, AbortSignal.abort()));
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).code, "AI_TIMEOUT");
+  reset();
+  process.env.GROQ_API_KEY = "qa-not-real";
+  state.historyFailure = true;
+  global.fetch = async () => new Response('data: {"choices":[{"delta":{"content":"Nueva"}}]}\n\ndata: [DONE]\n\n');
+  response = await POST(request({ message: "private history", conversationId: ids.conversation }));
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("x-ai-warning"), "AI_HISTORY_UNAVAILABLE");
+  assert.equal(state.created, 1);
+  await response.text();
+  reset();
+  process.env.GROQ_API_KEY = "qa-not-real";
+  state.persistenceFailure = true;
+  global.fetch = async () => new Response("data: [DONE]\n\n");
+  response = await POST(request({ message: "private persistence" }));
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).code, "AI_PERSISTENCE_UNAVAILABLE");
   reset();
   process.env.GROQ_API_KEY = "qa-not-real";
   global.fetch = async () => new Response("data: [DONE]\n\n");
@@ -231,6 +269,11 @@ async function main() {
   assert.doesNotMatch(body, /\[DONE\]/);
   assert.equal(state.saved.length, 1);
   reset();
+  state.owner = null;
+  response = await GET(new NextRequest("http://localhost/api/ai/chat"));
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { conversationId: null, messages: [] });
+  reset();
   response = await GET(new NextRequest("http://localhost/api/ai/chat"));
   assert.equal(response.status, 200);
   assert.equal((await response.json()).conversationId, ids.conversation);
@@ -244,4 +287,7 @@ main()
     console.error(e);
     process.exitCode = 1;
   })
-  .finally(() => fs.rmSync(outputDir, { recursive: true, force: true }));
+  .finally(() => {
+    console.error = originalConsoleError;
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  });
