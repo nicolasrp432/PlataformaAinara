@@ -6,6 +6,12 @@ import { ArrowRight, Check, Copy, Loader2, RotateCcw, Send, User } from "lucide-
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { RichText } from "@/components/ui/rich-text"
+import {
+  aiChatContextKey,
+  conversationIdForContext,
+  isUnavailableConversationCode,
+  type AiConversationRef,
+} from "@/lib/ai-chat-client"
 import { SseDecoder } from "@/lib/ai-stream"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -53,17 +59,20 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
   const [announcement, setAnnouncement] = useState("")
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [conversation, setConversation] = useState<AiConversationRef>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const requestRef = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const contextKey = aiChatContextKey(lessonId, formationId)
+  const contextKeyRef = useRef(contextKey)
+  contextKeyRef.current = contextKey
 
   const startFresh = useCallback(() => {
     requestRef.current?.abort()
     requestRef.current = null
     setMessages([])
-    setConversationId(null)
+    setConversation(null)
     setHistoryError(null)
     setIsStreaming(false)
     setAnnouncement("Nueva conversación preparada")
@@ -80,8 +89,8 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
       const response = await fetch(`/api/ai/chat?${query}`, { signal })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw Object.assign(new Error(), { status: response.status, code: data.code })
-      if (!signal?.aborted) {
-        setConversationId(data.conversationId)
+      if (!signal?.aborted && contextKeyRef.current === contextKey) {
+        setConversation(data.conversationId ? { id: data.conversationId, contextKey } : null)
         setMessages(data.messages ?? [])
       }
     } catch (error) {
@@ -89,12 +98,12 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
     } finally {
       if (!signal?.aborted) setIsRestoring(false)
     }
-  }, [formationId, lessonId])
+  }, [contextKey, formationId, lessonId])
 
   useEffect(() => {
     requestRef.current?.abort()
     setMessages([])
-    setConversationId(null)
+    setConversation(null)
     const abort = new AbortController()
     void restoreHistory(abort.signal)
     return () => { abort.abort(); requestRef.current?.abort(); requestRef.current = null }
@@ -127,7 +136,7 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
     setAnnouncement("El asistente está preparando una respuesta")
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
     try {
-      const res = await fetch("/api/ai/chat", { method: "POST", signal: abort.signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: trimmed, conversationId, lessonId, formationId }) })
+      const res = await fetch("/api/ai/chat", { method: "POST", signal: abort.signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: trimmed, conversationId: conversationIdForContext(conversation, requestContextKey), lessonId, formationId }) })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         throw Object.assign(new Error(), { status: res.status, code: data.code })
@@ -163,6 +172,11 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
       setAnnouncement("Respuesta completada")
     } catch (error) {
       if (requestRef.current !== abort) return
+      const providerCode = (error as { code?: string }).code
+      if (isUnavailableConversationCode(providerCode)) {
+        setConversation(null)
+        setInput(trimmed)
+      }
       const stopped = abort.signal.aborted
       const code = stopped ? "TEMPORARY_DELAY" : errorCodeFrom((error as { status?: number }).status, (error as { code?: string }).code)
       const content = stopped ? "Respuesta detenida. Puedes reintentarlo cuando quieras." : ERROR_CONTENT[code].body

@@ -78,6 +78,8 @@ for (const file of [
   "0025_learning_integrity.sql",
   "0026_community_integrity.sql",
   "0027_community_testimonials.sql",
+  "0028_testimonial_admin_consent.sql",
+  "0029_reflection_categories.sql",
 ]) {
   await db.exec(
     await readFile(new URL(`../migrations/${file}`, import.meta.url), "utf8"),
