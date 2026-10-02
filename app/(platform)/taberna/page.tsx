@@ -5,6 +5,9 @@ import { getAuthUser, getUserProfile, getReflections } from "@/lib/data-access"
 import { hasFullAccess, resolveAccessTier } from "@/lib/access"
 import { PageHeader } from "@/components/layout/page-header"
 import { TabernaFeed } from "./taberna-feed"
+import { TestimonialUploadForm } from "./testimonial-upload-form"
+import { TestimonialGallery, type TestimonialCard } from "./testimonial-gallery"
+import { createClient } from "@/lib/supabase/server"
 
 /**
  * El feed se resuelve dentro de su propia frontera de Suspense: la cabecera
@@ -61,9 +64,25 @@ export default async function TabernaPage() {
     avatarUrl: (profile ? profile.avatar_url : user.user_metadata?.avatar_url) ?? null,
   }
 
+  const supabase = await createClient()
+  const { data: testimonialRows } = await supabase
+    .from("community_testimonials")
+    .select("id, caption, playback_url, thumbnail_url, created_at, consent_granted_at, profiles!author_id(full_name)")
+    .eq("status", "published").is("deleted_at", null).order("created_at", { ascending: false }).limit(12)
+  const testimonials: TestimonialCard[] = (testimonialRows || []).filter(row => Boolean(row.playback_url)).map(row => {
+    const authors = row.profiles as unknown as { full_name: string | null } | { full_name: string | null }[] | null
+    return {
+      id: row.id, caption: row.caption, playback_url: row.playback_url!, thumbnail_url: row.thumbnail_url, created_at: row.created_at,
+      authorName: row.consent_granted_at ? ((Array.isArray(authors) ? authors[0]?.full_name : authors?.full_name) || null) : null,
+    }
+  })
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto pb-10 relative">
       <PageHeader eyebrow="La Taberna · Comunidad" title={<>Un camino <em>compartido.</em></>} description="Comparte tus preguntas, escucha otras experiencias y encuentra compañía en el proceso." />
+
+      <TestimonialUploadForm />
+      <TestimonialGallery testimonials={testimonials} />
 
       <Suspense fallback={<FeedSkeleton />}>
         <Feed currentUser={currentUser} />
