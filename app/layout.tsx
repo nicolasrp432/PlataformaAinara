@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   // Warm gold as theme color for browser chrome
-  themeColor: "#176B65",
+  themeColor: "#B8902E",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

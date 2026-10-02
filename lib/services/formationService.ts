@@ -75,30 +75,19 @@ export async function getFormations(
 export async function getFormationById(id: string) {
   const supabase = await createClient();
   
-  // Load formation
-  const { data: formationData, error: formationError } = await supabase
-    .from('formations')
-    .select('*')
-    .eq('id', id)
-    .single();
-
+  // Both reads are independent: fetch metadata and syllabus together.
+  const [formationResult, modulesResult] = await Promise.all([
+    supabase.from('formations').select('*').eq('id', id).single(),
+    supabase.from('modules').select('*, lessons(*)').eq('formation_id', id).order('sort_order', { ascending: true }),
+  ]);
+  const { data: formationData, error: formationError } = formationResult;
   if (formationError) {
-    if (formationError.code === 'PGRST116') return null; // Not found
+    if (formationError.code === 'PGRST116') return null;
     throw new Error(formationError.message);
   }
-
-  // Load modules with lessons
-  const { data: modulesData, error: modulesError } = await supabase
-    .from('modules')
-    .select(`
-      *,
-      lessons(*)
-    `)
-    .eq('formation_id', id)
-    .order('sort_order', { ascending: true });
-
+  const { data: modulesData, error: modulesError } = modulesResult;
   if (modulesError) throw new Error(modulesError.message);
-  
+
   // Sort lessons within each module
   const sortedModules = ((modulesData || []) as ModuleRow[]).map((m) => ({
     ...m,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { INITIAL_SCORES, lifeWheelSchema, wheelAverage } from "../lib/life-wheel.ts"
+import { INITIAL_SCORES, wheelAverage } from "../lib/life-wheel.ts"
+import { lifeWheelSchema } from "../lib/validations/life-wheel.ts"
 const valid = { scores: { ...INITIAL_SCORES }, focus: "health", intention: "Caminar veinte minutos" }
 test("validates all eight ratings and trims the intention", () => {
   assert.equal(lifeWheelSchema.parse({ ...valid, intention: "  Caminar  " }).intention, "Caminar")

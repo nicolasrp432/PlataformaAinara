@@ -1,20 +1,7 @@
-"use client"
-
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Separator } from "@/components/ui/separator"
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
@@ -23,260 +10,256 @@ import {
   Settings,
   LogOut,
   Menu,
-  X,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   FolderOpen,
   Video,
   FileQuestion,
   Award,
   MessageSquare,
   Bell,
-} from "lucide-react"
-import { getInitials } from "@/lib/utils"
-import { BrandMark } from "@/components/ui/brand"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { BrandMark } from "@/components/ui/brand";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getInitials, cn } from "@/lib/utils";
 
-interface AdminSidebarUser {
-  id: string
-  full_name: string
-  email: string
-  avatarUrl?: string | null
-  role: string
-}
-
+const groups = [
+  {
+    label: "Plataforma",
+    items: [
+      { name: "Resumen", href: "/admin", icon: LayoutDashboard },
+      { name: "Usuarios", href: "/admin/users", icon: Users },
+      { name: "Analíticas", href: "/admin/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Contenido",
+    items: [
+      {
+        name: "Formaciones",
+        href: "/admin/content/formations",
+        icon: BookOpen,
+      },
+      { name: "Módulos", href: "/admin/content/modules", icon: FolderOpen },
+      { name: "Lecciones", href: "/admin/content/lessons", icon: Video },
+      { name: "Quizzes", href: "/admin/content/quizzes", icon: FileQuestion },
+    ],
+  },
+  {
+    label: "Gestión",
+    items: [
+      { name: "Certificados", href: "/admin/certificates", icon: Award },
+      { name: "Notificaciones", href: "/admin/notifications", icon: Bell },
+      { name: "Comentarios", href: "/admin/comments", icon: MessageSquare },
+      { name: "Configuración", href: "/admin/settings", icon: Settings },
+    ],
+  },
+];
 interface AdminSidebarProps {
-  user: AdminSidebarUser
+  user: {
+    id: string;
+    full_name: string;
+    email: string;
+    avatarUrl?: string | null;
+    role: string;
+  };
 }
-
-const mainNavigation = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Usuarios", href: "/admin/users", icon: Users },
-  { name: "Analiticas", href: "/admin/analytics", icon: BarChart3 },
-]
-
-const contentNavigation = [
-  { name: "Formaciones", href: "/admin/content/formations", icon: BookOpen },
-  { name: "Modulos", href: "/admin/content/modules", icon: FolderOpen },
-  { name: "Lecciones", href: "/admin/content/lessons", icon: Video },
-  { name: "Quizzes", href: "/admin/content/quizzes", icon: FileQuestion },
-]
-
-const systemNavigation = [
-  { name: "Certificados",    href: "/admin/certificates",   icon: Award },
-  { name: "Notificaciones",  href: "/admin/notifications",  icon: Bell },
-  { name: "Comentarios",     href: "/admin/comments",       icon: MessageSquare },
-  { name: "Configuracion",   href: "/admin/settings",       icon: Settings },
-]
-
 export function AdminSidebar({ user }: AdminSidebarProps) {
-  const pathname = usePathname()
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
-  const [isMobileOpen, setIsMobileOpen] = React.useState(false)
-
-  const isActive = (href: string) => {
-    if (href === "/admin") {
-      return pathname === "/admin"
-    }
-    return pathname?.startsWith(href) ?? false
-  }
-
-  return (
-    <>
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed left-4 top-4 z-50 md:hidden"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
-
-      {/* Mobile overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--admin-sidebar-w",
+      collapsed ? "5rem" : "16rem",
+    );
+    return () => {
+      document.documentElement.style.removeProperty("--admin-sidebar-w");
+    };
+  }, [collapsed]);
+  const navigation = (compact: boolean) => (
+    <nav
+      aria-label="Administración"
+      className="flex-1 space-y-6 overflow-y-auto p-3"
+    >
+      {groups.map((group) => (
+        <div key={group.label}>
+          <p
+            className={cn(
+              "mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+              compact && "sr-only",
+            )}
+          >
+            {group.label}
+          </p>
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const active =
+                item.href === "/admin"
+                  ? pathname === item.href
+                  : pathname?.startsWith(item.href + "/") ||
+                    pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={compact ? item.name : undefined}
+                  title={compact ? item.name : undefined}
+                  className={cn(
+                    "admin-nav-link",
+                    active && "admin-nav-active",
+                    compact && "justify-center",
+                  )}
+                >
+                  <item.icon size={18} className="shrink-0" />
+                  {!compact && <span>{item.name}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+  const account = (compact: boolean) => (
+    <div className="space-y-3 border-t p-3">
+      <Link
+        href="/dashboard"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar transition-[width,transform] duration-300 ease-out",
-          isCollapsed ? "w-16" : "w-64",
-          isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          "admin-nav-link text-muted-foreground",
+          compact && "justify-center",
+        )}
+        aria-label={compact ? "Volver a la plataforma" : undefined}
+      >
+        <BookOpen size={18} className="shrink-0" />
+        {!compact && "Volver a mi espacio"}
+      </Link>
+      <div
+        className={cn(
+          "flex items-center gap-3 px-2",
+          compact && "justify-center",
         )}
       >
-        {/* Logo */}
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          <Link href="/admin" className="flex items-center gap-2">
-            <BrandMark size="sm" />
-            {!isCollapsed && (
-              <div>
-                <span className="font-display text-xl font-semibold tracking-wide">Mitra</span>
-                <span className="ml-1.5 text-xs text-muted-foreground">Admin</span>
-              </div>
-            )}
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden md:flex"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+        <Avatar className="h-9 w-9 shrink-0">
+          <AvatarImage src={user.avatarUrl || undefined} alt={user.full_name} />
+          <AvatarFallback>{getInitials(user.full_name)}</AvatarFallback>
+        </Avatar>
+        {!compact && (
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{user.full_name}</p>
+            <p className="text-xs text-muted-foreground">Administración</p>
+          </div>
+        )}
+        <Link
+          href="/logout"
+          aria-label="Cerrar sesión"
+          className={cn(
+            "ml-auto rounded-lg p-2 text-muted-foreground hover:bg-muted",
+            compact && "hidden",
+          )}
+        >
+          <LogOut size={16} />
+        </Link>
+      </div>
+      {compact && (
+        <Link
+          href="/logout"
+          aria-label="Cerrar sesión"
+          className="admin-nav-link justify-center"
+        >
+          <LogOut size={18} />
+        </Link>
+      )}
+    </div>
+  );
+  return (
+    <>
+      <header className="admin-mobile-header">
+        <Link href="/admin" className="flex items-center gap-2">
+          <BrandMark />
+          <span className="font-display text-xl">
+            Mitra{" "}
+            <span className="text-sm font-sans text-muted-foreground">
+              / Admin
+            </span>
+          </span>
+        </Link>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Abrir navegación de administración"
+            >
+              <Menu size={20} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            className="w-[min(20rem,90vw)]"
+            contentClassName="p-0"
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 space-y-4 overflow-y-auto p-2">
-          {/* Main */}
-          <div className="space-y-1">
-            {!isCollapsed && (
-              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Principal
-              </p>
-            )}
-            {mainNavigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive(item.href)
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!isCollapsed && <span>{item.name}</span>}
-              </Link>
-            ))}
-          </div>
-
-          {!isCollapsed && <Separator />}
-
-          {/* Content */}
-          <div className="space-y-1">
-            {!isCollapsed && (
-              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Contenido
-              </p>
-            )}
-            {contentNavigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive(item.href)
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!isCollapsed && <span>{item.name}</span>}
-              </Link>
-            ))}
-          </div>
-
-          {!isCollapsed && <Separator />}
-
-          {/* System */}
-          <div className="space-y-1">
-            {!isCollapsed && (
-              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Sistema
-              </p>
-            )}
-            {systemNavigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive(item.href)
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!isCollapsed && <span>{item.name}</span>}
-              </Link>
-            ))}
-          </div>
-        </nav>
-
-        {/* Back to platform link */}
-        <div className="border-t p-2">
-          <Link
-            href="/dashboard"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground"
-            )}
-          >
-            <ChevronLeft className="h-5 w-5 shrink-0" />
-            {!isCollapsed && <span>Volver a la plataforma</span>}
+            <SheetTitle className="px-6 pt-6 font-display">
+              Administración
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              Navegación y gestión de Mitra.
+            </SheetDescription>
+            {navigation(false)}
+            {account(false)}
+          </SheetContent>
+        </Sheet>
+      </header>
+      <aside
+        className={cn(
+          "ainara-admin-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r md:flex",
+          collapsed ? "w-20" : "w-64",
+        )}
+      >
+        <div
+          className={cn(
+            "flex h-24 items-center border-b px-4",
+            collapsed ? "justify-center" : "gap-3",
+          )}
+        >
+          <Link href="/admin" aria-label="Resumen de administración">
+            <BrandMark />
           </Link>
+          {!collapsed && (
+            <div>
+              <p className="font-display text-xl">Mitra</p>
+              <p className="text-xs text-muted-foreground">Administración</p>
+            </div>
+          )}
         </div>
-
-        {/* User menu */}
-        <div className="border-t p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-3",
-                  isCollapsed && "justify-center px-2"
-                )}
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatarUrl || undefined} />
-                  <AvatarFallback>
-                    {getInitials(user.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                {!isCollapsed && (
-                  <div className="flex flex-col items-start text-left">
-                    <span className="text-sm font-medium">
-                      {user.full_name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Administrador
-                    </span>
-                  </div>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/profile">
-                  <Users className="mr-2 h-4 w-4" />
-                  Perfil
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/logout">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar sesion
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <Button
+          variant="ghost"
+          className="mx-3 my-2"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen size={18} />
+          ) : (
+            <>
+              <PanelLeftClose size={18} />
+              <span>Reducir menú</span>
+            </>
+          )}
+        </Button>
+        {navigation(collapsed)}
+        {account(collapsed)}
       </aside>
     </>
-  )
+  );
 }

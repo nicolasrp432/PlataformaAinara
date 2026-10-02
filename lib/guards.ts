@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getAuthUser, getAccessTier } from "@/lib/data-access"
+import { getAuthUser, getAccessTier, getUserProfile } from "@/lib/data-access"
 import { hasFullAccess, hasIncludedMentoring, canEnterPlatform } from "@/lib/access"
 
 /**
@@ -63,5 +63,13 @@ export async function requireMembership(from: string) {
     redirect(`/billing?reason=membership&from=${encodeURIComponent(from)}`)
   }
 
+  return user
+}
+
+/** Admin mutations and data loaders must verify the role independently of navigation. */
+export const requireAdmin = async () => {
+  const user = await requireUser("/admin")
+  const profile = await getUserProfile(user.id)
+  if (profile?.role !== "admin") redirect("/dashboard")
   return user
 }

@@ -5,13 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -44,7 +37,6 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  Search,
   MoreHorizontal,
   CheckCircle2,
   XCircle,
@@ -78,6 +70,7 @@ interface UserRow {
 
 interface UsersTableProps {
   users: UserRow[]
+  counts: { total: number; approved: number; pending: number; suspended: number }
 }
 
 const accessStatusConfig = {
@@ -87,7 +80,7 @@ const accessStatusConfig = {
     className: "bg-success-soft text-success-strong border-success-border",
   },
   pending: {
-    label: "Gratuito",
+    label: "Sin suscripción",
     icon: Clock,
     className: "bg-warning-soft text-warning-strong border-warning-border",
   },
@@ -161,8 +154,8 @@ function ResetPasswordDialog({
           <Label htmlFor={`new-password-${user.id}`}>Nueva contraseña</Label>
           <Input
             id={`new-password-${user.id}`}
-            type="text"
-            autoComplete="off"
+            type="password"
+            autoComplete="new-password"
             placeholder="Mínimo 8 caracteres"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -245,7 +238,7 @@ function UserActions({ user }: { user: UserRow }) {
   }
 
   const triggerButton = (
-    <Button variant="ghost" size="icon" disabled={isPending}>
+    <Button variant="ghost" size="icon" disabled={isPending} aria-label={`Gestionar ${user.full_name || user.email || "usuario"}`}>
       {isPending ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
@@ -388,29 +381,7 @@ function UserActions({ user }: { user: UserRow }) {
   )
 }
 
-export function UsersTable({ users }: UsersTableProps) {
-  const [search, setSearch] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [filterRole, setFilterRole] = useState("all")
-
-  const filtered = users.filter((u) => {
-    const matchesSearch =
-      !search ||
-      u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus =
-      filterStatus === "all" || (u.access_status ?? "pending") === filterStatus
-    const matchesRole = filterRole === "all" || (u.role ?? "student") === filterRole
-    return matchesSearch && matchesStatus && matchesRole
-  })
-
-  const counts = {
-    total: users.length,
-    approved: users.filter((u) => u.access_status === "approved").length,
-    pending: users.filter((u) => !u.access_status || u.access_status === "pending").length,
-    suspended: users.filter((u) => u.access_status === "suspended").length,
-  }
-
+export function UsersTable({ users, counts }: UsersTableProps) {
   return (
     <div className="space-y-6">
       {/* Summary cards */}
@@ -418,7 +389,7 @@ export function UsersTable({ users }: UsersTableProps) {
         {[
           { label: "Total", value: counts.total, color: "text-foreground" },
           { label: "Suscritos", value: counts.approved, color: "text-success-strong" },
-          { label: "Gratuitos", value: counts.pending, color: "text-warning-strong" },
+          { label: "Sin suscripción", value: counts.pending, color: "text-warning-strong" },
           { label: "Suspendidos", value: counts.suspended, color: "text-danger-strong" },
         ].map((stat) => (
           <Card key={stat.label}>
@@ -428,41 +399,6 @@ export function UsersTable({ users }: UsersTableProps) {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre o email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue placeholder="Estado de acceso" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="approved">Suscritos</SelectItem>
-            <SelectItem value="pending">Gratuitos</SelectItem>
-            <SelectItem value="suspended">Suspendidos</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterRole} onValueChange={setFilterRole}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Rol" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los roles</SelectItem>
-            <SelectItem value="student">Estudiantes</SelectItem>
-            <SelectItem value="mentor">Mentores</SelectItem>
-            <SelectItem value="admin">Admins</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Table */}
@@ -480,14 +416,14 @@ export function UsersTable({ users }: UsersTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
                     No se encontraron usuarios
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((user) => {
+                users.map((user) => {
                   const statusKey =
                     (user.access_status as keyof typeof accessStatusConfig) ?? "pending"
                   const roleKey =

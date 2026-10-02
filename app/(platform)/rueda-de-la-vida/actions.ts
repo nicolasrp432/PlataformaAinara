@@ -1,7 +1,8 @@
 "use server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { lifeWheelSchema, type LifeWheelEntry } from "@/lib/life-wheel"
+import type { LifeWheelEntry } from "@/lib/life-wheel"
+import { lifeWheelSchema } from "@/lib/validations/life-wheel"
 
 export async function saveLifeWheel(input: unknown): Promise<{ entry?: LifeWheelEntry; error?: string }> {
   const parsed = lifeWheelSchema.safeParse(input)

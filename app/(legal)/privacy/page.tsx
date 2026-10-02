@@ -49,6 +49,12 @@ export default function PrivacyPage() {
           usuarias.
         </li>
         <li>
+          <strong>Rueda de la vida:</strong> las puntuaciones que eliges en ocho
+          áreas personales, tu prioridad y la intención que escribes. Estas
+          evaluaciones son privadas, están asociadas a tu cuenta y se incluyen
+          en la exportación de tus datos.
+        </li>
+        <li>
           <strong>Actividad formativa:</strong> lecciones vistas, progreso, XP,
           nivel, racha, insignias y resultados de cuestionarios.
         </li>

@@ -145,7 +145,7 @@ export const LIFETIME_INCLUDES = [
 export const MEMBERSHIP_ADDS = [
   {
     title: "Mentoría 1 a 1 incluida",
-    body: "Sesiones privadas con Ainara sin pagarlas aparte. Sueltas cuestan 150 € cada una, así que la cuota se cubre con menos de media sesión.",
+    body: "Sesiones privadas con Ainara sin pagarlas aparte. El acompañamiento mensual cuesta 97 €; una sesión suelta cuesta 150 €.",
   },
   {
     title: "Talleres en directo",

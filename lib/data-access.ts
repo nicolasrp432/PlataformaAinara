@@ -45,20 +45,15 @@ export const getUserProfile = cache(async (userId: string) => {
 /**
  * Nivel de acceso del usuario (free / member / suspended / staff).
  *
- * Consulta solo las dos columnas que deciden, no el perfil entero, y va
- * deduplicada por request: páginas, layout y capa de datos comparten la misma
- * respuesta. Es la lectura que deben usar todas las pantallas para decidir
+ * Reutiliza el perfil autenticado, deduplicado por request: páginas, layout
+ * y capa de datos comparten una sola consulta. Es la lectura que deben usar todas las pantallas para decidir
  * qué muestran bajo candado.
  */
 export const getAccessTier = cache(
   async (userId: string | null): Promise<AccessTier> => {
     if (!userId) return "free"
-    const supabase = await createClient()
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, access_status, has_lifetime_access")
-      .eq("id", userId)
-      .single()
+    // Shares the authenticated profile with layouts and pages in this request.
+    const data = await getUserProfile(userId)
     return resolveAccessTier({
       role: data?.role,
       accessStatus: data?.access_status,
@@ -204,6 +199,8 @@ export const getFormationsInProgress = cache(async (userId: string) => {
     completedLessonIds = progress?.map((p) => p.lesson_id) || []
   }
 
+  // Constant-time lookup when catalogs contain many lessons.
+  const completedSet = new Set(completedLessonIds)
   // Calcular progreso por formación en JS (sin queries adicionales)
   return enrollments
     .map((enrollment) => {
@@ -213,7 +210,7 @@ export const getFormationsInProgress = cache(async (userId: string) => {
       const lessonIds = formationLessonMap[formation.id] || []
       const totalLessons = lessonIds.length
       const completed = lessonIds.filter((id) =>
-        completedLessonIds.includes(id)
+        completedSet.has(id)
       ).length
 
       return {
@@ -328,17 +325,17 @@ export const getLibraryFormations = cache(
         (progressRes.data as any[])?.map((p: any) => p.lesson_id) || []
     }
 
+    const completedSet = new Set(completedLessonIds)
+    const enrollmentByFormation = new Map(enrollments.map(entry => [entry.formation_id, entry]))
     return formations.map((formation) => {
       const lessonIds = formation._lessonIds
       const lessonsCount = lessonIds.length
 
-      const enrollment = enrollments.find(
-        (e) => e.formation_id === formation.id
-      )
+      const enrollment = enrollmentByFormation.get(formation.id)
       const isEnrolled = !!enrollment
 
       const completed = isEnrolled
-        ? lessonIds.filter((id: string) => completedLessonIds.includes(id)).length
+        ? lessonIds.filter((id: string) => completedSet.has(id)).length
         : 0
       const progress =
         isEnrolled && lessonsCount > 0

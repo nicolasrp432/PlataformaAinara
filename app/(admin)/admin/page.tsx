@@ -1,340 +1,112 @@
-import type { Metadata } from "next"
-import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { createClient } from "@/lib/supabase/server"
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import Link from "next/link";
+import { Plus, BookOpen, Users, BarChart3, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-  Users,
-  BookOpen,
-  Video,
-  TrendingUp,
-  ArrowRight,
-  Plus,
-  Eye,
-  Clock,
-} from "lucide-react"
+  AdminStats,
+  RecentUsers,
+  RecentFormations,
+  SectionSkeleton,
+  StatsSkeleton,
+} from "./overview-sections";
 
 export const metadata: Metadata = {
-  title: "Panel de Administracion",
-  description: "Dashboard de administracion de la plataforma Mitra",
-}
-
-async function getAdminStats() {
-  const supabase = await createClient()
-
-  // Get total users
-  const { count: totalUsers } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-
-  // Get total formations
-  const { count: totalFormations } = await supabase
-    .from("formations")
-    .select("*", { count: "exact", head: true })
-
-  // Get published formations
-  const { count: publishedFormations } = await supabase
-    .from("formations")
-    .select("*", { count: "exact", head: true })
-    .eq("is_published", true)
-
-  // Get total lessons
-  const { count: totalLessons } = await supabase
-    .from("lessons")
-    .select("*", { count: "exact", head: true })
-
-  // Get completed lessons
-  const { count: completedLessons } = await supabase
-    .from("user_progress")
-    .select("*", { count: "exact", head: true })
-    .eq("is_completed", true)
-
-  // Get total enrollments
-  const { count: totalEnrollments } = await supabase
-    .from("enrollments")
-    .select("*", { count: "exact", head: true })
-
-  return {
-    totalUsers: totalUsers ?? 0,
-    totalFormations: totalFormations ?? 0,
-    publishedFormations: publishedFormations ?? 0,
-    totalLessons: totalLessons ?? 0,
-    completedLessons: completedLessons ?? 0,
-    totalEnrollments: totalEnrollments ?? 0,
-  }
-}
-
-async function getRecentUsers() {
-  const supabase = await createClient()
-
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, created_at, role")
-    .order("created_at", { ascending: false })
-    .limit(5)
-
-  if (!profiles) return []
-
-  return profiles.map((profile) => ({
-    id: profile.id,
-    full_name: profile.full_name || "Sin nombre",
-    role: profile.role || "student",
-    joinedAt: formatTimeAgo(profile.created_at),
-  }))
-}
-
-async function getRecentFormations() {
-  const supabase = await createClient()
-
-  const { data: formations } = await supabase
-    .from("formations")
-    .select("id, title, is_published, created_at, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(5)
-
-  if (!formations) return []
-
-  return formations.map((formation) => ({
-    id: formation.id,
-    title: formation.title,
-    isPublished: formation.is_published,
-    time: formatTimeAgo(formation.updated_at || formation.created_at),
-  }))
-}
-
-function formatTimeAgo(date: string | null): string {
-  if (!date) return "Reciente"
-  const now = new Date()
-  const past = new Date(date)
-  const diffMs = now.getTime() - past.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMins / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMins < 1) return "Ahora"
-  if (diffMins < 60) return `Hace ${diffMins}m`
-  if (diffHours < 24) return `Hace ${diffHours}h`
-  if (diffDays === 1) return "Ayer"
-  if (diffDays < 30) return `Hace ${diffDays} dias`
-  return `Hace ${Math.floor(diffDays / 30)} meses`
-}
-
-export default async function AdminDashboardPage() {
-  const [stats, recentUsers, recentFormations] = await Promise.all([
-    getAdminStats(),
-    getRecentUsers(),
-    getRecentFormations(),
-  ])
-
+  title: "Administración",
+  description: "Contenido, personas y actividad de Mitra.",
+};
+export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/30 pb-4">
+      <header className="ainara-page-header flex flex-wrap items-end justify-between gap-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Panel de Administración</h1>
-          <p className="text-muted-foreground text-sm">
-            Gestiona el contenido y usuarios de la plataforma
-          </p>
+          <p className="ainara-eyebrow">MITRA / ADMINISTRACIÓN</p>
+          <h1>El pulso de tu plataforma.</h1>
+          <p>Contenido, personas y próximos pasos, en un mismo lugar.</p>
         </div>
-        <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
-          <Button variant="outline" asChild className="flex-1 sm:flex-initial justify-center">
-            <Link href="/admin/content/formations">
-              <Eye className="mr-2 h-4 w-4 shrink-0" />
-              Ver Contenido
+        <Button asChild>
+          <Link href="/admin/content/formations/new">
+            <Plus size={16} />
+            Nueva formación
+          </Link>
+        </Button>
+      </header>
+      <Suspense fallback={<StatsSkeleton />}>
+        <AdminStats />
+      </Suspense>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <section className="ainara-panel">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="font-display text-2xl">Personas que llegan</h2>
+            <Link
+              href="/admin/users"
+              className="text-sm font-semibold text-primary-strong"
+            >
+              Ver usuarios
             </Link>
-          </Button>
-          <Button asChild className="flex-1 sm:flex-initial justify-center bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Link href="/admin/content/formations/new">
-              <Plus className="mr-2 h-4 w-4 shrink-0" />
-              Nueva Formación
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuarios Totales</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Usuarios registrados
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inscripciones</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEnrollments.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Inscripciones totales
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Formaciones</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalFormations}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.publishedFormations} publicadas
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lecciones</CardTitle>
-            <Video className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalLessons}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.completedLessons.toLocaleString()} completadas
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Users */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Usuarios Recientes</CardTitle>
-                <CardDescription>
-                  Ultimos usuarios registrados en la plataforma
-                </CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/admin/users">
-                  Ver todos
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentUsers.length > 0 ? (
-                recentUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                        {user.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{user.full_name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {user.joinedAt}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay usuarios registrados aun
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Formations */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Formaciones Recientes</CardTitle>
-                <CardDescription>
-                  Ultimas formaciones creadas o actualizadas
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentFormations.length > 0 ? (
-                recentFormations.map((formation) => (
-                  <div key={formation.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                        <BookOpen className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{formation.title}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={formation.isPublished ? "default" : "secondary"} className="text-xs">
-                        {formation.isPublished ? "Publicada" : "Borrador"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{formation.time}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay formaciones creadas aun
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Acciones Rapidas</CardTitle>
-          <CardDescription>
-            Accesos directos a las tareas mas comunes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/admin/content/formations/new">
-                <BookOpen className="h-6 w-6" />
-                <span>Nueva Formacion</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/admin/content/lessons/new">
-                <Video className="h-6 w-6" />
-                <span>Nueva Leccion</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/admin/users">
-                <Users className="h-6 w-6" />
-                <span>Gestionar Usuarios</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/admin/analytics">
-                <TrendingUp className="h-6 w-6" />
-                <span>Ver Analiticas</span>
-              </Link>
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+          <Suspense fallback={<SectionSkeleton />}>
+            <RecentUsers />
+          </Suspense>
+        </section>
+        <section className="ainara-panel">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="font-display text-2xl">Tu contenido reciente</h2>
+            <Link
+              href="/admin/content/formations"
+              className="text-sm font-semibold text-primary-strong"
+            >
+              Ver catálogo
+            </Link>
+          </div>
+          <Suspense fallback={<SectionSkeleton />}>
+            <RecentFormations />
+          </Suspense>
+        </section>
+      </div>
+      <section>
+        <p className="ainara-eyebrow">GESTIÓN DIARIA</p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              title: "Organizar el contenido",
+              body: "Publica y revisa tus formaciones.",
+              href: "/admin/content/formations",
+              icon: BookOpen,
+            },
+            {
+              title: "Gestionar los accesos",
+              body: "Roles, suscripciones y acceso permanente.",
+              href: "/admin/users",
+              icon: Users,
+            },
+            {
+              title: "Consultar la actividad",
+              body: "Comprueba participación y aprendizaje.",
+              href: "/admin/analytics",
+              icon: BarChart3,
+            },
+            {
+              title: "Revisar comentarios",
+              body: "Cuida las conversaciones de las lecciones.",
+              href: "/admin/comments",
+              icon: MessageSquare,
+            },
+          ].map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="ainara-panel hover:border-primary"
+            >
+              <action.icon size={22} className="mb-5 text-primary-strong" />
+              <h3 className="text-base">{action.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {action.body}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
-  )
+  );
 }

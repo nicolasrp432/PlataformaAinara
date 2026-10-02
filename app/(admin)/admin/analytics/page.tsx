@@ -1,7 +1,21 @@
-import type { Metadata } from "next"
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Suspense } from "react";
+import { requireAdmin } from "@/lib/guards";
+import {
+  progressCompletionPercentage,
+  rankFormations,
+  type FormationEnrollmentCount,
+} from "@/lib/admin-analytics";
+import { SectionSkeleton } from "../overview-sections";
+import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Users,
   BookOpen,
@@ -11,101 +25,118 @@ import {
   XCircle,
   Video,
   Trophy,
-} from "lucide-react"
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Analíticas — Admin",
+};
+
+export const dynamic = "force-dynamic";
+
+async function getFormationRanking(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
+  // Aggregate counts in Postgres; transfer one row per formation, not enrollment.
+  // Page through the full catalog so the ranking never samples the first 100 rows.
+  const rows: FormationEnrollmentCount[] = [];
+  for (let from = 0; ; from += 500) {
+    const { data, error } = await supabase
+      .from("formations")
+      .select("id,title,is_published,enrollments(count)")
+      .order("id")
+      .range(from, from + 499);
+    if (error) throw new Error("No se pudo cargar el ranking de formaciones.");
+    rows.push(...((data ?? []) as FormationEnrollmentCount[]));
+    if (!data || data.length < 500) break;
+  }
+  return rankFormations(rows);
 }
 
-export const dynamic = "force-dynamic"
-
 async function getAnalytics() {
-  const supabase = await createClient()
-
-  const [
-    { count: totalUsers },
-    { count: approvedUsers },
-    { count: pendingUsers },
-    { count: suspendedUsers },
-    { count: totalFormations },
-    { count: publishedFormations },
-    { count: totalLessons },
-    { count: totalEnrollments },
-    { count: completedLessons },
-    { data: topFormations },
-    { data: recentEnrollments },
-  ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("access_status", "approved"),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("access_status", "pending"),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("access_status", "suspended"),
-    supabase.from("formations").select("*", { count: "exact", head: true }),
-    supabase.from("formations").select("*", { count: "exact", head: true }).eq("is_published", true),
-    supabase.from("lessons").select("*", { count: "exact", head: true }),
-    supabase.from("enrollments").select("*", { count: "exact", head: true }),
-    supabase.from("user_progress").select("*", { count: "exact", head: true }).eq("is_completed", true),
+  await requireAdmin();
+  const supabase = await createClient();
+  const [counts, topFormations, recent] = await Promise.all([
+    Promise.all([
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("access_status", "approved"),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("access_status", "pending"),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("access_status", "suspended"),
+      supabase.from("formations").select("id", { count: "exact", head: true }),
+      supabase
+        .from("formations")
+        .select("id", { count: "exact", head: true })
+        .eq("is_published", true),
+      supabase.from("lessons").select("id", { count: "exact", head: true }),
+      supabase.from("enrollments").select("id", { count: "exact", head: true }),
+      supabase
+        .from("user_progress")
+        .select("id", { count: "exact", head: true })
+        .eq("is_completed", true),
+      supabase
+        .from("user_progress")
+        .select("id", { count: "exact", head: true }),
+    ]),
+    getFormationRanking(supabase),
     supabase
       .from("enrollments")
-      .select("formation_id, formations(title, is_published)")
-      .limit(100),
-    supabase
-      .from("enrollments")
-      .select("enrolled_at, formations(title)")
+      .select("enrolled_at,formations(title)")
       .order("enrolled_at", { ascending: false })
       .limit(10),
-  ])
-
-  // Count enrollments per formation
-  const formationCounts: Record<string, { title: string; count: number; published: boolean }> = {}
-  if (topFormations) {
-    for (const e of topFormations) {
-      const fid = e.formation_id as string
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const f = e.formations as any
-      if (!formationCounts[fid]) {
-        formationCounts[fid] = {
-          title: f?.title ?? "Sin título",
-          count: 0,
-          published: f?.is_published ?? false,
-        }
-      }
-      formationCounts[fid].count++
-    }
-  }
-
-  const rankedFormations = Object.values(formationCounts)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-
-  const completionRate =
-    totalEnrollments && totalEnrollments > 0
-      ? Math.round((completedLessons! / totalEnrollments!) * 100)
-      : 0
-
+  ]);
+  if (counts.some((result) => result.error) || recent.error)
+    throw new Error("No se pudieron cargar las analíticas.");
+  const [
+    totalUsers,
+    approvedUsers,
+    pendingUsers,
+    suspendedUsers,
+    totalFormations,
+    publishedFormations,
+    totalLessons,
+    totalEnrollments,
+    completedLessons,
+    recordedLessons,
+  ] = counts.map((result) => result.count ?? 0);
   return {
     users: {
-      total: totalUsers ?? 0,
-      approved: approvedUsers ?? 0,
-      pending: pendingUsers ?? 0,
-      suspended: suspendedUsers ?? 0,
+      total: totalUsers,
+      approved: approvedUsers,
+      pending: pendingUsers,
+      suspended: suspendedUsers,
     },
     content: {
-      formations: totalFormations ?? 0,
-      published: publishedFormations ?? 0,
-      lessons: totalLessons ?? 0,
+      formations: totalFormations,
+      published: publishedFormations,
+      lessons: totalLessons,
     },
     engagement: {
-      enrollments: totalEnrollments ?? 0,
-      completedLessons: completedLessons ?? 0,
-      completionRate,
+      enrollments: totalEnrollments,
+      completedLessons,
+      completionRate: progressCompletionPercentage(
+        completedLessons,
+        recordedLessons,
+      ),
     },
-    topFormations: rankedFormations,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recentEnrollments: (recentEnrollments ?? []).map((e: any) => ({
-      date: e.enrolled_at as string,
-      formationTitle: e.formations?.title ?? "Sin título",
-    })),
-  }
+    topFormations,
+    recentEnrollments: (recent.data ?? []).map((entry) => {
+      const formation = Array.isArray(entry.formations)
+        ? entry.formations[0]
+        : entry.formations;
+      return {
+        date: entry.enrolled_at,
+        formationTitle: formation?.title ?? "Sin título",
+      };
+    }),
+  };
 }
 
 function StatCard({
@@ -115,11 +146,11 @@ function StatCard({
   icon: Icon,
   accent,
 }: {
-  title: string
-  value: number | string
-  description?: string
-  icon: React.ComponentType<{ className?: string }>
-  accent?: string
+  title: string;
+  value: number | string;
+  description?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent?: string;
 }) {
   return (
     <Card>
@@ -136,7 +167,7 @@ function StatCard({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function formatDate(dateStr: string) {
@@ -144,21 +175,14 @@ function formatDate(dateStr: string) {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  })
+  });
 }
 
-export default async function AdminAnalyticsPage() {
-  const data = await getAnalytics()
+async function AnalyticsContent() {
+  const data = await getAnalytics();
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Analíticas</h1>
-        <p className="text-muted-foreground">
-          Métricas en tiempo real de la plataforma.
-        </p>
-      </div>
-
       {/* Users section */}
       <div>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -179,7 +203,7 @@ export default async function AdminAnalyticsPage() {
             accent="bg-success-soft"
           />
           <StatCard
-            title="En plan gratuito"
+            title="Sin suscripción activa"
             value={data.users.pending}
             icon={Clock}
             accent="bg-warning-soft"
@@ -234,9 +258,9 @@ export default async function AdminAnalyticsPage() {
             accent="bg-warning-soft"
           />
           <StatCard
-            title="Tasa de finalización"
+            title="Progreso completado"
             value={`${data.engagement.completionRate}%`}
-            description="lecciones completadas / inscripciones"
+            description="Registros de progreso finalizados / registrados"
             icon={CheckCircle2}
             accent="bg-success-soft"
           />
@@ -259,7 +283,7 @@ export default async function AdminAnalyticsPage() {
             ) : (
               <div className="space-y-3">
                 {data.topFormations.map((f, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  <div key={f.id} className="flex items-center gap-3">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                       {i + 1}
                     </span>
@@ -297,8 +321,13 @@ export default async function AdminAnalyticsPage() {
             ) : (
               <div className="space-y-3">
                 {data.recentEnrollments.map((e, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2">
-                    <p className="min-w-0 flex-1 truncate text-sm">{e.formationTitle}</p>
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <p className="min-w-0 flex-1 truncate text-sm">
+                      {e.formationTitle}
+                    </p>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {formatDate(e.date)}
                     </span>
@@ -310,5 +339,26 @@ export default async function AdminAnalyticsPage() {
         </Card>
       </div>
     </div>
-  )
+  );
+}
+
+export default function AdminAnalyticsPage() {
+  return (
+    <div className="space-y-8">
+      <header className="ainara-page-header">
+        <p className="ainara-eyebrow">ACTIVIDAD / APRENDIZAJE</p>
+        <h1>Una mirada a lo que sucede.</h1>
+        <p>Usuarios, inscripciones y progreso registrado en la plataforma.</p>
+      </header>
+      <Suspense
+        fallback={
+          <div className="ainara-panel">
+            <SectionSkeleton rows={6} />
+          </div>
+        }
+      >
+        <AnalyticsContent />
+      </Suspense>
+    </div>
+  );
 }
