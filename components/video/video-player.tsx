@@ -315,7 +315,7 @@ function YouTubePlayer({
     // queda área negra debajo del iframe.
     // [&_iframe]:* fuerza al iframe generado por YT a llenar el contenedor.
     <div className={cn(
-      "relative bg-black rounded-lg overflow-hidden aspect-video",
+      "relative bg-black rounded-[1.5rem] md:rounded-[2rem] overflow-hidden aspect-video shadow-xl ring-1 ring-black/5",
       "[&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:w-full [&_iframe]:h-full",
       className
     )}>
@@ -379,7 +379,7 @@ function VimeoPlayer({
   const videoId = extractVimeoId(src)
 
   return (
-    <div className={cn("relative bg-black rounded-lg overflow-hidden", className)}>
+    <div className={cn("relative bg-black rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-xl ring-1 ring-black/5", className)}>
       <iframe
         src={`https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0`}
         className="w-full aspect-video"
@@ -601,7 +601,7 @@ function NativePlayer({
     <div
       ref={containerRef}
       className={cn(
-        "relative bg-black rounded-lg overflow-hidden group",
+        "relative bg-black rounded-[1.5rem] md:rounded-[2rem] overflow-hidden group shadow-xl ring-1 ring-black/5",
         isFullscreen && "rounded-none",
         className
       )}

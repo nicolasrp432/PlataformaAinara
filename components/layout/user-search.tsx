@@ -312,7 +312,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
                       onClick={() => handleSelectUser(user.id)}
                       onMouseEnter={() => setSelectedIndex(index)}
                       className={cn(
-                        "group flex items-center justify-between gap-3 p-3 rounded-xl cursor-pointer transition-all duration-150",
+                        "group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-150",
                         isSelected 
                           ? "bg-primary/10 border border-primary/25 shadow-xs" 
                           : "border border-transparent hover:bg-muted/40"
@@ -363,7 +363,7 @@ export function UserSearch({ variant = "sidebar" }: UserSearchProps = {}) {
                       </div>
 
                       {/* Botón de acción directa: Enviar Mensaje */}
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex min-w-fit items-center gap-2 justify-self-end">
                         {allowsDirectMessages ? (
                           <Button
                             type="button"
