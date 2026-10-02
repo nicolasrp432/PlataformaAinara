@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { fileName, lessonId } = body
+  const { fileName, lessonId, uploadPurpose } = body
 
   if (!fileName) {
     return NextResponse.json({ error: "fileName is required" }, { status: 400 })
@@ -31,7 +31,10 @@ export async function POST(request: NextRequest) {
     const upload = await createTusUploadUrl(fileName, {
       maxDurationSeconds: 7200,
       requireSignedURLs: false,
-      meta: { lessonId: lessonId || "" },
+      meta: {
+        lessonId: lessonId || "",
+        uploadPurpose: uploadPurpose === "community_testimonial" ? uploadPurpose : "lesson",
+      },
     })
     return NextResponse.json({ uploadUrl: upload.uploadUrl, videoId: upload.uid })
   } catch (error) {

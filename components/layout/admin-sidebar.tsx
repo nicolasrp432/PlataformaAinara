@@ -61,6 +61,7 @@ const groups = [
       { name: "Certificados", href: "/admin/certificates", icon: Award },
       { name: "Notificaciones", href: "/admin/notifications", icon: Bell },
       { name: "Comentarios", href: "/admin/comments", icon: MessageSquare },
+      { name: "Testimonios", href: "/admin/testimonials", icon: Video },
       { name: "Configuración", href: "/admin/settings", icon: Settings },
     ],
   },

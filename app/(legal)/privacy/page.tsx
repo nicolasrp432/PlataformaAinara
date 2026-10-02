@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalDoc title="Política de Privacidad" updatedAt="agosto de 2026">
+    <LegalDoc title="Política de Privacidad" updatedAt="2 de octubre de 2026">
       <p>
         En {CONTROLLER.brand} tratamos datos muy personales: lo que escribes en tu
         diario privado, cómo te sientes cada día y tus conversaciones con otras
@@ -77,7 +77,58 @@ export default function PrivacyPage() {
         terceros. No elaboramos perfiles comerciales ni vendemos datos a nadie.
       </p>
 
-      <h2>3. Para qué los usamos y con qué base legal</h2>
+      <h2 id="testimonios-audiovisuales">3. Testimonios audiovisuales</h2>
+      <p>
+        Participar es voluntario y no condiciona el acceso al servicio. La
+        autorización para un testimonio se solicita mediante una casilla propia,
+        sin marcar, y <strong>no se deduce de la aceptación de estas condiciones</strong>.
+        Antes de publicar, mostramos y registramos la versión legal aceptada y la fecha.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Elemento</th><th>Tratamiento</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Imagen</strong></td><td>Grabación, edición técnica y reproducción de la apariencia de la participante.</td></tr>
+          <tr><td><strong>Voz</strong></td><td>Grabación, ajuste técnico y reproducción del audio; no se usa para identificación biométrica.</td></tr>
+          <tr><td><strong>Texto testimonial</strong></td><td>Transcripción, subtítulos o extractos fieles, sin alterar el sentido de lo manifestado.</td></tr>
+          <tr><td><strong>Metadatos del vídeo</strong></td><td>Nombre del archivo, formato, tamaño, duración, identificador técnico, fecha de subida y datos necesarios para seguridad y entrega. Eliminamos los metadatos no necesarios cuando sea técnicamente posible.</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li><strong>Finalidad:</strong> revisar, moderar y, solo dentro del alcance elegido, comunicar experiencias reales sobre la formación y el acompañamiento.</li>
+        <li><strong>Base jurídica:</strong> consentimiento específico y revocable (art. 6.1.a RGPD). Si el contenido revela salud u otra categoría especial, exigimos además consentimiento explícito (art. 9.2.a) y revisión jurídica previa.</li>
+        <li><strong>Audiencia:</strong> la seleccionada al autorizar: revisión interna, personas registradas o web pública y canales sociales propios. No ampliamos canales, campañas ni usos publicitarios sin una nueva autorización.</li>
+        <li><strong>Proveedor de alojamiento:</strong> Cloudflare Stream almacena y distribuye el vídeo por cuenta nuestra; Supabase conserva el registro de consentimiento, texto y estado de moderación. Las transferencias internacionales se protegen como se indica en la sección de proveedores.</li>
+        <li><strong>Conservación:</strong> mientras el testimonio esté publicado y exista consentimiento. Tras su retirada bloqueamos la publicación y eliminamos vídeo y copias bajo nuestro control en un máximo de 30 días, salvo conservación limitada para atender responsabilidades legales. Las copias de seguridad rotan en sus ciclos técnicos.</li>
+        <li><strong>Moderación:</strong> todos los testimonios quedan pendientes de revisión. Podemos rechazarlos o editarlos solo por formato, duración, privacidad, seguridad o cumplimiento; pediremos aprobación si una edición cambia el sentido. No publicamos afirmaciones engañosas ni datos de terceras personas sin base suficiente.</li>
+      </ul>
+      <h3>Retirar el testimonio y solicitar su eliminación</h3>
+      <p>
+        Puedes retirar el consentimiento en cualquier momento escribiendo a{" "}
+        <a href={`mailto:${CONTROLLER.email}?subject=Retirada%20de%20testimonio`}>
+          <strong>{CONTROLLER.email}</strong>
+        </a>{" "}
+        con el asunto «Retirada de testimonio» e indicando el nombre con el que
+        participaste y, si lo conoces, el enlace. Confirmaremos la recepción,
+        ocultaremos el contenido con diligencia y tramitaremos su eliminación.
+        Retirar el consentimiento no afecta a los tratamientos realizados
+        legítimamente antes de recibir la solicitud.
+      </p>
+      <p>
+        Una persona administradora solo puede subir el vídeo de un tercero si ha
+        comprobado una autorización escrita, específica e informada que identifique
+        a la persona, el contenido, finalidades, audiencia, canales, plazo y forma
+        de retirada. Debe guardar evidencia verificable de la fecha, versión del
+        texto aceptado, firmante y documento o comunicación, con acceso restringido.
+      </p>
+      <p>
+        <strong>Antes de activar este flujo se solicitará revisión jurídica</strong>,
+        especialmente cuando el relato mencione salud mental, diagnósticos,
+        tratamientos o resultados personales.
+      </p>
+
+      <h2>4. Para qué los usamos y con qué base legal</h2>
       <table>
         <thead>
           <tr>
@@ -121,7 +172,7 @@ export default function PrivacyPage() {
         </tbody>
       </table>
 
-      <h2>4. Cuánto tiempo los conservamos</h2>
+      <h2>5. Cuánto tiempo los conservamos</h2>
       <ul>
         <li>
           <strong>Mientras tengas la cuenta activa.</strong> Si solicitas la
@@ -139,7 +190,7 @@ export default function PrivacyPage() {
         </li>
       </ul>
 
-      <h2>5. Quién más accede a tus datos</h2>
+      <h2>6. Quién más accede a tus datos</h2>
       <p>
         Solo proveedores necesarios para que la plataforma funcione, todos con
         contrato de encargado de tratamiento:
@@ -196,7 +247,7 @@ export default function PrivacyPage() {
         plataforma.
       </p>
 
-      <h2>6. Tus derechos</h2>
+      <h2>7. Tus derechos</h2>
       <p>
         Puedes ejercer en cualquier momento los derechos de{" "}
         <strong>acceso, rectificación, supresión, oposición, limitación y
@@ -224,7 +275,7 @@ export default function PrivacyPage() {
         .
       </p>
 
-      <h2>7. Decisiones automatizadas</h2>
+      <h2>8. Decisiones automatizadas</h2>
       <p>
         No tomamos decisiones automatizadas con efectos jurídicos sobre ti. El
         asistente de IA y la carta natal generan contenido orientativo:{" "}
@@ -232,7 +283,7 @@ export default function PrivacyPage() {
         ninguna decisión sobre tu cuenta depende de ellos.
       </p>
 
-      <h2>8. Menores de edad</h2>
+      <h2>9. Menores de edad</h2>
       <p>
         La plataforma está dirigida a mayores de <strong>14 años</strong>. Por
         debajo de esa edad se requiere autorización de quien ostente la patria
@@ -240,7 +291,7 @@ export default function PrivacyPage() {
         eliminaremos.
       </p>
 
-      <h2>9. Seguridad</h2>
+      <h2>10. Seguridad</h2>
       <p>
         Ciframos las comunicaciones (HTTPS), las contraseñas se almacenan con
         funciones de derivación seguras y el acceso a los datos está restringido
@@ -250,7 +301,7 @@ export default function PrivacyPage() {
         72 horas siguientes.
       </p>
 
-      <h2>10. Cambios en esta política</h2>
+      <h2>11. Cambios en esta política</h2>
       <p>
         Si modificamos esta política de forma sustancial, te avisaremos dentro de
         la plataforma antes de que los cambios sean efectivos.
