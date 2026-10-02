@@ -33,12 +33,9 @@ export default function OpengraphImage() {
             marginBottom: 48,
           }}
         >
-          <svg width="88" height="88" viewBox="0 0 24 24" fill="none">
-            <path d="M2 20 L8 8 L12 14 L16 6 L22 20 Z" fill="#FFFFFF" opacity="0.92" />
-            <circle cx="9.5" cy="17" r="0.85" fill="#B8902E" />
-            <circle cx="11.2" cy="14.2" r="0.85" fill="#B8902E" />
-            <circle cx="13.2" cy="11" r="0.85" fill="#B8902E" />
-            <circle cx="15.2" cy="7.8" r="0.85" fill="#B8902E" />
+          <svg width="100" height="100" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="6.5" r="2.5" fill="#171717" />
+            <path d="M6 23V15c0-3.8 4.1-5.3 6.2-2.1L16 19l3.8-6.1C21.9 9.7 26 11.2 26 15v8M16 19v8m0-4-4 4m4-4 4 4" stroke="#171717" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <div

@@ -2,9 +2,9 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { SPRING_UI } from "@/lib/motion"
-import { X, Sparkles, Loader2, AlertCircle, MailCheck } from "lucide-react"
+import { motion } from "framer-motion"
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { Sparkles, Loader2, AlertCircle, MailCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,9 +21,10 @@ import Link from "next/link"
 interface RegisterModalProps {
   open: boolean
   onClose: () => void
+  returnFocusRef: React.RefObject<HTMLElement | null>
 }
 
-export function RegisterModal({ open, onClose }: RegisterModalProps) {
+export function RegisterModal({ open, onClose, returnFocusRef }: RegisterModalProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -129,26 +130,10 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-
-          {/* Panel */}
-          <motion.div
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background shadow-2xl"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={SPRING_UI}
-          >
+    <Sheet open={open} onOpenChange={next => { if (!next) onClose() }}>
+      <SheetContent side="right" showGrabber={false} className="w-full max-w-md bg-background" contentClassName="p-0" onCloseAutoFocus={event => { event.preventDefault(); returnFocusRef.current?.focus() }}>
+        <SheetTitle className="sr-only">Crear tu cuenta en Mitra</SheetTitle>
+        <SheetDescription className="sr-only">Accede a las primeras clases gratuitas y a tu diario privado.</SheetDescription>
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border/50 px-6 py-5">
               <div className="flex items-center gap-3">
@@ -160,12 +145,6 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
                   <p className="text-xs text-muted-foreground">Comienza tu transformación</p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
             </div>
 
             {/* Content */}
@@ -290,9 +269,7 @@ export function RegisterModal({ open, onClose }: RegisterModalProps) {
                 </>
               )}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      </SheetContent>
+    </Sheet>
   )
 }

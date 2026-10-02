@@ -107,12 +107,12 @@ export function LibraryContent({
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-10 relative">
       {/* Dynamic Header */}
-      <div className="flex flex-col gap-2 relative z-10 mb-2">
+      <div className="ainara-page-header flex flex-col gap-2 relative z-10 mb-2">
         <h1 className="text-4xl font-light tracking-tight text-foreground sm:text-5xl">
-          Biblioteca de <span className="font-semibold text-primary">Formaciones</span>
+          Aprende. <em className="text-primary">A tu ritmo.</em>
         </h1>
         <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mt-2 leading-relaxed">
-          Explora conocimiento profundo, forja nuevas habilidades y comienza tu viaje de transformación definitiva.
+          Encuentra tu próxima formación o continúa donde lo dejaste. Haz espacio para lo que necesitas ahora.
         </p>
       </div>
 

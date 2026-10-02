@@ -92,7 +92,7 @@ export function MentorHero({ mentor, includedInMembership }: MentorHeroProps) {
             </div>
           </div>
 
-          <MentorshipBookingDialog mentor={mentor} />
+          <MentorshipBookingDialog mentor={{ ...mentor,included: includedInMembership }} />
         </CardContent>
       </div>
     </Card>

@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils"
-import { SenderoLogo } from "@/components/ui/logo"
+import { MitraLogo } from "@/components/ui/logo"
 
 /**
  * Marca "Mitra" — única fuente de verdad del lockup de marca.
- * El wordmark usa siempre la tipografía display (Cormorant Garamond)
- * en tamaño ≥ text-lg: la fuente rinde mal por debajo de ese cuerpo.
+ * El wordmark usa siempre la tipografía display (Fraunces)
+ * y acompaña al símbolo de raíz de Mitra.
  */
 
 const MARK_SIZES = {
@@ -31,7 +31,7 @@ export function BrandMark({
         className
       )}
     >
-      <SenderoLogo className={s.icon} />
+      <MitraLogo className={s.icon} />
     </div>
   )
 }

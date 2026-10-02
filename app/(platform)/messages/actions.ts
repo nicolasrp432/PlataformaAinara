@@ -1,12 +1,12 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { supabaseAdmin } from "@/lib/supabase/admin"
 import {
   startConversation,
   sendMessage,
   markConversationRead,
   getConversationMessages,
+  listConversations,
 } from "@/lib/services/messaging"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
@@ -17,11 +17,12 @@ export async function startConversationAction(otherUserId: string) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "No autorizado" }
+  if (!z.string().uuid().safeParse(otherUserId).success) return { error: "Usuario inválido" }
   if (user.id === otherUserId) return { error: "No puedes enviarte mensajes a ti mismo" }
 
-  const admin = supabaseAdmin()
+  const admin = supabase
   const { data: profile, error: profileError } = await admin
-    .from("profiles")
+    .from("member_profiles")
     .select("allow_direct_messages, full_name")
     .eq("id", otherUserId)
     .maybeSingle()
@@ -45,7 +46,7 @@ export async function startConversationAction(otherUserId: string) {
 
 const messageSchema = z.object({
   body: z
-    .string()
+    .string().trim()
     .min(1, "El mensaje no puede estar vacío")
     .max(2000, "Máximo 2000 caracteres"),
 })
@@ -94,42 +95,34 @@ export async function markConversationReadAction(conversationId: string) {
   }
 }
 
-export async function getLatestMessagesAction(conversationId: string, afterTimestamp?: string) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { messages: [] }
-
+const cursorSchema = z.object({ created_at: z.string().datetime({ offset: true }).transform(value => new Date(value).toISOString()),id: z.string().uuid() })
+async function messagePage(conversationId: string,cursor: unknown,direction: "before" | "after") {
+  if (!z.string().uuid().safeParse(conversationId).success) return { error: "Conversación inválida",messages: [] }
+  const parsed = cursorSchema.safeParse(cursor)
+  if (!parsed.success) return { error: "Página inválida",messages: [] }
+  const client = await createClient()
+  const { data: { user } } = await client.auth.getUser()
+  if (!user) return { error: "No autorizado",messages: [] }
   try {
-    const messages = await getConversationMessages(conversationId, user.id, { limit: 50 })
-    if (!messages) return { messages: [] }
+    const messages = await getConversationMessages(conversationId,user.id,{ limit: 50,[direction]: parsed.data })
+    if (!messages) return { error: "Conversación no disponible",messages: [] }
+    return { messages: messages.map(message => {
+      const raw = message.profiles
+      return { ...message,profiles: Array.isArray(raw) ? raw[0] ?? null : raw }
+    }) }
+  } catch { return { error: "No se pudieron actualizar los mensajes",messages: [] } }
+}
+export async function getLatestMessagesAction(conversationId: string,cursor: { created_at: string; id: string }) {
+  return messagePage(conversationId,cursor,"after")
+}
+export async function getOlderMessagesAction(conversationId: string,cursor: { created_at: string; id: string }) {
+  return messagePage(conversationId,cursor,"before")
+}
 
-    const formatted = messages.map((m) => {
-      const rawP = (m as Record<string, unknown>).profiles
-      const profiles = (Array.isArray(rawP) ? rawP[0] : rawP) as {
-        id: string
-        full_name: string
-        avatar_url: string | null
-      } | null
-      return {
-        id: m.id as string,
-        sender_id: m.sender_id as string,
-        body: m.body as string,
-        created_at: m.created_at as string,
-        profiles,
-      }
-    })
-
-    if (afterTimestamp) {
-      const filtered = formatted.filter(
-        (m) => new Date(m.created_at).getTime() > new Date(afterTimestamp).getTime()
-      )
-      return { messages: filtered }
-    }
-
-    return { messages: formatted }
-  } catch {
-    return { messages: [] }
-  }
+export async function listConversationsAction() {
+  const client = await createClient()
+  const { data: { user } } = await client.auth.getUser()
+  if (!user) return { error: "No autorizado" }
+  try { return { conversations: await listConversations(user.id) } }
+  catch { return { error: "No se pudo actualizar la bandeja." } }
 }

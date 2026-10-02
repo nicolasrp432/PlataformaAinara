@@ -1,5 +1,6 @@
 import { cache } from "react"
 import { createClient } from "@/lib/supabase/server"
+import { calendarSlots } from "@/lib/mentorship-slots"
 
 export interface MentorRecord {
   id: string
@@ -12,6 +13,7 @@ export interface MentorRecord {
   session_price: number | null
   session_duration_minutes: number | null
   is_active: boolean | null
+  timezone?: string
 }
 
 export interface MentorAvailability {
@@ -26,7 +28,7 @@ export interface MentorAvailability {
 export interface AvailableSlot {
   /** ISO date-time string in UTC for the slot start. */
   startsAt: string
-  /** HH:MM label in local user time. */
+  /** HH:MM label in the mentor calendar timezone. */
   label: string
   /** ISO date (YYYY-MM-DD) for grouping. */
   date: string
@@ -40,7 +42,8 @@ export interface MentorshipSessionRecord {
   duration_minutes: number
   status: "pending" | "confirmed" | "completed" | "cancelled" | "no_show"
   meeting_link: string | null
-  notes: string | null
+  hold_expires_at: string | null
+  timezone: string
   user_notes: string | null
   payment_reference: string | null
   created_at: string
@@ -81,75 +84,17 @@ export async function getAvailableSlots(
 ): Promise<AvailableSlot[]> {
   const supabase = await createClient()
 
-  const [{ data: availability }, { data: blocked }, { data: existing }] = await Promise.all([
-    supabase
-      .from("mentor_availability")
-      .select("*")
-      .eq("mentor_id", mentorId)
-      .eq("is_active", true),
-    supabase
-      .from("mentor_blocked_dates")
-      .select("blocked_date")
-      .eq("mentor_id", mentorId),
-    supabase
-      .from("mentorship_sessions")
-      .select("scheduled_at, duration_minutes, status")
-      .eq("mentor_id", mentorId)
-      .in("status", ["pending", "confirmed"])
-      .gte("scheduled_at", fromDate.toISOString())
-      .lte("scheduled_at", toDate.toISOString()),
+  const mentor = await getMentor(mentorId)
+  if (!mentor?.is_active) return []
+  const [availability, blocked, busy] = await Promise.all([
+    supabase.from("mentor_availability").select("day_of_week,start_time,end_time").eq("mentor_id",mentorId).eq("is_active",true),
+    supabase.from("mentor_blocked_dates").select("blocked_date").eq("mentor_id",mentorId).gte("blocked_date",new Date(fromDate.getTime()-86_400_000).toISOString().slice(0,10)).lte("blocked_date",new Date(toDate.getTime()+86_400_000).toISOString().slice(0,10)),
+    supabase.rpc("mentor_busy_intervals", { p_mentor_id: mentorId, p_from: fromDate.toISOString(), p_to: toDate.toISOString() }),
   ])
-
-  const blockedSet = new Set(
-    (blocked || []).map((b: { blocked_date: string }) => b.blocked_date),
-  )
-  const takenSet = new Set(
-    (existing || []).map((s: { scheduled_at: string }) => new Date(s.scheduled_at).toISOString()),
-  )
-
-  const availByDow = new Map<number, MentorAvailability[]>()
-  for (const a of (availability || []) as MentorAvailability[]) {
-    const arr = availByDow.get(a.day_of_week) ?? []
-    arr.push(a)
-    availByDow.set(a.day_of_week, arr)
-  }
-
-  const slots: AvailableSlot[] = []
-  const cursor = new Date(fromDate)
-  cursor.setHours(0, 0, 0, 0)
-
-  while (cursor.getTime() <= toDate.getTime()) {
-    const dow = cursor.getDay()
-    const dateKey = cursor.toISOString().slice(0, 10)
-    if (!blockedSet.has(dateKey)) {
-      const slotsForDow = availByDow.get(dow) ?? []
-      for (const a of slotsForDow) {
-        const [sh, sm] = a.start_time.split(":").map(Number)
-        const [eh, em] = a.end_time.split(":").map(Number)
-        const startMinutes = sh * 60 + sm
-        const endMinutes = eh * 60 + em
-        for (
-          let m = startMinutes;
-          m + sessionDurationMinutes <= endMinutes;
-          m += sessionDurationMinutes
-        ) {
-          const slotDate = new Date(cursor)
-          slotDate.setHours(Math.floor(m / 60), m % 60, 0, 0)
-          if (slotDate.getTime() <= Date.now()) continue
-          const iso = slotDate.toISOString()
-          if (takenSet.has(iso)) continue
-          slots.push({
-            startsAt: iso,
-            label: `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`,
-            date: dateKey,
-          })
-        }
-      }
-    }
-    cursor.setDate(cursor.getDate() + 1)
-  }
-
-  return slots
+  if (availability.error || blocked.error || busy.error) throw new Error("No se pudo consultar la disponibilidad.")
+  return calendarSlots({ from: fromDate, to: toDate, now: Date.now(), duration: sessionDurationMinutes,
+    zone: mentor.timezone ?? "Europe/Madrid", availability: availability.data ?? [],
+    blocked: (blocked.data ?? []).map(row => row.blocked_date), busy: busy.data ?? [] })
 }
 
 export async function getUserMentorshipSessions(
@@ -158,8 +103,8 @@ export async function getUserMentorshipSessions(
   const supabase = await createClient()
   const { data } = await supabase
     .from("mentorship_sessions")
-    .select("*")
+    .select("id,mentor_id,user_id,scheduled_at,duration_minutes,status,meeting_link,user_notes,payment_reference,created_at,hold_expires_at,mentors(timezone)")
     .eq("user_id", userId)
     .order("scheduled_at", { ascending: false })
-  return (data as MentorshipSessionRecord[]) ?? []
+  return (data ?? []).map(row => { const mentor = Array.isArray(row.mentors) ? row.mentors[0] : row.mentors; return { ...row,timezone: mentor?.timezone ?? "Europe/Madrid" } }) as MentorshipSessionRecord[]
 }

@@ -14,15 +14,7 @@ interface NotificationsContextValue {
   refresh: () => void
   decrementUnread: () => void
   clearUnread: () => void
-  broadcastDirectMessage: (
-    recipientId: string,
-    data: {
-      conversationId: string
-      senderName: string
-      senderAvatar?: string | null
-      body: string
-    }
-  ) => void
+
 }
 
 const FALLBACK: NotificationsContextValue = {
@@ -31,7 +23,6 @@ const FALLBACK: NotificationsContextValue = {
   refresh: () => {},
   decrementUnread: () => {},
   clearUnread: () => {},
-  broadcastDirectMessage: () => {},
 }
 
 const NotificationsContext = React.createContext<NotificationsContextValue | null>(null)
@@ -72,9 +63,7 @@ export function NotificationsProvider({
     refresh()
 
     const supabase = createClient()
-    const channel = supabase.channel(`user:${userId}:global`, {
-      config: { broadcast: { self: false } },
-    })
+    const channel = supabase.channel(`notifications:${userId}`)
 
     channelRef.current = channel
 
@@ -90,6 +79,7 @@ export function NotificationsProvider({
       (payload) => {
         refresh()
         const row = payload.new as {
+          id?: string
           title?: string
           body?: string
           link?: string
@@ -98,6 +88,10 @@ export function NotificationsProvider({
 
         // Si es un nuevo mensaje, alertar con sonido y toast
         if (row.kind === "new_message" || (row.link && row.link.includes("/messages/"))) {
+          if (document.visibilityState === "visible" && window.location.pathname === row.link) {
+            if (row.id) supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id",row.id).eq("user_id",userId).then(() => refresh())
+            return
+          }
           playMessageChime()
           toast(row.title || "Nuevo mensaje recibido", {
             description: row.body ? `«${row.body}»` : undefined,
@@ -112,66 +106,12 @@ export function NotificationsProvider({
       }
     )
 
-    // 2. Escuchar broadcast instantáneo de mensajes directos
-    channel.on(
-      "broadcast",
-      { event: "direct_message" },
-      (event) => {
-        const data = event.payload as {
-          conversationId: string
-          senderName: string
-          senderAvatar?: string | null
-          body: string
-        }
-        refresh()
-        playMessageChime()
-
-        toast(`${data.senderName} te ha enviado un mensaje`, {
-          description: `«${data.body.slice(0, 80)}»`,
-          action: {
-            label: "Responder",
-            onClick: () => router.push(`/messages/${data.conversationId}`),
-          },
-        })
-      }
-    )
-
     channel.subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [userId, refresh, router])
-
-  // Difundir un mensaje directo en tiempo real al canal del destinatario
-  const broadcastDirectMessage = React.useCallback(
-    (
-      recipientId: string,
-      data: {
-        conversationId: string
-        senderName: string
-        senderAvatar?: string | null
-        body: string
-      }
-    ) => {
-      try {
-        const supabase = createClient()
-        const targetChannel = supabase.channel(`user:${recipientId}:global`)
-        targetChannel.subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            targetChannel.send({
-              type: "broadcast",
-              event: "direct_message",
-              payload: data,
-            })
-          }
-        })
-      } catch {
-        // Fallback silencioso; la notificación en base de datos ya está en curso
-      }
-    },
-    []
-  )
 
   const decrementUnread = React.useCallback(() => {
     setUnreadTotal((n) => Math.max(0, n - 1))
@@ -189,9 +129,8 @@ export function NotificationsProvider({
       refresh,
       decrementUnread,
       clearUnread,
-      broadcastDirectMessage,
     }),
-    [unreadTotal, unreadMessages, refresh, decrementUnread, clearUnread, broadcastDirectMessage]
+    [unreadTotal, unreadMessages, refresh, decrementUnread, clearUnread]
   )
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>

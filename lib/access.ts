@@ -150,6 +150,7 @@ const AUTHENTICATED_PREFIXES = [
   "/logout",
   "/pending",
   "/reflexion",
+  "/rueda-de-la-vida",
   "/library",
   "/formations",
   "/learn",

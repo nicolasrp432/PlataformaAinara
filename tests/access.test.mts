@@ -106,7 +106,8 @@ const cases: Array<[string, string]> = [
   ["/billing/success", "authenticated"], ["/profile/settings", "authenticated"],
   ["/pending", "authenticated"], ["/logout", "authenticated"],
   ["/quest", "content"], ["/taberna", "content"], ["/mentorship", "content"],
-  ["/messages", "content"], ["/messages/xyz", "content"],
+  ["/messages", "authenticated"], ["/messages/xyz", "authenticated"],
+  ["/rueda-de-la-vida", "authenticated"],
   ["/assistant", "content"], ["/u/some-id", "content"],
   ["/admin", "staff"], ["/admin/content/lessons", "staff"],
 ]

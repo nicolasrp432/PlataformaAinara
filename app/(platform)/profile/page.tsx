@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getAuthUser, getUserProfile, getQuestData } from "@/lib/data-access"
+import { PageHeader } from "@/components/layout/page-header"
 import { ProfileForm } from "./profile-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -56,7 +57,9 @@ function formatRelative(dateStr: string) {
   return `${days}d`
 }
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const params = await searchParams
+  const initialTab = ["info","activity","mentorship","subscription","messages"].includes(params.tab ?? "") ? params.tab : "info"
   const user = await getAuthUser()
   if (!user) redirect("/login")
 
@@ -92,9 +95,9 @@ export default async function ProfilePage() {
 
   const userData = {
     id: user.id,
-    full_name: user.user_metadata?.full_name || profile?.full_name || "Usuario",
+    full_name: profile?.full_name || user.user_metadata?.full_name || "Usuario",
     email: user.email || "",
-    avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url || "",
+    avatarUrl: (profile ? profile.avatar_url : user.user_metadata?.avatar_url) ?? "",
     role: profile?.role || "student",
     level: profile?.level || 1,
     xp: profile?.xp ?? 0,
@@ -123,17 +126,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10 relative">
-      {/* Header */}
-      <div className="flex flex-col gap-2 relative z-10">
-        <h1 className="text-3xl font-light tracking-tight text-foreground sm:text-4xl">
-          Mi <span className="font-semibold text-primary">Perfil</span>{" "}
-          <span className="text-muted-foreground text-base font-light hidden sm:inline">en Mitra</span>
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base max-w-xl">
-          Aquí radica tu esencia como pensador y creador dentro de nuestra
-          comunidad. Explora tus logros y actualiza tu identidad.
-        </p>
-      </div>
+      <PageHeader eyebrow="Tu espacio en Mitra" title={<>Mi <em>perfil.</em></>} description="Cuida tu identidad, revisa tu aprendizaje y encuentra tus mensajes, sesiones y logros en un mismo lugar." />
 
       <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
         {/* Left Column: Avatar & Main Stats (unchanged) */}
@@ -156,6 +149,7 @@ export default async function ProfilePage() {
                 <p className="text-sm text-muted-foreground font-medium">
                   {userData.email}
                 </p>
+                {profile?.bio && <p className="mt-3 break-words text-sm text-muted-foreground">{profile.bio}</p>}
               </div>
               <div className="flex justify-center items-center gap-2 mb-2">
                 <Badge variant="secondary" className="bg-primary/15 text-primary hover:bg-primary/25 border-none transition-colors px-3 py-1">
@@ -219,7 +213,7 @@ export default async function ProfilePage() {
 
         {/* Right Column: Tabs */}
         <div className="lg:col-span-2 space-y-6">
-          <Tabs defaultValue="info">
+          <Tabs defaultValue={initialTab}>
             <TabsList className="bg-muted/50 w-full justify-start p-1 rounded-xl h-auto flex flex-wrap">
               <TabsTrigger value="info" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
                 <Award className="w-4 h-4" /> Información
@@ -268,6 +262,7 @@ export default async function ProfilePage() {
                   birth_date: userData.birth_date,
                   birth_time: userData.birth_time,
                   birth_city: userData.birth_city,
+                  bio: profile?.bio ?? null,
                 }}
               />
 
@@ -393,6 +388,7 @@ export default async function ProfilePage() {
                 mentorshipSessions.map((s) => {
                   const date = new Date(s.scheduled_at)
                   const isPast = date.getTime() < Date.now()
+                  const expired = s.status === "pending" && s.hold_expires_at && new Date(s.hold_expires_at).getTime() <= Date.now()
                   const statusColors: Record<string, string> = {
                     confirmed: "bg-success-soft text-success-strong border-success-border",
                     pending: "bg-warning-soft text-warning-strong border-warning-border",
@@ -414,7 +410,7 @@ export default async function ProfilePage() {
                           <div className="flex items-center gap-2 mb-2">
                             <CalendarDays className="w-4 h-4 text-primary" />
                             <p className="text-sm font-semibold text-foreground">
-                              {date.toLocaleString("es-ES", { dateStyle: "full", timeStyle: "short" })}
+                              {date.toLocaleString("es-ES", { timeZone: s.timezone,dateStyle: "full", timeStyle: "short" })}
                             </p>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -423,7 +419,7 @@ export default async function ProfilePage() {
                               {s.duration_minutes} min
                             </span>
                             <Badge variant="outline" className={cn("border", statusColors[s.status] ?? statusColors.pending)}>
-                              {statusLabels[s.status] ?? s.status}
+                              {expired ? "Reserva caducada" : statusLabels[s.status] ?? s.status}
                             </Badge>
                           </div>
                           {s.user_notes && (

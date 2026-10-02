@@ -10,6 +10,7 @@ import {
   CreateModuleInput
 } from '@/lib/validations/content';
 import * as formationService from '@/lib/services/formationService';
+import { requireAdmin } from '@/lib/guards';
 import { CACHE_TAGS } from '@/lib/cache';
 
 function getErrorMessage(error: unknown) {
@@ -22,9 +23,14 @@ function getErrorMessage(error: unknown) {
  */
 function invalidateCatalog() {
   revalidateTag(CACHE_TAGS.formations);
+  revalidatePath('/');
+  revalidatePath('/library');
+  revalidatePath('/admin');
+  revalidatePath('/admin/analytics');
 }
 
 export async function createFormationAction(data: CreateFormationInput) {
+  await requireAdmin();
   try {
     const validated = createFormationSchema.parse(data);
     const result = await formationService.createFormation(validated);
@@ -41,6 +47,7 @@ export async function createFormationAction(data: CreateFormationInput) {
 }
 
 export async function updateFormationAction(id: string, data: UpdateFormationInput) {
+  await requireAdmin();
   try {
     const validated = updateFormationSchema.parse(data);
     const result = await formationService.updateFormation(id, validated);
@@ -59,6 +66,7 @@ export async function updateFormationAction(id: string, data: UpdateFormationInp
 }
 
 export async function deleteFormationAction(id: string) {
+  await requireAdmin();
   try {
     await formationService.deleteFormation(id);
     invalidateCatalog();
@@ -71,6 +79,7 @@ export async function deleteFormationAction(id: string) {
 }
 
 export async function createModuleAction(data: CreateModuleInput) {
+  await requireAdmin();
   try {
     const validated = createModuleSchema.parse(data);
     const result = await formationService.createModule(validated);
@@ -84,6 +93,7 @@ export async function createModuleAction(data: CreateModuleInput) {
 }
 
 export async function deleteModuleAction(id: string, formationId: string) {
+  await requireAdmin();
   try {
     await formationService.deleteModule(id);
     invalidateCatalog();

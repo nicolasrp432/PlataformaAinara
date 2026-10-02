@@ -13,12 +13,12 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const query = searchParams.get("q") || ""
-    const trimmed = query.trim()
+    const trimmed = query.trim().replace(/[%_]/g, " ").slice(0, 80)
 
     if (!trimmed) {
       // Sugerencias iniciales: exploradores activos de la comunidad (excluyendo al usuario actual)
       const { data: suggestions, error: suggestError } = await supabase
-        .from("profiles")
+        .from("member_profiles")
         .select("id, full_name, avatar_url, level, xp, role, allow_direct_messages")
         .neq("id", user.id)
         .neq("profile_visibility", "private")
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     // Consultar perfiles en la base de datos que coincidan con la búsqueda
     // Excluir al usuario actual y perfiles privados
     const { data: profiles, error } = await supabase
-      .from("profiles")
+      .from("member_profiles")
       .select("id, full_name, avatar_url, level, xp, role, allow_direct_messages")
       .neq("id", user.id)
       .neq("profile_visibility", "private")

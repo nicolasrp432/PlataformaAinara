@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { toast } from "sonner"
 import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical, MoreVertical, Video, FileText, Clock, Users, Loader2 } from "lucide-react"
+import { MediaImage } from "@/components/media/media-image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -607,11 +608,15 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   />
                 </div>
                 {formation?.thumbnail_url && (
-                  <div className="border rounded-lg overflow-hidden">
-                    <img
+                  <div className="relative h-48 border rounded-lg overflow-hidden">
+                    <MediaImage
                       src={formation.thumbnail_url}
-                      alt="Portada"
-                      className="w-full max-h-48 object-cover"
+                      alt={`Portada de ${formation.title}`}
+                      seed={formation.slug || formation.id}
+                      title={formation.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 600px"
+                      className="object-cover"
                     />
                   </div>
                 )}

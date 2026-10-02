@@ -23,7 +23,7 @@ const jakarta = Plus_Jakarta_Sans({
 // `SOFT` redondea los vértices lo justo para que no resulte severa.
 const fraunces = Fraunces({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-heading-brand",
   display: "swap",
   axes: ["SOFT", "opsz"],
   preload: true,
@@ -33,6 +33,7 @@ const fraunces = Fraunces({
 // (globals.css define --font-mono como ui-monospace, sin referenciarla).
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")),
   title: {
     default: "Mitra | Desde la raíz",
     template: "%s | Mitra",

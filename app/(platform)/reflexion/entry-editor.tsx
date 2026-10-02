@@ -274,7 +274,7 @@ export function EntryEditor({
         <Quote className="h-4 w-4 shrink-0 text-primary mt-0.5" />
         <div className="space-y-0.5">
           <span className="text-3xs uppercase tracking-wider font-bold text-primary">
-            Oráculo del Día
+            Una pregunta para empezar
           </span>
           <p className="font-display text-sm sm:text-base italic leading-relaxed text-foreground/90">
             {prompt}
@@ -335,7 +335,7 @@ export function EntryEditor({
           className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-foreground"
         >
           <Feather className="h-4 w-4 text-primary" />
-          Tu Espacio de Desahogo & Verdad
+          ¿Qué necesitas expresar hoy?
         </label>
         <textarea
           ref={textareaRef}
@@ -343,11 +343,11 @@ export function EntryEditor({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           maxLength={2000}
-          rows={5}
+          rows={8}
           placeholder="Escribe lo que sientes, tus comprensiones o lo que quieres soltar con total libertad..."
           className={cn(
             "w-full resize-none rounded-lg border border-border/80 bg-card px-4 py-3",
-            "min-h-[130px] text-base leading-relaxed text-foreground md:text-sm",
+            "min-h-[220px] text-base leading-loose text-foreground",
             "placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30",
             "transition-colors shadow-xs"
           )}

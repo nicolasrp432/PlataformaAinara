@@ -8,6 +8,7 @@ import {
   Bot,
   Trophy,
   NotebookPen,
+  Compass,
   type LucideIcon,
 } from "lucide-react"
 
@@ -32,9 +33,10 @@ export interface NavItem {
  * escritorio y para la barra inferior + hoja "Más" de móvil.
  */
 export const PLATFORM_NAV: NavItem[] = [
-  { name: "Dashboard",  href: "/dashboard",   icon: LayoutDashboard, shortName: "Inicio" },
+  { name: "Mi espacio",  href: "/dashboard",   icon: LayoutDashboard, shortName: "Inicio" },
   { name: "Biblioteca", href: "/library",     icon: BookOpen, shortName: "Cursos" },
-  { name: "Reflexión",  href: "/reflexion",   icon: NotebookPen, shortName: "Reflexión" },
+  { name: "Mi diario",  href: "/reflexion",   icon: NotebookPen, shortName: "Reflexión" },
+  { name: "Rueda de la vida", href: "/rueda-de-la-vida", icon: Compass, shortName: "Mi rueda" },
   { name: "Logros",     href: "/quest",       icon: Trophy, shortName: "Logros", requiresMembership: true },
   { name: "Comunidad",  href: "/taberna",     icon: MessageSquare, shortName: "Comunidad", requiresMembership: true },
   { name: "Mensajes",   href: "/messages",    icon: Mail, shortName: "Mensajes" },

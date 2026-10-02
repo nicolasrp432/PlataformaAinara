@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
-import { awardXP } from "@/lib/services/xpService"
 import { createNotification } from "@/lib/services/notifications"
 import {
   addCommentSchema,
@@ -18,99 +17,9 @@ export async function markLessonCompleted(lessonId: string, slug: string) {
 
   if (!user) return { error: "No autorizado" }
 
-  const { data: existingProgress } = await supabase
-    .from("user_progress")
-    .select("id, is_completed")
-    .eq("user_id", user.id)
-    .eq("lesson_id", lessonId)
-    .single()
-
-  if (existingProgress?.is_completed) {
-    return { success: true, alreadyCompleted: true, xpEarned: 0, leveledUp: false, certificateIssued: false }
-  }
-
-  const { data: lesson } = await supabase
-    .from("lessons")
-    .select("xp_reward, module_id")
-    .eq("id", lessonId)
-    .single()
-
-  const xpAmount = lesson?.xp_reward ?? 50
-
-  if (existingProgress) {
-    const { error } = await supabase
-      .from("user_progress")
-      .update({ is_completed: true, completed_at: new Date().toISOString(), status: "completed" })
-      .eq("id", existingProgress.id)
-
-    if (error) return { error: error.message }
-  } else {
-    const { error } = await supabase
-      .from("user_progress")
-      .insert({
-        user_id: user.id,
-        lesson_id: lessonId,
-        status: "completed",
-        is_completed: true,
-        completed_at: new Date().toISOString(),
-        progress_percent: 100,
-      })
-
-    if (error) return { error: error.message }
-  }
-
-  const xpResult = await awardXP(user.id, xpAmount)
-
-  // Check if all lessons in the formation are now completed → issue certificate.
-  // Optimizado: antes ejecutaba DOS veces la misma cadena modules→lessons con
-  // awaits anidados dentro de .in(). Ahora: 3 queries lineales sin duplicar.
-  let certificateIssued = false
-  if (lesson?.module_id) {
-    const { data: formation } = await supabase
-      .from("modules")
-      .select("formation_id")
-      .eq("id", lesson.module_id)
-      .single()
-
-    if (formation?.formation_id) {
-      // 1) Módulos de la formación
-      const { data: mods } = await supabase
-        .from("modules")
-        .select("id")
-        .eq("formation_id", formation.formation_id)
-      const moduleIds = (mods ?? []).map((m) => m.id)
-
-      if (moduleIds.length > 0) {
-        // 2) Lecciones publicadas de esos módulos (una sola vez)
-        const { data: less } = await supabase
-          .from("lessons")
-          .select("id")
-          .eq("is_published", true)
-          .in("module_id", moduleIds)
-        const lessonIds = (less ?? []).map((l) => l.id)
-        const totalLessons = lessonIds.length
-
-        if (totalLessons > 0) {
-          // 3) Cuántas de esas completó el usuario
-          const { count: completedLessons } = await supabase
-            .from("user_progress")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id)
-            .eq("is_completed", true)
-            .in("lesson_id", lessonIds)
-
-          if (completedLessons && completedLessons >= totalLessons) {
-            // Issue certificate (ignore duplicate conflict)
-            const { error: certError } = await supabase
-              .from("certificates")
-              .insert({ user_id: user.id, formation_id: formation.formation_id })
-
-            if (!certError) certificateIssued = true
-          }
-        }
-      }
-    }
-  }
+  const { data, error } = await supabase.rpc("complete_lesson", { p_lesson_id: lessonId })
+  if (error || !data) return { error: "No se pudo completar la lección. Comprueba tu acceso e inténtalo de nuevo." }
+  const result = data as { alreadyCompleted: boolean; xpEarned: number; leveledUp: boolean; certificateIssued: boolean }
 
   // Revalidaciones: efecto secundario que NO afecta el valor devuelto.
   // Se difieren con after() para no añadir latencia a la respuesta del usuario.
@@ -122,13 +31,7 @@ export async function markLessonCompleted(lessonId: string, slug: string) {
     revalidatePath("/quest")
   })
 
-  return {
-    success: true,
-    alreadyCompleted: false,
-    xpEarned: xpAmount,
-    leveledUp: xpResult?.leveledUp ?? false,
-    certificateIssued,
-  }
+  return { success: true, ...result }
 }
 
 export async function addLessonComment(formData: FormData, lessonId: string, slug: string) {
@@ -136,6 +39,9 @@ export async function addLessonComment(formData: FormData, lessonId: string, slu
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return { error: "No autorizado" }
+
+  const access = await supabase.rpc("can_access_lesson", { p_lesson_id: lessonId })
+  if (access.error || !access.data) return { error: "Esta lección no está disponible." }
 
   const parsed = addCommentSchema.safeParse({
     content: formData.get("content"),
@@ -172,6 +78,10 @@ export async function addCommentReply(parentId: string, content: string, lessonI
     return { error: parsed.error.issues[0]?.message ?? "Respuesta inválida." }
   }
 
+  const access = await supabase.rpc("can_access_lesson", { p_lesson_id: lessonId })
+  if (access.error || !access.data) return { error: "Esta lección no está disponible." }
+  const { data: parent } = await supabase.from("reflections").select("id").eq("id",parentId).eq("lesson_id",lessonId).eq("is_public",true).maybeSingle()
+  if (!parent) return { error: "El comentario original no está disponible." }
   const { error } = await supabase
     .from("reflections")
     .insert({

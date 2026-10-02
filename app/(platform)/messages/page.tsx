@@ -16,7 +16,7 @@ export default async function MessagesPage() {
   const conversations = await listConversations(user.id)
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100vh)] flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto md:border-x md:border-border/60">
+    <div className="messaging-workspace flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto ">
       {/* Columna Izquierda: Lista de conversaciones (en móvil ocupa toda la pantalla; en desktop 360px-400px) */}
       <div className="w-full md:w-[380px] lg:w-[420px] h-full shrink-0">
         <ConversationsInbox

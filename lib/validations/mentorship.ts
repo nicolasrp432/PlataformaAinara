@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const mentorshipCheckoutSchema = z.object({
-  mentorId: z.string().min(1, "Mentor requerido."),
+  mentorId: z.string().uuid("Mentor inválido."),
   scheduledAt: z
     .string()
     .min(1, "Fecha requerida.")
@@ -11,3 +11,8 @@ export const mentorshipCheckoutSchema = z.object({
 })
 
 export type MentorshipCheckoutInput = z.infer<typeof mentorshipCheckoutSchema>
+
+export const mentorshipRequestSchema = z.object({
+  mentorId: z.string().uuid().optional(),
+  notes: z.string().trim().min(10,"Describe tu consulta con al menos 10 caracteres.").max(1000,"Máximo 1000 caracteres."),
+})

@@ -40,13 +40,19 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Datos de nacimiento:</strong> fecha, hora y ciudad, únicamente
-          si decides usar la carta natal. Son opcionales y puedes borrarlos.
+          si decides usar la carta natal. Son opcionales y puedes borrarlos. La fecha, hora, ciudad y carta natal no se muestran en el perfil de comunidad.
         </li>
         <li>
           <strong>Diario de reflexión:</strong> tu estado de ánimo diario y lo que
           escribes. Es <strong>estrictamente privado</strong>: la base de datos
           impide técnicamente que otra persona lo lea, incluido el resto de
           usuarias.
+        </li>
+        <li>
+          <strong>Rueda de la vida:</strong> las puntuaciones que eliges en ocho
+          áreas personales, tu prioridad y la intención que escribes. Estas
+          evaluaciones son privadas, están asociadas a tu cuenta y se incluyen
+          en la exportación de tus datos.
         </li>
         <li>
           <strong>Actividad formativa:</strong> lecciones vistas, progreso, XP,
@@ -63,7 +69,7 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Consultas al asistente de IA:</strong> los mensajes que le
-          escribes se envían al proveedor del modelo para generar la respuesta.
+          escribes, el historial de esa conversación y el contenido disponible de la clase se envían al proveedor del modelo para generar la respuesta. El asistente puede usar tu nombre y nivel para personalizar el acompañamiento; no recibe tu diario privado, tus mensajes con otras personas ni tus datos de nacimiento.
         </li>
       </ul>
       <p>
@@ -163,7 +169,7 @@ export default function PrivacyPage() {
             <td>UE / EE. UU.</td>
           </tr>
           <tr>
-            <td>Groq</td>
+            <td>Google Gemini / Groq</td>
             <td>Modelo de lenguaje del asistente de IA</td>
             <td>EE. UU.</td>
           </tr>

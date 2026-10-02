@@ -53,9 +53,9 @@ export default async function PlatformLayout({
 
   const userData = {
     id: user.id,
-    full_name: user.user_metadata?.full_name || profile?.full_name || "Usuario",
+    full_name: profile?.full_name || user.user_metadata?.full_name || "Usuario",
     email: user.email || "",
-    avatarUrl: user.user_metadata?.avatar_url || profile?.avatar_url,
+    avatarUrl: profile?.avatar_url || user.user_metadata?.avatar_url,
     role: profile?.role || "student",
     level: profile?.level || 1,
     xp: profile?.xp ?? 0,
@@ -64,7 +64,7 @@ export default async function PlatformLayout({
   const streak = profile?.streak_days || 0
 
   return (
-    <UserStoreProvider>
+    <UserStoreProvider key={user.id}>
       {/* Hydrate client store with server-fetched user data */}
       <HydrateStore
         xp={profile?.xp ?? 0}
@@ -76,12 +76,12 @@ export default async function PlatformLayout({
           la campana y el badge de Mensajes se renderizan por duplicado entre
           sidebar y navegación móvil. */}
       <NotificationsProvider userId={user.id}>
-        <div className="min-h-screen bg-background">
+        <div className="ainara-platform min-h-screen bg-background">
           <PlatformSidebar user={userData} streak={streak} hasFullAccess={isMember} />
           <MobileTopBar user={userData} streak={streak} />
           {/* --sidebar-w lo escribe el sidebar al colapsar; en móvil siempre 0 */}
           <main className="transition-[padding] duration-300 md:pl-[var(--sidebar-w,16rem)]">
-            <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 md:px-6 md:pb-10 md:pt-6">
+            <div className="mx-auto w-full max-w-7xl px-4 pb-28 pt-6 md:px-8 md:pb-12 md:pt-10 lg:px-10">
               {/* Frontera de streaming: el cascarón (sidebar, cabecera y barra
                   inferior) se pinta sin esperar a los datos de la página. */}
               <Suspense fallback={<PageFallback />}>{children}</Suspense>

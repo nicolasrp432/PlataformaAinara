@@ -1,38 +1,13 @@
-import { redirect } from "next/navigation"
-import { AdminSidebar } from "@/components/layout/admin-sidebar"
-import { createClient } from "@/lib/supabase/server"
+import { AdminSidebar } from "@/components/layout/admin-sidebar";
+import { requireAdmin } from "@/lib/guards";
+import { Suspense } from "react";
 
 export default async function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const supabase = await createClient()
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
-
-  // Redirect if not authenticated
-  if (error || !user) {
-    redirect("/login")
-  }
-
-  // Check if user is admin
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
-  // El rol se lee SOLO de `profiles`. `user_metadata` lo puede escribir el
-  // propio usuario desde el cliente (`supabase.auth.updateUser`), así que
-  // aceptarlo aquí permitía que cualquiera se concediera el panel de
-  // administración.
-  const isAdmin = profile?.role === "admin"
-
-  // Redirect if not admin
-  if (!isAdmin) {
-    redirect("/dashboard")
-  }
+  const user = await requireAdmin();
 
   const userData = {
     id: user.id,
@@ -40,16 +15,24 @@ export default async function AdminLayout({
     email: user.email || "",
     avatarUrl: user.user_metadata?.avatar_url as string | null,
     role: "admin" as const,
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="ainara-admin min-h-screen bg-background">
       <AdminSidebar user={userData} />
-      <main className="md:pl-64 transition-[padding] duration-300 ease-out">
-        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-20 md:px-6 md:pt-6">
-          {children}
+      <main className="md:pl-[var(--admin-sidebar-w,16rem)] transition-[padding] duration-200">
+        <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-6 md:px-8 md:pt-10 lg:px-10">
+          <Suspense
+            fallback={
+              <div role="status" className="admin-section-loading">
+                Cargando esta sección…
+              </div>
+            }
+          >
+            {children}
+          </Suspense>
         </div>
       </main>
     </div>
-  )
+  );
 }
