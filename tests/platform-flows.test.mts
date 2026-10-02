@@ -7,6 +7,11 @@ import { lessonResources } from "../lib/lesson-resources.ts";
 import { aiChatSchema } from "../lib/validations/ai-chat.ts";
 import { profileSchema } from "../lib/validations/profile.ts";
 import { commentContentSchema } from "../lib/validations/comments.ts";
+import {
+  aiChatContextKey,
+  conversationIdForContext,
+  isUnavailableConversationCode,
+} from "../lib/ai-chat-client.ts";
 
 test("AI streams survive fragmented UTF-8, CRLF and multiple frames in a chunk", () => {
   const raw =
@@ -56,6 +61,22 @@ test("AI extracts actual provider text and rejects provider errors", () => {
   );
   assert.equal(providerText('{"choices":[]}', "groq"), "");
   assert.throws(() => providerText('{"error":{"message":"failed"}}', "gemini"));
+});
+test("AI chat never reuses a conversation while navigating rapidly between contexts", () => {
+  const lessonA = aiChatContextKey("lesson-a", "formation-a");
+  const lessonB = aiChatContextKey("lesson-b", "formation-a");
+  const conversation = { id: "conversation-a", contextKey: lessonA };
+  assert.equal(conversationIdForContext(conversation, lessonA), "conversation-a");
+  assert.equal(conversationIdForContext(conversation, lessonB), undefined);
+  assert.equal(
+    conversationIdForContext(
+      conversation,
+      aiChatContextKey(undefined, "formation-b"),
+    ),
+    undefined,
+  );
+  assert.equal(isUnavailableConversationCode("CONVERSATION_NOT_FOUND"), true);
+  assert.equal(isUnavailableConversationCode("CONVERSATION_CONTEXT_MISMATCH"), true);
 });
 test("mentoring converts wall time independently of the server timezone and skips DST gaps", () => {
   assert.equal(

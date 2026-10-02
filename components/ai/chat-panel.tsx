@@ -118,6 +118,7 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
     const trimmed = textToSend.trim()
     if (!trimmed || requestRef.current || isRestoring) return
     const abort = new AbortController()
+    const requestContextKey = contextKey
     requestRef.current = abort
     const assistantId = crypto.randomUUID()
     setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "user", content: trimmed, rawPrompt: trimmed }, { id: assistantId, role: "assistant", content: "", rawPrompt: trimmed }])
@@ -133,13 +134,17 @@ export function ChatPanel({ lessonId, formationId, className }: ChatPanelProps) 
       }
       if (!res.body) throw Object.assign(new Error(), { code: "CONNECTION_LOST" })
       const convId = res.headers.get("X-Conversation-Id")
-      if (convId) setConversationId(convId)
+      if (convId && contextKeyRef.current === requestContextKey) setConversation({ id: convId, contextKey: requestContextKey })
       reader = res.body.getReader()
       const parser = new SseDecoder()
       let completed = false
       let received = false
       const consume = (events: string[]) => {
         for (const event of events) {
+          if (contextKeyRef.current !== requestContextKey) {
+            abort.abort()
+            throw new DOMException("La navegación canceló la solicitud anterior.", "AbortError")
+          }
           if (event === "[DONE]") { completed = true; break }
           const data = JSON.parse(event)
           if (data.error) throw Object.assign(new Error(), { code: data.code ?? "TEMPORARY_DELAY" })
