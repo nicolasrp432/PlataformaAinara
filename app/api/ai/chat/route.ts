@@ -195,6 +195,7 @@ export async function POST(req: NextRequest) {
     if (!hasProvider)
       return NextResponse.json(
         {
+          code: "CONFIG_UNAVAILABLE",
           error:
             "El asistente no está disponible ahora. Puedes continuar la clase o volver a intentarlo más tarde.",
         },
@@ -219,6 +220,7 @@ export async function POST(req: NextRequest) {
     if (!upstream)
       return NextResponse.json(
         {
+          code: "TEMPORARY_DELAY",
           error:
             "El asistente está temporalmente ocupado. Inténtalo de nuevo en unos minutos.",
         },
@@ -278,6 +280,7 @@ export async function POST(req: NextRequest) {
           if (!signal.aborted)
             emit(
               JSON.stringify({
+                code: "TEMPORARY_DELAY",
                 error:
                   "La respuesta se interrumpió. Puedes volver a intentarlo.",
               }),
@@ -307,7 +310,7 @@ export async function POST(req: NextRequest) {
     });
   } catch {
     return NextResponse.json(
-      { error: "No se pudo recuperar tu conversación. Inténtalo de nuevo." },
+      { code: "TEMPORARY_DELAY", error: "No se pudo completar la respuesta. Inténtalo de nuevo." },
       { status: 503 },
     );
   }
@@ -374,6 +377,7 @@ export async function GET(req: NextRequest) {
   } catch {
     return NextResponse.json(
       {
+        code: "HISTORY_UNAVAILABLE",
         error:
           "No se pudo recuperar el historial. Puedes empezar una conversación nueva.",
       },
