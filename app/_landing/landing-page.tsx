@@ -193,8 +193,9 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
                   </h2>
                 </div>
                 <p className="max-w-sm text-muted-foreground">
-                  Explora el diario, prueba la rueda de la vida y descubre cómo
-                  se conecta tu aprendizaje.
+                  Explora el diario, prueba la rueda de la vida y consulta tu
+                  carta natal como herramientas complementarias para observar
+                  patrones, prioridades y preguntas personales.
                 </p>
               </div>
               <ExperiencePreview />
@@ -218,7 +219,7 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
                   {
                     icon: Sparkles,
                     title: "Carta natal",
-                    body: "Otra herramienta de exploración personal en tu perfil.",
+                    body: "Un mapa astrológico calculado con tu fecha, hora y lugar de nacimiento para explorar símbolos y preguntas sobre ti. Se plantea como reflexión personal, no como diagnóstico ni predicción.",
                   },
                 ].map((item) => (
                   <div key={item.title}>
