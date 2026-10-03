@@ -241,14 +241,18 @@ export default function LessonEditorPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descripcion</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   value={lesson.description || ""}
                   onChange={(e) => setLesson({ ...lesson, description: e.target.value })}
-                  placeholder="Describe el contenido de esta leccion..."
-                  rows={4}
+                  placeholder={"Escribe la descripción en Markdown. Ej.: ## Título\n**Idea clave**\n- Punto uno"}
+                  rows={7}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Admite Markdown: # títulos, ## subtítulos, **negrita**, *cursiva*, listas y código.
+                  Los usuarios verán el formato ya interpretado.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

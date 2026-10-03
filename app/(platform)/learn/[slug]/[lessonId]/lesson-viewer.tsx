@@ -45,10 +45,10 @@ import dynamic from "next/dynamic"
 const VideoPlayer = dynamic(() => import("@/components/video/video-player").then((mod) => mod.VideoPlayer), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full aspect-video flex items-center justify-center bg-black/90 rounded-xl border border-white/10">
+    <div className="flex aspect-video h-full w-full items-center justify-center bg-muted">
       <div className="flex flex-col items-center gap-2.5">
         <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-xs text-white/50 tracking-wider">Cargando reproductor...</p>
+        <p className="text-xs tracking-wider text-muted-foreground">Cargando reproductor...</p>
       </div>
     </div>
   ),
@@ -487,10 +487,10 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               <RichText text={lesson.transcript || lesson.description || "El contenido de esta lectura está en preparación."} className="text-base leading-relaxed" />
             </article>
           ) : (
-            /* Video Player / Theater Screen */
-            <div className="overflow-hidden bg-black/95 shadow-inner md:px-6 md:py-6">
-              <div className="w-full max-w-5xl mx-auto">
-                <div className="aspect-video w-full">
+            /* Video Player */
+            <div className="w-full bg-background">
+              <div className="w-full">
+                <div className="aspect-video w-full overflow-hidden">
                   {lesson.videoUrl ? (
                     <VideoPlayer
                       src={lesson.videoUrl}
@@ -574,9 +574,10 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-5">
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
-                    {lesson.description}
-                  </p>
+                  <RichText
+                    text={lesson.description}
+                    className="text-xs leading-relaxed text-muted-foreground sm:text-sm"
+                  />
                 </CardContent>
               </Card>
             )}
