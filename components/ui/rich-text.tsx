@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 function inline(text: string): ReactNode[] {
   return text
-    .split(/(\\*\\*[^*]+\\*\\*|\\*[^*]+\\*|`[^`]+`)/g)
+    .split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g)
     .filter(Boolean)
     .map((part, index) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -32,30 +32,30 @@ export function RichText({
 }) {
   return (
     <div className={`rich-text space-y-3 ${className}`}>
-      {text.split(/\\n\\s*\\n/).map((block, index) => {
-        const lines = block.split("\\n")
+      {text.split(/\n\s*\n/).map((block, index) => {
+        const lines = block.split("\n")
 
-        if (lines.every((line) => /^\\s*[-•*]\\s/.test(line))) {
+        if (lines.every((line) => /^\s*[-•*]\s/.test(line))) {
           return (
             <ul key={index} className="ml-5 list-disc space-y-1">
               {lines.map((line, i) => (
-                <li key={i}>{inline(line.replace(/^\\s*[-•*]\\s/, ""))}</li>
+                <li key={i}>{inline(line.replace(/^\s*[-•*]\s/, ""))}</li>
               ))}
             </ul>
           )
         }
 
-        if (lines.every((line) => /^\\s*\\d+[.)]\\s/.test(line))) {
+        if (lines.every((line) => /^\s*\d+[.)]\s/.test(line))) {
           return (
             <ol key={index} className="ml-5 list-decimal space-y-1">
               {lines.map((line, i) => (
-                <li key={i}>{inline(line.replace(/^\\s*\\d+[.)]\\s/, ""))}</li>
+                <li key={i}>{inline(line.replace(/^\s*\d+[.)]\s/, ""))}</li>
               ))}
             </ol>
           )
         }
 
-        const heading = block.match(/^(#{1,3})\\s+([\\s\\S]+)$/)
+        const heading = block.match(/^(#{1,3})\s+([\s\S]+)$/)
         if (heading) {
           const level = heading[1].length
           const content = inline(heading[2])
