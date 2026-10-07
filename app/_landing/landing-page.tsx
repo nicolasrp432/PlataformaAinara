@@ -488,14 +488,15 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
                 </article>
               </CardTilt>
             </div>
-            <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted-foreground">
-              El pago se realiza dentro de tu cuenta a través de Stripe.
-              Consulta las{" "}
-              <Link href="/terms" className="underline">
-                condiciones de compra y acceso
-              </Link>{" "}
-              antes de elegir.
-            </p>
+            <div className="relative z-20 mx-auto mt-14 sm:mt-20 max-w-2xl text-center">
+              <p className="inline-block rounded-full border border-border/70 bg-card/90 px-6 py-3 text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
+                El pago se realiza dentro de tu cuenta a través de Stripe. Consulta las{" "}
+                <Link href="/terms" className="font-medium text-foreground underline hover:text-primary-strong">
+                  condiciones de compra y acceso
+                </Link>{" "}
+                antes de elegir.
+              </p>
+            </div>
           </section>
 
           <section className="sales-section sales-soft">

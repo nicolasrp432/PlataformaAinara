@@ -4,7 +4,6 @@ import Image from "next/image"
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion"
 import { useState, type PointerEvent } from "react"
 import { GoldMatrixGlitch } from "./gold-matrix-glitch"
-import { Sparkles } from "lucide-react"
 
 export function HeroVisual() {
   const reduced = useReducedMotion()
@@ -130,17 +129,6 @@ export function HeroVisual() {
               "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(246, 210, 92, 0.25) 3px, rgba(246, 210, 92, 0.25) 4px)",
           }}
         />
-
-        {/* Interactive hover hint badge */}
-        <motion.div
-          className="pointer-events-none absolute bottom-4 left-4 z-30 flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-[#1f1a14]/80 px-3 py-1 text-[11px] font-semibold tracking-wider text-[#F6D25C] shadow-lg backdrop-blur-md"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <Sparkles className="h-3 w-3 animate-spin text-amber-300" style={{ animationDuration: "6s" }} />
-          <span>DESDE LA RAÍZ · VÓRTICE DORADO</span>
-        </motion.div>
       </motion.div>
 
       {/* Orbiting Golden Celestial Particles */}

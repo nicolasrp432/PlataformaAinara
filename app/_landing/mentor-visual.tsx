@@ -3,7 +3,6 @@
 import Image from "next/image"
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion"
 import { useState, type PointerEvent } from "react"
-import { Sparkles, Compass } from "lucide-react"
 import { GoldMatrixGlitch } from "./gold-matrix-glitch"
 
 interface MentorVisualProps {
@@ -162,37 +161,6 @@ export function MentorVisual({ portrait, alt, experienceLabel }: MentorVisualPro
             <span>{experienceLabel}</span>
           </motion.div>
         </div>
-
-        {/* Floating Note with Golden Sparkle */}
-        <motion.div
-          className="mentor-frame-note pointer-events-auto absolute -bottom-5 right-2 sm:-right-4 z-30 flex max-w-[15rem] items-center gap-3 rounded-2xl border border-amber-300/40 bg-[#fffdf2] p-3.5 text-xs font-bold text-[#29251e] shadow-[0_15px_40px_rgba(0,0,0,0.35)] backdrop-blur-md transition-transform duration-300 hover:scale-105"
-          animate={
-            reduced
-              ? undefined
-              : {
-                  y: [0, -5, 0],
-                }
-          }
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        >
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFE885] to-[#F6D25C] text-[#29251e] shadow-md">
-            <Sparkles className="h-5 w-5 animate-pulse" />
-          </div>
-          <div>
-            <span className="block text-[11px] font-medium tracking-wide text-amber-900/70">METODOLOGÍA</span>
-            <span className="text-sm font-semibold leading-tight text-[#29251e]">Presencia, escucha y dirección</span>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* Orbiting celestial sparkles */}
-      <motion.div
-        className="pointer-events-none absolute -bottom-3 -left-3 z-30 flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-[#29251e]/80 px-3 py-1 text-[11px] font-medium text-amber-200 shadow-lg backdrop-blur-md"
-        animate={reduced ? undefined : { y: [0, 4, 0] }}
-        transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-      >
-        <Compass className="h-3 w-3 text-amber-300" />
-        <span>Mentoría personalizada</span>
       </motion.div>
     </motion.div>
   )
