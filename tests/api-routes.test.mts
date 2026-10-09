@@ -5,6 +5,10 @@ import { fileURLToPath } from "node:url";
 
 for (const [name, script] of [
   [
+    "Admin routes protect quiz answers and certificate PDF downloads",
+    "admin-api",
+  ],
+  [
     "AI route enforces ownership/access and handles real, empty and failed provider streams",
     "ai-api",
   ],

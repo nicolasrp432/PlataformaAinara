@@ -1,119 +1,176 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
-  CheckCircle2, XCircle, Sparkles, HelpCircle,
-  ChevronRight, RefreshCw, Trophy, AlertCircle, Loader2,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { toast } from "sonner"
+  CheckCircle2,
+  XCircle,
+  Sparkles,
+  HelpCircle,
+  ChevronRight,
+  RefreshCw,
+  Trophy,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface QuizOption {
-  id: string
-  option_text: string
-  sort_order: number
+  id: string;
+  option_text: string;
+  sort_order: number;
+  is_correct?: boolean;
 }
 
 interface QuizQuestion {
-  id: string
-  question: string
-  type: string
-  explanation: string | null
-  sort_order: number
-  options: QuizOption[]
+  id: string;
+  question: string;
+  type: string;
+  explanation: string | null;
+  sort_order: number;
+  options: QuizOption[];
 }
 
-interface QuizData {
-  id: string
-  title: string
-  description: string | null
-  passing_score: number
-  xp_reward: number
-  questions: QuizQuestion[]
+export interface QuizData {
+  id: string;
+  title: string;
+  description: string | null;
+  passing_score: number;
+  xp_reward: number;
+  questions: QuizQuestion[];
 }
 
 interface AttemptResult {
-  score: number
-  passed: boolean
-  passingScore: number
-  results: Record<string, { selected: string; correct: string; isCorrect: boolean }>
-  xpEarned: number
-  leveledUp: boolean
+  score: number;
+  passed: boolean;
+  passingScore: number;
+  results: Record<
+    string,
+    {
+      selected: string;
+      correct: string;
+      isCorrect: boolean;
+      explanation?: string | null;
+    }
+  >;
+  xpEarned: number;
+  leveledUp: boolean;
 }
 
 interface QuizPlayerProps {
-  lessonId: string
-  formationSlug: string
-  formationId: string
+  lessonId: string;
+  formationSlug: string;
+  formationId: string;
+  previewQuiz?: QuizData;
+  onPassed?: () => void;
 }
 
-type Stage = "loading" | "error" | "intro" | "playing" | "results"
+type Stage = "loading" | "error" | "intro" | "playing" | "results";
 
-export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
-  const [stage, setStage] = useState<Stage>("loading")
-  const [quiz, setQuiz] = useState<QuizData | null>(null)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState<AttemptResult | null>(null)
-  const [bestScore, setBestScore] = useState<number | null>(null)
+export function QuizPlayer({
+  lessonId,
+  formationSlug,
+  previewQuiz,
+  onPassed,
+}: QuizPlayerProps) {
+  const [stage, setStage] = useState<Stage>("loading");
+  const [quiz, setQuiz] = useState<QuizData | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<AttemptResult | null>(null);
+  const [bestScore, setBestScore] = useState<number | null>(null);
 
   const loadQuiz = useCallback(async () => {
-    setStage("loading")
-    try {
-      const res = await fetch(`/api/quiz/${lessonId}`)
-      if (!res.ok) {
-        setStage("error")
-        return
-      }
-      const { quiz: quizData, bestAttempt } = await res.json()
-      setQuiz(quizData)
-      if (bestAttempt) setBestScore(bestAttempt.score)
-      setStage("intro")
-    } catch {
-      setStage("error")
+    if (previewQuiz) {
+      setQuiz(previewQuiz);
+      setStage("intro");
+      return;
     }
-  }, [lessonId])
+    setStage("loading");
+    try {
+      const res = await fetch(`/api/quiz/${lessonId}`);
+      if (!res.ok) {
+        setStage("error");
+        return;
+      }
+      const { quiz: quizData, bestAttempt } = await res.json();
+      setQuiz(quizData);
+      if (bestAttempt) setBestScore(bestAttempt.score);
+      setStage("intro");
+    } catch {
+      setStage("error");
+    }
+  }, [lessonId, previewQuiz]);
 
   useEffect(() => {
-    loadQuiz()
-  }, [loadQuiz])
+    loadQuiz();
+  }, [loadQuiz]);
 
   const startQuiz = () => {
-    setCurrentIndex(0)
-    setAnswers({})
-    setSelectedOption(null)
-    setResult(null)
-    setStage("playing")
-  }
+    setCurrentIndex(0);
+    setAnswers({});
+    setSelectedOption(null);
+    setResult(null);
+    setStage("playing");
+  };
 
   const handleOptionSelect = (optionId: string) => {
-    setSelectedOption(optionId)
-  }
+    setSelectedOption(optionId);
+  };
 
   const handleNext = () => {
-    if (!selectedOption || !quiz) return
+    if (!selectedOption || !quiz) return;
 
-    const currentQuestion = quiz.questions[currentIndex]
-    const newAnswers = { ...answers, [currentQuestion.id]: selectedOption }
-    setAnswers(newAnswers)
-    setSelectedOption(null)
+    const currentQuestion = quiz.questions[currentIndex];
+    const newAnswers = { ...answers, [currentQuestion.id]: selectedOption };
+    setAnswers(newAnswers);
+    setSelectedOption(null);
 
     if (currentIndex < quiz.questions.length - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(currentIndex + 1);
     } else {
-      submitQuiz(newAnswers)
+      submitQuiz(newAnswers);
     }
-  }
+  };
 
   const submitQuiz = async (finalAnswers: Record<string, string>) => {
-    if (!quiz) return
-    setSubmitting(true)
+    if (!quiz) return;
+    if (previewQuiz) {
+      const results = Object.fromEntries(
+        quiz.questions.map((q) => {
+          const correct = q.options.find((o) => o.is_correct)?.id ?? "";
+          return [
+            q.id,
+            {
+              selected: finalAnswers[q.id],
+              correct,
+              isCorrect: finalAnswers[q.id] === correct,
+            },
+          ];
+        }),
+      );
+      const score = Math.round(
+        (100 * Object.values(results).filter((r) => r.isCorrect).length) /
+          quiz.questions.length,
+      );
+      setResult({
+        score,
+        passed: score >= quiz.passing_score,
+        passingScore: quiz.passing_score,
+        results,
+        xpEarned: 0,
+        leveledUp: false,
+      });
+      setStage("results");
+      return;
+    }
+    setSubmitting(true);
     try {
       const res = await fetch("/api/quiz/submit", {
         method: "POST",
@@ -124,30 +181,35 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
           formationSlug,
           answers: finalAnswers,
         }),
-      })
+      });
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: "Error al enviar." }))
-        toast.error(error ?? "Error al enviar el quiz.")
-        setStage("playing")
-        return
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: "Error al enviar." }));
+        toast.error(error ?? "Error al enviar el quiz.");
+        setStage("playing");
+        return;
       }
-      const data: AttemptResult = await res.json()
-      setResult(data)
-      setBestScore((prev) => (prev === null || data.score > prev ? data.score : prev))
-      setStage("results")
+      const data: AttemptResult = await res.json();
+      setResult(data);
+      if (data.passed) onPassed?.();
+      setBestScore((prev) =>
+        prev === null || data.score > prev ? data.score : prev,
+      );
+      setStage("results");
 
       if (data.xpEarned > 0) {
         toast.success(`¡Quiz superado! +${data.xpEarned} XP`, {
           description: data.leveledUp ? "¡Subiste de nivel! 🎉" : undefined,
-        })
+        });
       }
     } catch {
-      toast.error("Error de conexión.")
-      setStage("playing")
+      toast.error("Error de conexión.");
+      setStage("playing");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   if (stage === "loading") {
     return (
@@ -155,7 +217,7 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm">Cargando quiz...</p>
       </div>
-    )
+    );
   }
 
   if (stage === "error" || !quiz) {
@@ -167,7 +229,7 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
           <RefreshCw className="h-4 w-4 mr-2" /> Reintentar
         </Button>
       </div>
-    )
+    );
   }
 
   if (stage === "intro") {
@@ -178,8 +240,15 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
             <HelpCircle className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <Badge variant="outline" className="text-primary border-primary/40 mb-1">Quiz</Badge>
-            <h2 className="text-xl font-semibold text-foreground">{quiz.title}</h2>
+            <Badge
+              variant="outline"
+              className="text-primary border-primary/40 mb-1"
+            >
+              Quiz
+            </Badge>
+            <h2 className="text-xl font-semibold text-foreground">
+              {quiz.title}
+            </h2>
           </div>
           <div className="ml-auto flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -188,44 +257,61 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
         </div>
 
         {quiz.description && (
-          <p className="text-muted-foreground text-sm leading-relaxed">{quiz.description}</p>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {quiz.description}
+          </p>
         )}
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
-            <p className="text-xl sm:text-2xl font-bold text-foreground">{quiz.questions.length}</p>
-            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">Preguntas</p>
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
+              {quiz.questions.length}
+            </p>
+            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">
+              Preguntas
+            </p>
           </Card>
           <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
-            <p className="text-xl sm:text-2xl font-bold text-foreground">{quiz.passing_score}%</p>
-            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">Para aprobar</p>
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
+              {quiz.passing_score}%
+            </p>
+            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">
+              Para aprobar
+            </p>
           </Card>
           <Card className="border-border/50 bg-card/50 text-center p-3 sm:p-4">
             <p className="text-xl sm:text-2xl font-bold text-primary">
               {bestScore !== null ? `${bestScore}%` : "—"}
             </p>
-            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">Mejor intento</p>
+            <p className="text-2xs sm:text-xs text-muted-foreground mt-1 leading-tight">
+              Mejor intento
+            </p>
           </Card>
         </div>
 
-        <Button onClick={startQuiz} className="w-full bg-primary hover:bg-primary/90">
+        <Button
+          onClick={startQuiz}
+          className="w-full bg-primary hover:bg-primary/90"
+        >
           {bestScore !== null ? "Intentar de nuevo" : "Comenzar Quiz"}
           <ChevronRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
-    )
+    );
   }
 
   if (stage === "playing") {
-    const currentQuestion = quiz.questions[currentIndex]
-    const progress = ((currentIndex) / quiz.questions.length) * 100
+    const currentQuestion = quiz.questions[currentIndex];
+    const progress = (currentIndex / quiz.questions.length) * 100;
 
     return (
       <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-6">
         {/* Progress header */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Pregunta {currentIndex + 1} de {quiz.questions.length}</span>
+            <span>
+              Pregunta {currentIndex + 1} de {quiz.questions.length}
+            </span>
             <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-1.5" />
@@ -262,41 +348,55 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
           className="w-full bg-primary hover:bg-primary/90"
         >
           {submitting ? (
-            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...
+            </>
           ) : currentIndex < quiz.questions.length - 1 ? (
-            <>Siguiente <ChevronRight className="h-4 w-4 ml-2" /></>
+            <>
+              Siguiente <ChevronRight className="h-4 w-4 ml-2" />
+            </>
           ) : (
-            <>Finalizar Quiz <CheckCircle2 className="h-4 w-4 ml-2" /></>
+            <>
+              Finalizar Quiz <CheckCircle2 className="h-4 w-4 ml-2" />
+            </>
           )}
         </Button>
       </div>
-    )
+    );
   }
 
   // Results stage
   if (stage === "results" && result) {
-    const passed = result.passed
+    const passed = result.passed;
 
     return (
       <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-6">
         {/* Score header */}
-        <div className={cn(
-          "text-center p-6 rounded-2xl border",
-          passed
-            ? "bg-success-soft border-success"
-            : "bg-destructive/10 border-destructive/30",
-        )}>
+        <div
+          className={cn(
+            "text-center p-6 rounded-2xl border",
+            passed
+              ? "bg-success-soft border-success"
+              : "bg-destructive/10 border-destructive/30",
+          )}
+        >
           <div className="flex justify-center mb-3">
-            {passed
-              ? <Trophy className="h-10 w-10 text-success" />
-              : <XCircle className="h-10 w-10 text-destructive/70" />}
+            {passed ? (
+              <Trophy className="h-10 w-10 text-success" />
+            ) : (
+              <XCircle className="h-10 w-10 text-destructive/70" />
+            )}
           </div>
           <p className="text-4xl font-bold text-foreground">{result.score}%</p>
-          <p className={cn(
-            "text-sm font-medium mt-1",
-            passed ? "text-success-strong" : "text-destructive/80",
-          )}>
-            {passed ? "¡Aprobado!" : `No aprobado (mínimo ${result.passingScore}%)`}
+          <p
+            className={cn(
+              "text-sm font-medium mt-1",
+              passed ? "text-success-strong" : "text-destructive/80",
+            )}
+          >
+            {passed
+              ? "¡Aprobado!"
+              : `No aprobado (mínimo ${result.passingScore}%)`}
           </p>
           {result.xpEarned > 0 && (
             <div className="flex items-center justify-center gap-1.5 mt-2 text-sm text-primary">
@@ -308,39 +408,64 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
 
         {/* Answer review */}
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">Revisión de respuestas</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Revisión de respuestas
+          </h3>
           {quiz.questions.map((q) => {
-            const qResult = result.results[q.id]
-            const isCorrect = qResult?.isCorrect
-            const correctOption = q.options.find((o) => o.id === qResult?.correct)
-            const selectedOption = q.options.find((o) => o.id === qResult?.selected)
+            const qResult = result.results[q.id];
+            const isCorrect = qResult?.isCorrect;
+            const correctOption = q.options.find(
+              (o) => o.id === qResult?.correct,
+            );
+            const selectedOption = q.options.find(
+              (o) => o.id === qResult?.selected,
+            );
 
             return (
-              <Card key={q.id} className={cn(
-                "border",
-                isCorrect ? "border-success bg-success-soft" : "border-destructive/20 bg-destructive/5",
-              )}>
+              <Card
+                key={q.id}
+                className={cn(
+                  "border",
+                  isCorrect
+                    ? "border-success bg-success-soft"
+                    : "border-destructive/20 bg-destructive/5",
+                )}
+              >
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start gap-2">
-                    {isCorrect
-                      ? <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                      : <XCircle className="h-4 w-4 text-destructive/70 shrink-0 mt-0.5" />}
-                    <p className="text-sm font-medium text-foreground">{q.question}</p>
+                    {isCorrect ? (
+                      <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-destructive/70 shrink-0 mt-0.5" />
+                    )}
+                    <p className="text-sm font-medium text-foreground">
+                      {q.question}
+                    </p>
                   </div>
                   {!isCorrect && (
                     <div className="ml-6 space-y-1 text-xs text-muted-foreground">
-                      <p>Tu respuesta: <span className="text-destructive/80">{selectedOption?.option_text ?? "—"}</span></p>
-                      <p>Correcta: <span className="text-success-strong">{correctOption?.option_text ?? "—"}</span></p>
+                      <p>
+                        Tu respuesta:{" "}
+                        <span className="text-destructive/80">
+                          {selectedOption?.option_text ?? "—"}
+                        </span>
+                      </p>
+                      <p>
+                        Correcta:{" "}
+                        <span className="text-success-strong">
+                          {correctOption?.option_text ?? "—"}
+                        </span>
+                      </p>
                     </div>
                   )}
-                  {q.explanation && (
+                  {(qResult?.explanation || q.explanation) && (
                     <p className="ml-6 text-xs text-muted-foreground italic border-l-2 border-border pl-2">
-                      {q.explanation}
+                      {qResult?.explanation || q.explanation}
                     </p>
                   )}
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
 
@@ -353,8 +478,8 @@ export function QuizPlayer({ lessonId, formationSlug }: QuizPlayerProps) {
           Intentar de nuevo
         </Button>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }

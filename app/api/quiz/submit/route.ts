@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const { data: quiz, error } = await admin
       .from("quizzes")
       .select(
-        "id,passing_score,xp_reward,lesson_id,quiz_questions(id,quiz_options(id,is_correct))",
+        "id,passing_score,xp_reward,lesson_id,quiz_questions(id,explanation,quiz_options(id,is_correct))",
       )
       .eq("id", input.quizId)
       .eq("lesson_id", input.lessonId)
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       );
     const questions = quiz.quiz_questions as Array<{
       id: string;
+      explanation: string | null;
       quiz_options: Array<{ id: string; is_correct: boolean }>;
     }>;
     if (!questions.length)
@@ -66,7 +67,12 @@ export async function POST(req: NextRequest) {
     let correct = 0;
     const results: Record<
       string,
-      { selected: string; correct: string; isCorrect: boolean }
+      {
+        selected: string;
+        correct: string;
+        isCorrect: boolean;
+        explanation: string | null;
+      }
     > = {};
     for (const question of questions) {
       const selected = input.answers[question.id] ?? "";
@@ -74,19 +80,22 @@ export async function POST(req: NextRequest) {
         question.quiz_options.find((option) => option.is_correct)?.id ?? "";
       const isCorrect = Boolean(answer && selected === answer);
       if (isCorrect) correct++;
-      results[question.id] = { selected, correct: answer, isCorrect };
+      results[question.id] = {
+        selected,
+        correct: answer,
+        isCorrect,
+        explanation: question.explanation,
+      };
     }
     const score = Math.round((correct / questions.length) * 100);
     const passed = score >= quiz.passing_score;
-    const saved = await admin
-      .from("quiz_attempts")
-      .insert({
-        user_id: user.id,
-        quiz_id: quiz.id,
-        score,
-        passed,
-        answers: input.answers,
-      });
+    const saved = await admin.from("quiz_attempts").insert({
+      user_id: user.id,
+      quiz_id: quiz.id,
+      score,
+      passed,
+      answers: input.answers,
+    });
     if (saved.error) throw new Error("Attempt was not saved");
     let xpEarned = 0;
     let leveledUp = false;

@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useRef, useCallback, useEffect, useTransition } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useState, useRef, useCallback, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -18,106 +18,128 @@ import {
   Share2,
   Lightbulb,
   Lock,
-} from "lucide-react"
-import type { ContentType } from "@/types"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+} from "lucide-react";
+import type { ContentType } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { addLessonComment, markLessonCompleted } from "./actions"
-import { cn } from "@/lib/utils"
-import { toast } from "sonner"
-import { RichText } from "@/components/ui/rich-text"
-import { CommentThread, type ThreadedComment } from "@/components/comments/comment-thread"
-import { useUserStore } from "@/lib/store/user-store"
-import dynamic from "next/dynamic"
+} from "@/components/ui/sheet";
+import { addLessonComment, markLessonCompleted } from "./actions";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { RichText } from "@/components/ui/rich-text";
+import {
+  CommentThread,
+  type ThreadedComment,
+} from "@/components/comments/comment-thread";
+import { useUserStore } from "@/lib/store/user-store";
+import dynamic from "next/dynamic";
 
-const VideoPlayer = dynamic(() => import("@/components/video/video-player").then((mod) => mod.VideoPlayer), {
-  ssr: false,
-  loading: () => (
-    <div className="flex aspect-video h-full w-full items-center justify-center bg-muted">
-      <div className="flex flex-col items-center gap-2.5">
-        <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-xs tracking-wider text-muted-foreground">Cargando reproductor...</p>
+const VideoPlayer = dynamic(
+  () =>
+    import("@/components/video/video-player").then((mod) => mod.VideoPlayer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex aspect-video h-full w-full items-center justify-center bg-muted">
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-xs tracking-wider text-muted-foreground">
+            Cargando reproductor...
+          </p>
+        </div>
       </div>
-    </div>
-  ),
-})
+    ),
+  },
+);
 
-const ChatPanel = dynamic(() => import("@/components/ai/chat-panel").then((mod) => mod.ChatPanel), {
-  ssr: false,
-  loading: () => <div className="h-full w-full shimmer rounded-xl" />,
-})
+const ChatPanel = dynamic(
+  () => import("@/components/ai/chat-panel").then((mod) => mod.ChatPanel),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full shimmer rounded-xl" />,
+  },
+);
 
-const ExerciseViewer = dynamic(() => import("@/components/exercises/exercise-viewer").then((mod) => mod.ExerciseViewer), {
-  ssr: false,
-  loading: () => <div className="h-[400px] w-full shimmer rounded-xl" />,
-})
+const ExerciseViewer = dynamic(
+  () =>
+    import("@/components/exercises/exercise-viewer").then(
+      (mod) => mod.ExerciseViewer,
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-[400px] w-full shimmer rounded-xl" />,
+  },
+);
 
-const QuizPlayer = dynamic(() => import("@/components/exercises/quiz-player").then((mod) => mod.QuizPlayer), {
-  ssr: false,
-  loading: () => <div className="h-[400px] w-full shimmer rounded-xl" />,
-})
+const QuizPlayer = dynamic(
+  () =>
+    import("@/components/exercises/quiz-player").then((mod) => mod.QuizPlayer),
+  {
+    ssr: false,
+    loading: () => <div className="h-[400px] w-full shimmer rounded-xl" />,
+  },
+);
 
 interface LessonViewerProps {
   data: {
     lesson: {
-      id: string
-      title: string
-      description: string | null
-      videoUrl: string | null
-      durationSeconds: number | null
-      xpReward: number
-      isCompleted: boolean
-      watchedSeconds: number
-      contentType: ContentType
-      transcript: string | null
-      resources: { title: string; url: string }[]
-    }
+      id: string;
+      title: string;
+      description: string | null;
+      videoUrl: string | null;
+      durationSeconds: number | null;
+      xpReward: number;
+      isCompleted: boolean;
+      watchedSeconds: number;
+      contentType: ContentType;
+      transcript: string | null;
+      resources: { title: string; url: string }[];
+    };
     module: {
-      id: string
-      title: string
-      order: number
-    }
+      id: string;
+      title: string;
+      order: number;
+    };
     formation: {
-      id: string
-      title: string
-      slug: string
-    }
+      id: string;
+      title: string;
+      slug: string;
+    };
     curriculum: Array<{
-      id: string
-      title: string
-      order: number
+      id: string;
+      title: string;
+      order: number;
       lessons: Array<{
-        id: string
-        title: string
-        isCompleted: boolean
-        isCurrent: boolean
+        id: string;
+        title: string;
+        isCompleted: boolean;
+        isCurrent: boolean;
         /** Requiere suscripción: se pinta con candado y no navega. */
-        isLocked: boolean
-      }>
-    }>
-    previousLesson: { id: string; title: string } | null
-    nextLesson: { id: string; title: string; isLocked: boolean } | null
-    completedCount: number
-    totalCount: number
-    hasFullAccess: boolean
-    comments?: ThreadedComment[]
-  }
-  currentUserId: string
+        isLocked: boolean;
+      }>;
+    }>;
+    previousLesson: { id: string; title: string } | null;
+    nextLesson: { id: string; title: string; isLocked: boolean } | null;
+    completedCount: number;
+    totalCount: number;
+    hasFullAccess: boolean;
+    comments?: ThreadedComment[];
+  };
+  currentUserId: string;
 }
 
-type Curriculum = LessonViewerProps["data"]["curriculum"]
+type Curriculum = LessonViewerProps["data"]["curriculum"];
 
 /* ── Panel de Curriculum ─────────────────────────────────────────────── */
 
@@ -126,16 +148,18 @@ function CurriculumPanel({
   formationSlug,
   progressPercent,
 }: {
-  curriculum: Curriculum
-  formationSlug: string
-  progressPercent: number
+  curriculum: Curriculum;
+  formationSlug: string;
+  progressPercent: number;
 }) {
   return (
     <div className="space-y-4">
       {/* Progress */}
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
         <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-          <span className="text-muted-foreground uppercase tracking-wider">Tu Progreso</span>
+          <span className="text-muted-foreground uppercase tracking-wider">
+            Tu Progreso
+          </span>
           <span className="text-primary">{progressPercent}%</span>
         </div>
         <Progress value={progressPercent} className="h-1.5" />
@@ -162,8 +186,8 @@ function CurriculumPanel({
                     l.isCurrent
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : l.isLocked
-                      ? "text-muted-foreground hover:bg-primary/5"
-                      : "hover:bg-primary/5 text-foreground hover:text-primary"
+                        ? "text-muted-foreground hover:bg-primary/5"
+                        : "hover:bg-primary/5 text-foreground hover:text-primary",
                   )}
                 >
                   <div
@@ -172,8 +196,8 @@ function CurriculumPanel({
                       l.isCompleted
                         ? "bg-success-soft text-success-strong dark:text-success"
                         : l.isCurrent
-                        ? "bg-white/20 text-white"
-                        : "bg-muted text-muted-foreground"
+                          ? "bg-white/20 text-white"
+                          : "bg-muted text-muted-foreground",
                     )}
                   >
                     {l.isCompleted ? (
@@ -182,11 +206,15 @@ function CurriculumPanel({
                       lessonIndex + 1
                     )}
                   </div>
-                  <span className={cn(
-                    "truncate flex-1 text-xs",
-                    l.isCurrent ? "text-primary-foreground font-semibold" : "text-foreground",
-                    l.isLocked && !l.isCurrent && "text-muted-foreground"
-                  )}>
+                  <span
+                    className={cn(
+                      "truncate flex-1 text-xs",
+                      l.isCurrent
+                        ? "text-primary-foreground font-semibold"
+                        : "text-foreground",
+                      l.isLocked && !l.isCurrent && "text-muted-foreground",
+                    )}
+                  >
                     {l.title}
                   </span>
                   {l.isLocked && !l.isCurrent && (
@@ -202,7 +230,7 @@ function CurriculumPanel({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ── Panel de Comentarios ────────────────────────────────────────────── */
@@ -217,14 +245,14 @@ function CommentsPanel({
   lessonId,
   formationSlug,
 }: {
-  comments: ThreadedComment[]
-  commentText: string
-  onCommentTextChange: (v: string) => void
-  onSubmit: (e: { preventDefault(): void }) => void
-  isPending: boolean
-  currentUserId: string
-  lessonId: string
-  formationSlug: string
+  comments: ThreadedComment[];
+  commentText: string;
+  onCommentTextChange: (v: string) => void;
+  onSubmit: (e: { preventDefault(): void }) => void;
+  isPending: boolean;
+  currentUserId: string;
+  lessonId: string;
+  formationSlug: string;
 }) {
   return (
     <div className="space-y-4">
@@ -264,7 +292,7 @@ function CommentsPanel({
         />
       </div>
     </div>
-  )
+  );
 }
 
 /* ── Panel de Asistente IA ───────────────────────────────────────────── */
@@ -275,59 +303,134 @@ function AssistantPanel({
   hasAccess,
   className,
 }: {
-  lessonId: string
-  hasAccess: boolean
-  formationId: string
-  className?: string
+  lessonId: string;
+  hasAccess: boolean;
+  formationId: string;
+  className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col border border-border rounded-xl p-3.5 bg-card/60 shadow-sm", className)}>
-      {hasAccess ? <ChatPanel lessonId={lessonId} formationId={formationId} className="flex-1" /> : <div className="space-y-4 p-4"><Bot className="h-7 w-7 text-primary" /><h3 className="text-xl">Acompaña tu aprendizaje.</h3><p className="text-sm text-muted-foreground">El asistente contextual está incluido con el acceso completo a Mitra. Puedes seguir disfrutando de esta clase de muestra.</p><Button asChild><Link href="/billing">Ver opciones de acceso</Link></Button></div>}
+    <div
+      className={cn(
+        "flex flex-col border border-border rounded-xl p-3.5 bg-card/60 shadow-sm",
+        className,
+      )}
+    >
+      {hasAccess ? (
+        <ChatPanel
+          lessonId={lessonId}
+          formationId={formationId}
+          className="flex-1"
+        />
+      ) : (
+        <div className="space-y-4 p-4">
+          <Bot className="h-7 w-7 text-primary" />
+          <h3 className="text-xl">Acompaña tu aprendizaje.</h3>
+          <p className="text-sm text-muted-foreground">
+            El asistente contextual está incluido con el acceso completo a
+            Mitra. Puedes seguir disfrutando de esta clase de muestra.
+          </p>
+          <Button asChild>
+            <Link href="/billing">Ver opciones de acceso</Link>
+          </Button>
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
 /* ── Panel de Recursos ───────────────────────────────────────────────── */
 
-function ResourcesPanel({ resources,transcript }: { resources: { title: string; url: string }[]; transcript: string | null }) {
-  return <div className="space-y-5">
-    {resources.length > 0 ? <ul className="grid gap-3 sm:grid-cols-2">{resources.map(resource => <li key={resource.url}><a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex h-full items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium hover:bg-primary/10"><Paperclip className="h-4 w-4 shrink-0 text-primary" /><span className="break-words">{resource.title}<span className="mt-1 block text-xs font-normal text-muted-foreground">Abrir material ↗</span></span></a></li>)}</ul> : <p className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">Esta lección no tiene materiales descargables añadidos.</p>}
-    {transcript && <section className="space-y-3 rounded-xl border border-border bg-card p-5"><h3 className="font-semibold">Texto de la lección</h3><RichText text={transcript} /></section>}
-  </div>
+function ResourcesPanel({
+  resources,
+  transcript,
+}: {
+  resources: { title: string; url: string }[];
+  transcript: string | null;
+}) {
+  return (
+    <div className="space-y-5">
+      {resources.length > 0 ? (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {resources.map((resource) => (
+            <li key={resource.url}>
+              <a
+                href={resource.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-full items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium hover:bg-primary/10"
+              >
+                <Paperclip className="h-4 w-4 shrink-0 text-primary" />
+                <span className="break-words">
+                  {resource.title}
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                    Abrir material ↗
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
+          Esta lección no tiene materiales descargables añadidos.
+        </p>
+      )}
+      {transcript && (
+        <section className="space-y-3 rounded-xl border border-border bg-card p-5">
+          <h3 className="font-semibold">Texto de la lección</h3>
+          <RichText text={transcript} />
+        </section>
+      )}
+    </div>
+  );
 }
 
 /* ── Componente Principal LessonViewer ───────────────────────────────── */
 
 export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
-  const router = useRouter()
-  const { markLessonComplete, addXP } = useUserStore()
-  const [lessonCompleted, setLessonCompleted] = useState(data.lesson.isCompleted)
-  useEffect(() => { setLessonCompleted(data.lesson.isCompleted) }, [data.lesson.isCompleted])
-  const [isSaving, setIsSaving] = useState(false)
-  const [commentText, setCommentText] = useState("")
-  const [comments, setComments] = useState(data.comments || [])
-  const [isPending, startTransition] = useTransition()
-  const latestPositionRef = useRef<number | null>(null)
-  const lastPersistedRef = useRef(0)
-  const completionPendingRef = useRef(false)
-  const progressQueueRef = useRef(Promise.resolve())
+  const router = useRouter();
+  const { markLessonComplete, addXP } = useUserStore();
+  const [lessonCompleted, setLessonCompleted] = useState(
+    data.lesson.isCompleted,
+  );
+  useEffect(() => {
+    setLessonCompleted(data.lesson.isCompleted);
+  }, [data.lesson.isCompleted]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState(data.comments || []);
+  const [isPending, startTransition] = useTransition();
+  const latestPositionRef = useRef<number | null>(null);
+  const lastPersistedRef = useRef(0);
+  const completionPendingRef = useRef(false);
+  const progressQueueRef = useRef(Promise.resolve());
 
   // Bottom-sheet state (mobile)
-  const [openContenido, setOpenContenido] = useState(false)
-  const [openComentarios, setOpenComentarios] = useState(false)
-  const [openIA, setOpenIA] = useState(false)
+  const [openContenido, setOpenContenido] = useState(false);
+  const [openComentarios, setOpenComentarios] = useState(false);
+  const [openIA, setOpenIA] = useState(false);
 
   useEffect(() => {
-    setComments(data.comments || [])
-  }, [data.comments])
+    setComments(data.comments || []);
+  }, [data.comments]);
 
-  const { lesson, module, formation, curriculum, previousLesson, nextLesson, completedCount, totalCount } = data
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+  const {
+    lesson,
+    module,
+    formation,
+    curriculum,
+    previousLesson,
+    nextLesson,
+    completedCount,
+    totalCount,
+  } = data;
+  const progressPercent =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const totalCommentCount = comments.reduce(
     (acc, c) => acc + 1 + (c.replies?.length ?? 0),
     0,
-  )
+  );
 
   const handleShareToTaberna = () => {
     sessionStorage.setItem(
@@ -335,16 +438,16 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
       JSON.stringify({
         content: `✨ Descubrimiento en "${formation.title}" · Lección: ${lesson.title}\n\n`,
         source: lesson.title,
-      })
-    )
-    toast.success("Abriendo La Taberna para compartir tu aprendizaje...")
-    router.push("/taberna")
-  }
+      }),
+    );
+    toast.success("Abriendo La Taberna para compartir tu aprendizaje...");
+    router.push("/taberna");
+  };
 
   const handleCommentSubmit = (e: { preventDefault(): void }) => {
-    e.preventDefault()
-    const trimmed = commentText.trim()
-    if (!trimmed) return
+    e.preventDefault();
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
 
     const optimistic: ThreadedComment = {
       id: `temp-${Date.now()}`,
@@ -355,64 +458,106 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
       profiles: null,
       reactions: {},
       replies: [],
-    }
-    setComments((prev) => [optimistic, ...prev])
-    setCommentText("")
+    };
+    setComments((prev) => [optimistic, ...prev]);
+    setCommentText("");
 
-    const formData = new FormData()
-    formData.append("content", trimmed)
+    const formData = new FormData();
+    formData.append("content", trimmed);
 
     startTransition(async () => {
-      const result = await addLessonComment(formData, lesson.id, formation.slug)
+      const result = await addLessonComment(
+        formData,
+        lesson.id,
+        formation.slug,
+      );
       if (result?.error) {
-        toast.error(result.error)
-        setComments((prev) => prev.filter((c) => c.id !== optimistic.id))
-        setCommentText(trimmed)
-        return
+        toast.error(result.error);
+        setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+        setCommentText(trimmed);
+        return;
       }
-      router.refresh()
-    })
-  }
+      router.refresh();
+    });
+  };
 
   useEffect(() => {
     return () => {
-      const position = latestPositionRef.current
-      if (position !== null) fetch("/api/progress", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonId: lesson.id, watchedSeconds: position }) }).catch(() => {})
-    }
-  }, [lesson.id])
+      const position = latestPositionRef.current;
+      if (position !== null)
+        fetch("/api/progress", {
+          method: "POST",
+          keepalive: true,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lessonId: lesson.id,
+            watchedSeconds: position,
+          }),
+        }).catch(() => {});
+    };
+  }, [lesson.id]);
 
-  const saveProgress = useCallback((watchedSeconds: number) => {
-    latestPositionRef.current = watchedSeconds
-    if (Date.now() - lastPersistedRef.current < 10_000) return
-    lastPersistedRef.current = Date.now()
-    progressQueueRef.current = progressQueueRef.current.then(async () => {
-      const res = await fetch("/api/progress", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonId: lesson.id, watchedSeconds }) })
-      if (!res.ok) throw new Error("No se pudo guardar tu posición. Comprueba la conexión.")
-    }).catch(() => { toast.error("No se pudo guardar tu posición. Comprueba la conexión.") })
-  }, [lesson.id])
+  const saveProgress = useCallback(
+    (watchedSeconds: number) => {
+      latestPositionRef.current = watchedSeconds;
+      if (Date.now() - lastPersistedRef.current < 10_000) return;
+      lastPersistedRef.current = Date.now();
+      progressQueueRef.current = progressQueueRef.current
+        .then(async () => {
+          const res = await fetch("/api/progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lessonId: lesson.id, watchedSeconds }),
+          });
+          if (!res.ok)
+            throw new Error(
+              "No se pudo guardar tu posición. Comprueba la conexión.",
+            );
+        })
+        .catch(() => {
+          toast.error("No se pudo guardar tu posición. Comprueba la conexión.");
+        });
+    },
+    [lesson.id],
+  );
 
   const handleMarkComplete = async (advance = true) => {
-    if (completionPendingRef.current) return
-    completionPendingRef.current = true
-    setIsSaving(true)
+    if (completionPendingRef.current) return;
+    completionPendingRef.current = true;
+    setIsSaving(true);
     try {
-      const result = await markLessonCompleted(lesson.id, formation.slug)
-      if (!("success" in result)) { toast.error(result.error); return }
-      setLessonCompleted(true)
-      markLessonComplete(lesson.id)
-      if (!result.alreadyCompleted) {
-        addXP(result.xpEarned ?? 0, result.leveledUp ?? false)
-        toast.success(`Lección completada · +${result.xpEarned ?? 0} XP`, { description: result.leveledUp ? "Has subido de nivel." : "Continúa integrando tu aprendizaje." })
-        if (result.certificateIssued) toast.success("Tu certificado está disponible en el perfil.")
+      const result = await markLessonCompleted(lesson.id, formation.slug);
+      if (!("success" in result)) {
+        toast.error(result.error);
+        return;
       }
-      router.refresh()
-      if (advance && nextLesson && !nextLesson.isLocked) router.push(`/learn/${formation.slug}/${nextLesson.id}`)
-    } catch { toast.error("No se pudo completar la lección. Inténtalo de nuevo.") }
-    finally { completionPendingRef.current = false; setIsSaving(false) }
-  }
+      setLessonCompleted(true);
+      markLessonComplete(lesson.id);
+      if (!result.alreadyCompleted) {
+        addXP(result.xpEarned ?? 0, result.leveledUp ?? false);
+        toast.success(`Lección completada · +${result.xpEarned ?? 0} XP`, {
+          description: result.leveledUp
+            ? "Has subido de nivel."
+            : "Continúa integrando tu aprendizaje.",
+        });
+        if (result.certificateIssued)
+          toast.success("Tu certificado está disponible en el perfil.");
+      }
+      router.refresh();
+      if (advance && nextLesson && !nextLesson.isLocked)
+        router.push(`/learn/${formation.slug}/${nextLesson.id}`);
+    } catch {
+      toast.error("No se pudo completar la lección. Inténtalo de nuevo.");
+    } finally {
+      completionPendingRef.current = false;
+      setIsSaving(false);
+    }
+  };
 
   const canMarkComplete =
-    !lessonCompleted && lesson.contentType !== "exercise" && lesson.contentType !== "quiz"
+    !lessonCompleted &&
+    lesson.contentType !== "exercise" &&
+    lesson.contentType !== "quiz";
 
   return (
     <div className="min-h-screen bg-background">
@@ -421,12 +566,21 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
         <div className="flex items-center justify-between h-14 px-3 sm:px-6 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link href={`/formations/${formation.slug}`} className="shrink-0">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2 sm:px-2.5 rounded-lg h-8">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground px-2 sm:px-2.5 rounded-lg h-8"
+              >
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline ml-1 text-xs font-semibold">Formación</span>
+                <span className="hidden sm:inline ml-1 text-xs font-semibold">
+                  Formación
+                </span>
               </Button>
             </Link>
-            <Separator orientation="vertical" className="h-4 bg-border shrink-0 hidden sm:block" />
+            <Separator
+              orientation="vertical"
+              className="h-4 bg-border shrink-0 hidden sm:block"
+            />
             <div className="min-w-0">
               <p className="text-xs sm:text-sm font-semibold truncate max-w-[170px] sm:max-w-[260px] md:max-w-[360px] text-foreground">
                 {formation.title}
@@ -480,11 +634,23 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               lessonId={lesson.id}
               formationSlug={formation.slug}
               formationId={formation.id}
+              onPassed={() => {
+                setLessonCompleted(true);
+                markLessonComplete(lesson.id);
+                router.refresh();
+              }}
             />
           ) : lesson.contentType === "text" ? (
             <article className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-10">
               <p className="ainara-eyebrow">LECTURA / INTEGRACIÓN</p>
-              <RichText text={lesson.transcript || lesson.description || "El contenido de esta lectura está en preparación."} className="text-base leading-relaxed" />
+              <RichText
+                text={
+                  lesson.transcript ||
+                  lesson.description ||
+                  "El contenido de esta lectura está en preparación."
+                }
+                className="text-base leading-relaxed"
+              />
             </article>
           ) : (
             /* Video Player */
@@ -497,8 +663,12 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                       title={lesson.title}
                       lessonId={lesson.id}
                       initialProgress={lesson.watchedSeconds}
-                      onProgress={(currentTime) => saveProgress(Math.floor(currentTime))}
-                      onComplete={() => { if (!lessonCompleted) handleMarkComplete(false) }}
+                      onProgress={(currentTime) =>
+                        saveProgress(Math.floor(currentTime))
+                      }
+                      onComplete={() => {
+                        if (!lessonCompleted) handleMarkComplete(false);
+                      }}
                       className="w-full h-full"
                     />
                   ) : (
@@ -507,8 +677,13 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                         <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center mx-auto text-primary">
                           <Play className="h-8 w-8" />
                         </div>
-                        <p className="text-sm font-semibold">Video en preparación</p>
-                        <p className="text-xs text-white/50 max-w-sm">Puedes leer las notas, realizar los ejercicios de práctica o consultar con el Asistente IA.</p>
+                        <p className="text-sm font-semibold">
+                          Video en preparación
+                        </p>
+                        <p className="text-xs text-white/50 max-w-sm">
+                          Puedes leer las notas, realizar los ejercicios de
+                          práctica o consultar con el Asistente IA.
+                        </p>
                       </div>
                     </div>
                   )}
@@ -523,7 +698,10 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
               <div>
                 <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                  <Badge variant="outline" className="border-primary/30 text-primary text-3xs font-semibold rounded">
+                  <Badge
+                    variant="outline"
+                    className="border-primary/30 text-primary text-3xs font-semibold rounded"
+                  >
                     Módulo {module.order}
                   </Badge>
                   {lessonCompleted && (
@@ -533,7 +711,9 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                     </Badge>
                   )}
                 </div>
-                <h1 className="text-lg sm:text-xl font-bold text-foreground">{lesson.title}</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-foreground">
+                  {lesson.title}
+                </h1>
               </div>
 
               <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-foreground self-start shrink-0">
@@ -547,9 +727,12 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               <Card className="border border-primary/25 bg-primary/5 rounded-xl shadow-sm">
                 <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-0.5">
-                    <p className="font-semibold text-foreground text-xs sm:text-sm">¿Terminaste de ver la lección?</p>
+                    <p className="font-semibold text-foreground text-xs sm:text-sm">
+                      ¿Terminaste de ver la lección?
+                    </p>
                     <p className="text-2xs text-muted-foreground">
-                      Márcala como completada para sumar tus XP y pasar al siguiente paso de tu camino.
+                      Márcala como completada para sumar tus XP y pasar al
+                      siguiente paso de tu camino.
                     </p>
                   </div>
                   <Button
@@ -585,15 +768,24 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
             {/* Interactive Tabs */}
             <Tabs defaultValue="comments" className="w-full">
               <TabsList className="bg-muted/60 w-full justify-start p-1 rounded-lg h-auto flex flex-wrap">
-                <TabsTrigger value="comments" className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <TabsTrigger
+                  value="comments"
+                  className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
                   <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
                   Comunidad ({totalCommentCount})
                 </TabsTrigger>
-                <TabsTrigger value="assistant" className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <TabsTrigger
+                  value="assistant"
+                  className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
                   <Bot className="w-3.5 h-3.5 mr-1.5" />
                   Asistente IA
                 </TabsTrigger>
-                <TabsTrigger value="resources" className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <TabsTrigger
+                  value="resources"
+                  className="rounded-md py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
                   <Paperclip className="w-3.5 h-3.5 mr-1.5" />
                   Recursos
                 </TabsTrigger>
@@ -613,11 +805,19 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               </TabsContent>
 
               <TabsContent value="assistant" className="mt-3.5 outline-none">
-                <AssistantPanel hasAccess={data.hasFullAccess} lessonId={lesson.id} formationId={formation.id} className="h-[440px]" />
+                <AssistantPanel
+                  hasAccess={data.hasFullAccess}
+                  lessonId={lesson.id}
+                  formationId={formation.id}
+                  className="h-[440px]"
+                />
               </TabsContent>
 
               <TabsContent value="resources" className="mt-3.5 outline-none">
-                <ResourcesPanel resources={lesson.resources} transcript={lesson.transcript} />
+                <ResourcesPanel
+                  resources={lesson.resources}
+                  transcript={lesson.transcript}
+                />
               </TabsContent>
             </Tabs>
 
@@ -625,9 +825,14 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
             <div className="flex items-center justify-between pt-4 border-t border-border">
               {previousLesson ? (
                 <Link href={`/learn/${formation.slug}/${previousLesson.id}`}>
-                  <Button variant="outline" className="border-border hover:border-primary/40 rounded-lg text-xs h-8">
+                  <Button
+                    variant="outline"
+                    className="border-border hover:border-primary/40 rounded-lg text-xs h-8"
+                  >
                     <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">{previousLesson.title}</span>
+                    <span className="hidden sm:inline">
+                      {previousLesson.title}
+                    </span>
                     <span className="sm:hidden">Anterior</span>
                   </Button>
                 </Link>
@@ -642,7 +847,9 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
                       <Lock className="h-3.5 w-3.5 mr-1 shrink-0" aria-hidden />
                     )}
                     <span className="hidden sm:inline">
-                      {nextLesson.isLocked ? "Desbloquear siguiente" : nextLesson.title}
+                      {nextLesson.isLocked
+                        ? "Desbloquear siguiente"
+                        : nextLesson.title}
                     </span>
                     <span className="sm:hidden">Siguiente</span>
                     <ChevronRight className="h-3.5 w-3.5 ml-1" />
@@ -663,7 +870,9 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
         {/* ── Curriculum Sidebar (Desktop) ───────────────────── */}
         <aside className="hidden lg:block lg:w-80 bg-card/40 border-l border-border">
           <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto p-4 space-y-3.5">
-            <h3 className="font-semibold text-foreground text-xs uppercase tracking-wider">Contenido del Curso</h3>
+            <h3 className="font-semibold text-foreground text-xs uppercase tracking-wider">
+              Contenido del Curso
+            </h3>
             <CurriculumPanel
               curriculum={curriculum}
               formationSlug={formation.slug}
@@ -724,11 +933,15 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
               className="min-w-0 flex-[1.25] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-xl flex items-center justify-center gap-1 px-2"
             >
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate text-2xs font-semibold">{isSaving ? "..." : "Completar"}</span>
+              <span className="truncate text-2xs font-semibold">
+                {isSaving ? "..." : "Completar"}
+              </span>
             </Button>
           ) : nextLesson ? (
             <Button
-              onClick={() => router.push(`/learn/${formation.slug}/${nextLesson.id}`)}
+              onClick={() =>
+                router.push(`/learn/${formation.slug}/${nextLesson.id}`)
+              }
               size="sm"
               className="min-w-0 flex-[1.25] bg-primary hover:bg-primary/90 text-primary-foreground h-9 rounded-xl flex items-center justify-center gap-1 px-2"
             >
@@ -750,18 +963,26 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
 
       {/* ── Mobile Sheets ─────────────────────────────────── */}
       <Sheet open={openContenido} onOpenChange={setOpenContenido}>
-        <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl md:hidden"
-          contentClassName="px-4 pb-6">
+        <SheetContent
+          side="bottom"
+          className="max-h-[85vh] rounded-t-2xl md:hidden"
+          contentClassName="px-4 pb-6"
+        >
           <SheetHeader className="pb-2">
-            <SheetTitle className="text-left text-sm font-semibold">Temario del Curso</SheetTitle>
+            <SheetTitle className="text-left text-sm font-semibold">
+              Temario del Curso
+            </SheetTitle>
             <SheetDescription className="sr-only">
               Navega por las lecciones y consulta tu progreso en el curso.
             </SheetDescription>
           </SheetHeader>
-          <div className="overflow-y-auto max-h-[70vh] pb-4" onClick={(e) => {
-            const target = e.target as HTMLElement
-            if (target.closest("a")) setOpenContenido(false)
-          }}>
+          <div
+            className="overflow-y-auto max-h-[70vh] pb-4"
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.closest("a")) setOpenContenido(false);
+            }}
+          >
             <CurriculumPanel
               curriculum={curriculum}
               formationSlug={formation.slug}
@@ -772,10 +993,15 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
       </Sheet>
 
       <Sheet open={openComentarios} onOpenChange={setOpenComentarios}>
-        <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl md:hidden"
-          contentClassName="px-4 pb-6">
+        <SheetContent
+          side="bottom"
+          className="max-h-[85vh] rounded-t-2xl md:hidden"
+          contentClassName="px-4 pb-6"
+        >
           <SheetHeader className="pb-2">
-            <SheetTitle className="text-left text-sm font-semibold">Comunidad ({totalCommentCount})</SheetTitle>
+            <SheetTitle className="text-left text-sm font-semibold">
+              Comunidad ({totalCommentCount})
+            </SheetTitle>
             <SheetDescription className="sr-only">
               Lee y publica comentarios de la comunidad sobre esta lección.
             </SheetDescription>
@@ -802,14 +1028,21 @@ export function LessonViewer({ data, currentUserId }: LessonViewerProps) {
           contentClassName="px-4 pb-6"
         >
           <SheetHeader className="pb-2">
-            <SheetTitle className="text-left text-sm font-semibold">Asistente IA Ainara</SheetTitle>
+            <SheetTitle className="text-left text-sm font-semibold">
+              Asistente IA Ainara
+            </SheetTitle>
             <SheetDescription className="sr-only">
               Consulta al asistente sobre el contenido de esta lección.
             </SheetDescription>
           </SheetHeader>
-          <AssistantPanel hasAccess={data.hasFullAccess} lessonId={lesson.id} formationId={formation.id} className="flex-1 min-h-0" />
+          <AssistantPanel
+            hasAccess={data.hasFullAccess}
+            lessonId={lesson.id}
+            formationId={formation.id}
+            className="flex-1 min-h-0"
+          />
         </SheetContent>
       </Sheet>
     </div>
-  )
+  );
 }

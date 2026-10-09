@@ -1,13 +1,23 @@
-import { createClient } from "@/lib/supabase/server"
-import { QuizAdminClient, type QuizListItem, type QuizLesson } from "./quiz-admin-client"
+import { createClient } from "@/lib/supabase/server";
+import {
+  QuizAdminClient,
+  type QuizListItem,
+  type QuizLesson,
+} from "./quiz-admin-client";
 
-export default async function QuizzesPage() {
-  const supabase = await createClient()
+export default async function QuizzesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lessonId?: string }>;
+}) {
+  const { lessonId } = await searchParams;
+  const supabase = await createClient();
 
   // Load all quizzes with their linked lesson and formation context
   const { data: quizzes } = await supabase
     .from("quizzes")
-    .select(`
+    .select(
+      `
       id, title, description, passing_score, xp_reward, created_at,
       lessons (
         id, title,
@@ -16,23 +26,27 @@ export default async function QuizzesPage() {
           formations ( id, title )
         )
       )
-    `)
-    .order("created_at", { ascending: false })
+    `,
+    )
+    .order("created_at", { ascending: false });
 
   // Load lessons typed as quiz to allow linking new quizzes
   const { data: quizLessons } = await supabase
     .from("lessons")
-    .select(`
+    .select(
+      `
       id, title, content_type,
       modules ( id, title, formations ( id, title ) )
-    `)
+    `,
+    )
     .eq("content_type", "quiz")
-    .order("title")
+    .order("title");
 
   return (
     <QuizAdminClient
+      selectedLessonId={lessonId}
       quizzes={(quizzes ?? []) as unknown as QuizListItem[]}
       quizLessons={(quizLessons ?? []) as unknown as QuizLesson[]}
     />
-  )
+  );
 }

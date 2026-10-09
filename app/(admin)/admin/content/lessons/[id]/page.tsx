@@ -1,8 +1,10 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
+import { toast } from "sonner";
+import { removeCurriculumLesson } from "../../curriculum-actions";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   Save,
@@ -15,40 +17,52 @@ import {
   Play,
   Pencil,
   HelpCircle,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { LessonResourcesEditor } from "@/components/admin/lesson-resources-editor"
-import { lessonResources } from "@/lib/lesson-resources"
-import { VideoUploader } from "@/components/admin/video-uploader"
-import type { Lesson as BaseLesson } from "@/types"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { LessonResourcesEditor } from "@/components/admin/lesson-resources-editor";
+import { lessonResources } from "@/lib/lesson-resources";
+import { VideoUploader } from "@/components/admin/video-uploader";
+import type { Lesson as BaseLesson } from "@/types";
 
 type LessonWithContext = BaseLesson & {
-  xp_reward?: number
-  sort_order?: number
-  module_title: string
-  formation_title: string
-  formation_id: string
-}
+  xp_reward?: number;
+  sort_order?: number;
+  module_title: string;
+  formation_title: string;
+  formation_id: string;
+};
 
 export default function LessonEditorPage() {
-  const params = useParams()
-  const router = useRouter()
-  const lessonId = params?.id as string
-  const isNew = lessonId === "new"
+  const params = useParams();
+  const router = useRouter();
+  const lessonId = params?.id as string;
+  const isNew = lessonId === "new";
 
-  const [lesson, setLesson] = useState<LessonWithContext | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("details")
+  const [lesson, setLesson] = useState<LessonWithContext | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
     if (isNew) {
@@ -69,35 +83,41 @@ export default function LessonEditorPage() {
         module_title: "",
         formation_title: "",
         formation_id: "",
-      } as LessonWithContext)
-      setLoading(false)
-      return
+      } as LessonWithContext);
+      setLoading(false);
+      return;
     }
 
     fetch(`/api/admin/lessons/${lessonId}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Leccion no encontrada")
-        return res.json()
+        if (!res.ok) throw new Error("Leccion no encontrada");
+        return res.json();
       })
       .then((data) => {
-        setLesson({ ...data,resources: lessonResources(data.resources).map(resource => ({ ...resource,type: "link" })) })
-        setLoading(false)
+        setLesson({
+          ...data,
+          resources: lessonResources(data.resources).map((resource) => ({
+            ...resource,
+            type: "link",
+          })),
+        });
+        setLoading(false);
       })
       .catch(() => {
-        setLoading(false)
-      })
-  }, [lessonId, isNew])
+        setLoading(false);
+      });
+  }, [lessonId, isNew]);
 
   const handleSave = async () => {
-    if (!lesson) return
+    if (!lesson) return;
     if (isNew) {
       setSaveError(
-        "Las lecciones se crean desde el árbol de la formación, no desde aquí."
-      )
-      return
+        "Las lecciones se crean desde el árbol de la formación, no desde aquí.",
+      );
+      return;
     }
-    setSaving(true)
-    setSaveError(null)
+    setSaving(true);
+    setSaveError(null);
 
     try {
       const res = await fetch(`/api/admin/lessons/${lessonId}`, {
@@ -116,39 +136,44 @@ export default function LessonEditorPage() {
           transcript: lesson.transcript ?? null,
           resources: lesson.resources ?? [],
         }),
-      })
+      });
 
       if (!res.ok) {
-        const data = await res.json()
-        setSaveError(data.error || "Error al guardar")
+        const data = await res.json();
+        setSaveError(data.error || "Error al guardar");
+      } else {
+        toast.success("Lección guardada");
+        router.refresh();
       }
     } catch {
-      setSaveError("Error de conexión al guardar")
+      setSaveError("Error de conexión al guardar");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     }
-    return `${minutes}:${secs.toString().padStart(2, "0")}`
-  }
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
-    )
+    );
   }
 
   if (!lesson) {
-    return <div className="p-8 text-muted-foreground">Leccion no encontrada</div>
+    return (
+      <div className="p-8 text-muted-foreground">Leccion no encontrada</div>
+    );
   }
 
   // No existe endpoint de creación de lecciones: se crean desde el árbol de la
@@ -169,7 +194,7 @@ export default function LessonEditorPage() {
           <Link href="/admin/content/formations">Ir a Formaciones</Link>
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -192,9 +217,13 @@ export default function LessonEditorPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isNew && lesson.video_url && (
+          {!isNew && (
             <Button variant="outline" size="sm" asChild>
-              <a href={`/learn/${lesson.formation_id}/${lessonId}`} target="_blank" rel="noopener noreferrer">
+              <a
+                href={`/admin/content/lessons/${lessonId}/preview`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 Vista Previa
               </a>
@@ -227,7 +256,9 @@ export default function LessonEditorPage() {
           <Card>
             <CardHeader>
               <CardTitle>Informacion de la Leccion</CardTitle>
-              <CardDescription>Configura el titulo y descripcion de esta leccion</CardDescription>
+              <CardDescription>
+                Configura el titulo y descripcion de esta leccion
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -235,7 +266,9 @@ export default function LessonEditorPage() {
                 <Input
                   id="title"
                   value={lesson.title}
-                  onChange={(e) => setLesson({ ...lesson, title: e.target.value })}
+                  onChange={(e) =>
+                    setLesson({ ...lesson, title: e.target.value })
+                  }
                   placeholder="Ej: Introduccion a la meditacion"
                 />
               </div>
@@ -245,13 +278,18 @@ export default function LessonEditorPage() {
                 <Textarea
                   id="description"
                   value={lesson.description || ""}
-                  onChange={(e) => setLesson({ ...lesson, description: e.target.value })}
-                  placeholder={"Escribe la descripción en Markdown. Ej.: ## Título\n**Idea clave**\n- Punto uno"}
+                  onChange={(e) =>
+                    setLesson({ ...lesson, description: e.target.value })
+                  }
+                  placeholder={
+                    "Escribe la descripción en Markdown. Ej.: ## Título\n**Idea clave**\n- Punto uno"
+                  }
                   rows={7}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Admite Markdown: # títulos, ## subtítulos, **negrita**, *cursiva*, listas y código.
-                  Los usuarios verán el formato ya interpretado.
+                  Admite Markdown: # títulos, ## subtítulos, **negrita**,
+                  *cursiva*, listas y código. Los usuarios verán el formato ya
+                  interpretado.
                 </p>
               </div>
 
@@ -261,7 +299,10 @@ export default function LessonEditorPage() {
                   <Select
                     value={lesson.content_type}
                     onValueChange={(value) =>
-                      setLesson({ ...lesson, content_type: value as BaseLesson["content_type"] })
+                      setLesson({
+                        ...lesson,
+                        content_type: value as BaseLesson["content_type"],
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -309,30 +350,51 @@ export default function LessonEditorPage() {
                     type="number"
                     value={lesson.xp_reward ?? 25}
                     onChange={(e) =>
-                      setLesson({ ...lesson, xp_reward: parseInt(e.target.value) || 0 })
+                      setLesson({
+                        ...lesson,
+                        xp_reward: parseInt(e.target.value) || 0,
+                      })
                     }
                   />
                 </div>
               </div>
 
               {/* Exercise instructions — visible only when content_type is exercise */}
-              {lesson.content_type === "exercise" && (
+              {["exercise", "text"].includes(lesson.content_type) && (
                 <div className="space-y-2 border-t border-border/50 pt-4">
                   <Label htmlFor="transcript">
                     <Pencil className="h-4 w-4 inline mr-1" />
-                    Instrucciones del Ejercicio
+                    {lesson.content_type === "text"
+                      ? "Contenido del artículo (Markdown)"
+                      : "Instrucciones del ejercicio"}
                   </Label>
                   <Textarea
                     id="transcript"
                     value={lesson.transcript || ""}
-                    onChange={(e) => setLesson({ ...lesson, transcript: e.target.value })}
+                    onChange={(e) =>
+                      setLesson({ ...lesson, transcript: e.target.value })
+                    }
                     placeholder="Describe paso a paso qué debe hacer el alumno en este ejercicio..."
                     rows={8}
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Las instrucciones se mostrarán en la vista del ejercicio. Puedes usar saltos de línea para mejor legibilidad.
+                    Las instrucciones se mostrarán en la vista del ejercicio.
+                    Puedes usar saltos de línea para mejor legibilidad.
                   </p>
+                </div>
+              )}
+              {lesson.content_type === "quiz" && (
+                <div className="rounded-xl border p-4">
+                  <p className="mb-3 text-sm text-muted-foreground">
+                    Guarda el tipo de contenido antes de configurar las
+                    preguntas.
+                  </p>
+                  <Button asChild variant="outline">
+                    <Link href={`/admin/content/quizzes?lessonId=${lesson.id}`}>
+                      Editar preguntas del cuestionario
+                    </Link>
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -345,7 +407,8 @@ export default function LessonEditorPage() {
             <CardHeader>
               <CardTitle>Video de la Leccion</CardTitle>
               <CardDescription>
-                Sube el video directamente a Cloudflare Stream. MP4, MOV o WebM hasta 5GB.
+                Sube el video directamente a Cloudflare Stream. MP4, MOV o WebM
+                hasta 5GB.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -358,9 +421,11 @@ export default function LessonEditorPage() {
                     ...lesson,
                     video_url: data.videoUrl,
                     duration_seconds: Math.round(data.duration),
-                  })
+                  });
                 }}
-                onUploadError={(err) => setSaveError(`Error de video: ${err.message}`)}
+                onUploadError={(err) =>
+                  setSaveError(`Error de video: ${err.message}`)
+                }
               />
             </CardContent>
           </Card>
@@ -381,12 +446,17 @@ export default function LessonEditorPage() {
                     type="number"
                     value={lesson.duration_seconds || 0}
                     onChange={(e) =>
-                      setLesson({ ...lesson, duration_seconds: parseInt(e.target.value) || 0 })
+                      setLesson({
+                        ...lesson,
+                        duration_seconds: parseInt(e.target.value) || 0,
+                      })
                     }
                     placeholder="Se detecta automaticamente"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {lesson.duration_seconds ? formatDuration(lesson.duration_seconds) : "No configurada"}
+                    {lesson.duration_seconds
+                      ? formatDuration(lesson.duration_seconds)
+                      : "No configurada"}
                   </p>
                 </div>
 
@@ -394,7 +464,12 @@ export default function LessonEditorPage() {
                   <Label>URL del Video (avanzado)</Label>
                   <Input
                     value={lesson.video_url || ""}
-                    onChange={(e) => setLesson({ ...lesson, video_url: e.target.value || null })}
+                    onChange={(e) =>
+                      setLesson({
+                        ...lesson,
+                        video_url: e.target.value || null,
+                      })
+                    }
                     placeholder="https://..."
                   />
                   <p className="text-xs text-muted-foreground">
@@ -416,7 +491,10 @@ export default function LessonEditorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <LessonResourcesEditor value={lesson.resources ?? []} onChange={resources => setLesson({ ...lesson,resources })} />
+              <LessonResourcesEditor
+                value={lesson.resources ?? []}
+                onChange={(resources) => setLesson({ ...lesson, resources })}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -438,7 +516,9 @@ export default function LessonEditorPage() {
                 <Switch
                   id="free"
                   checked={lesson.is_free}
-                  onCheckedChange={(checked) => setLesson({ ...lesson, is_free: checked })}
+                  onCheckedChange={(checked) =>
+                    setLesson({ ...lesson, is_free: checked })
+                  }
                 />
               </div>
               <Separator />
@@ -452,7 +532,9 @@ export default function LessonEditorPage() {
                 <Switch
                   id="published"
                   checked={lesson.is_published}
-                  onCheckedChange={(checked) => setLesson({ ...lesson, is_published: checked })}
+                  onCheckedChange={(checked) =>
+                    setLesson({ ...lesson, is_published: checked })
+                  }
                 />
               </div>
             </CardContent>
@@ -477,7 +559,10 @@ export default function LessonEditorPage() {
                   type="number"
                   value={lesson.xp_reward ?? 25}
                   onChange={(e) =>
-                    setLesson({ ...lesson, xp_reward: parseInt(e.target.value) || 0 })
+                    setLesson({
+                      ...lesson,
+                      xp_reward: parseInt(e.target.value) || 0,
+                    })
                   }
                   className="w-24"
                 />
@@ -488,15 +573,44 @@ export default function LessonEditorPage() {
           {!isNew && (
             <Card className="border-destructive">
               <CardHeader>
-                <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
+                <CardTitle className="text-destructive">
+                  Zona de Peligro
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <Button variant="destructive" disabled>
+                <Button
+                  variant="destructive"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (
+                      !confirm(
+                        `¿Eliminar «${lesson.title}» y su progreso asociado?`,
+                      )
+                    )
+                      return;
+                    setSaving(true);
+                    try {
+                      const result = await removeCurriculumLesson(lesson.id);
+                      if (result.error) toast.error(result.error);
+                      else {
+                        toast.success("Lección eliminada");
+                        router.push(
+                          `/admin/content/formations/${lesson.formation_id}`,
+                        );
+                      }
+                    } catch {
+                      toast.error("No se pudo eliminar la lección");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Eliminar Leccion
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Disponible pronto. Por ahora usa Supabase directamente.
+                  Esta acción elimina también las preguntas y el progreso
+                  asociado a esta lección.
                 </p>
               </CardContent>
             </Card>
@@ -504,5 +618,5 @@ export default function LessonEditorPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

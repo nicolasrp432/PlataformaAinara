@@ -1,19 +1,19 @@
-import { createPublicClient } from "@/lib/supabase/public"
-import { LandingPage } from "./_landing/landing-page"
+import { createPublicClient } from "@/lib/supabase/public";
+import { LandingPage } from "./_landing/landing-page";
 
-export const revalidate = 3600
+export const revalidate = 3600;
 
 type LandingFormation = {
-  id: string
-  title: string
-  slug: string
-  description: string | null
-  thumbnail_url: string | null
-  difficulty: string | null
-  duration_minutes: number | null
-  is_premium: boolean | null
-  xp_reward: number | null
-}
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  difficulty: string | null;
+  duration_minutes: number | null;
+  is_premium: boolean | null;
+  xp_reward: number | null;
+};
 
 /**
  * La portada se genera estáticamente y se revalida cada hora: el catálogo
@@ -30,34 +30,63 @@ type LandingFormation = {
  */
 async function getPublishedFormations(): Promise<LandingFormation[]> {
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!url || !key || url.includes("placeholder") || url.includes("your-project")) {
-      return []
+    if (
+      !url ||
+      !key ||
+      url.includes("placeholder") ||
+      url.includes("your-project")
+    ) {
+      return [];
     }
 
-    const supabase = createPublicClient()
+    const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("formations")
       .select(
-        "id, title, slug, description, thumbnail_url, difficulty, duration_minutes, is_premium, xp_reward"
+        "id, title, slug, description, thumbnail_url, difficulty, duration_minutes, is_premium, xp_reward",
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false })
-      .limit(8)
+      .limit(8);
 
-    if (error) throw error
-    return (data ?? []) as LandingFormation[]
+    if (error) throw error;
+    return (data ?? []) as LandingFormation[];
   } catch (err) {
     if (process.env.NODE_ENV === "production") {
-      console.error("Portada: no se pudo cargar el catálogo publicado.", err)
+      console.error("Portada: no se pudo cargar el catálogo publicado.", err);
     }
-    return []
+    return [];
   }
 }
 
 export default async function HomePage() {
-  const formations = await getPublishedFormations()
-  return <LandingPage formations={formations} />
+  const [formations, testimonials] = await Promise.all([
+    getPublishedFormations(),
+    getPublicTestimonials(),
+  ]);
+  return <LandingPage formations={formations} testimonials={testimonials} />;
+}
+
+async function getPublicTestimonials() {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  )
+    return [];
+  try {
+    const db = createPublicClient();
+    const { data, error } = await db
+      .from("public_testimonials")
+      .select(
+        "id,subject_name,caption,testimonial_text,playback_url,thumbnail_url",
+      )
+      .limit(6);
+    if (error) return [];
+    return data ?? [];
+  } catch {
+    return [];
+  }
 }

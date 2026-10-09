@@ -57,7 +57,11 @@ const groups = [
   {
     label: "Gestión",
     items: [
-      { name: "Agenda de mentoría", href: "/mentorship", icon: CalendarDays },
+      {
+        name: "Agenda de mentoría",
+        href: "/admin/mentorship",
+        icon: CalendarDays,
+      },
       { name: "Certificados", href: "/admin/certificates", icon: Award },
       { name: "Notificaciones", href: "/admin/notifications", icon: Bell },
       { name: "Comentarios", href: "/admin/comments", icon: MessageSquare },

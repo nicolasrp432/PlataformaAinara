@@ -1,148 +1,146 @@
-"use client"
+"use client";
 
-import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
-import { toast } from "sonner"
-import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical, MoreVertical, Video, FileText, Clock, Users, Loader2 } from "lucide-react"
-import { MediaImage } from "@/components/media/media-image"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { CurriculumEditor } from "@/components/admin/curriculum-editor";
+import Link from "next/link";
+import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ArrowLeft,
+  Save,
+  Eye,
+  Video,
+  FileText,
+  Clock,
+  Users,
+  Loader2,
+} from "lucide-react";
+import { MediaImage } from "@/components/media/media-image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  createFormationAction,
-  updateFormationAction,
-  createModuleAction,
-  deleteModuleAction
-} from "../actions"
-import { uploadImage, ACCEPTED_IMAGE_TYPES } from "@/lib/image-upload"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { createFormationAction, updateFormationAction } from "../actions";
+import { uploadImage, ACCEPTED_IMAGE_TYPES } from "@/lib/image-upload";
 
-type DifficultyLevel = "beginner" | "intermediate" | "advanced"
+type DifficultyLevel = "beginner" | "intermediate" | "advanced";
 
 interface FormationFormState {
-  id: string
-  title: string
-  slug: string
-  description: string | null
-  long_description: string | null
-  thumbnail_url: string | null
-  difficulty: DifficultyLevel
-  duration_minutes: number
-  is_published: boolean
-  is_premium: boolean
-  is_featured: boolean
-  xp_reward: number
-  price: number
-  sort_order: number
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  long_description: string | null;
+  thumbnail_url: string | null;
+  difficulty: DifficultyLevel;
+  duration_minutes: number;
+  is_published: boolean;
+  is_premium: boolean;
+  is_featured: boolean;
+  xp_reward: number;
+  price: number;
+  sort_order: number;
 }
 
 interface Module {
-  id: string
-  formation_id: string
-  title: string
-  description: string | null
-  sort_order: number
-  is_published: boolean
-  lessons?: Lesson[]
+  id: string;
+  formation_id: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  is_published: boolean;
+  lessons?: Lesson[];
 }
 
 interface Lesson {
-  id: string
-  module_id: string
-  title: string
-  description: string | null
-  video_url: string | null
-  duration_seconds: number
-  content_type: string
-  sort_order: number
-  is_published: boolean
-  is_free: boolean
-  xp_reward: number
+  id: string;
+  module_id: string;
+  title: string;
+  description: string | null;
+  video_url: string | null;
+  duration_seconds: number;
+  content_type: string;
+  sort_order: number;
+  is_published: boolean;
+  is_free: boolean;
+  xp_reward: number;
 }
 
 type FormationEditorInitialData = Partial<FormationFormState> & {
-  modules?: Module[]
-}
+  modules?: Module[];
+};
 
 const difficultyLevels = [
   { value: "beginner", label: "Principiante" },
   { value: "intermediate", label: "Intermedio" },
   { value: "advanced", label: "Avanzado" },
-]
+];
 
-export default function FormationEditorClientPage({ isNew, initialData }: { isNew: boolean; initialData: FormationEditorInitialData | null }) {
-  const router = useRouter()
-  const supabase = createClient()
+export default function FormationEditorClientPage({
+  isNew,
+  initialData,
+}: {
+  isNew: boolean;
+  initialData: FormationEditorInitialData | null;
+}) {
+  const router = useRouter();
 
-  const [formation, setFormation] = useState<FormationFormState>(initialData ? {
-    id: initialData.id || "",
-    title: initialData.title || "",
-    slug: initialData.slug || "",
-    description: initialData.description ?? null,
-    long_description: initialData.long_description ?? null,
-    thumbnail_url: initialData.thumbnail_url ?? null,
-    difficulty: initialData.difficulty || "beginner",
-    duration_minutes: initialData.duration_minutes ?? 0,
-    is_published: initialData.is_published ?? false,
-    is_premium: initialData.is_premium ?? false,
-    is_featured: initialData.is_featured ?? false,
-    xp_reward: initialData.xp_reward ?? 0,
-    price: initialData.price ?? 0,
-    sort_order: initialData.sort_order ?? 0,
-  } : {
-    id: "",
-    title: "",
-    slug: "",
-    description: null,
-    long_description: null,
-    thumbnail_url: null,
-    difficulty: "beginner",
-    duration_minutes: 0,
-    is_published: false,
-    is_premium: false,
-    is_featured: false,
-    xp_reward: 0,
-    price: 0,
-    sort_order: 0,
-  })
-  const [modules, setModules] = useState<Module[]>(initialData?.modules || [])
-  const [loading] = useState(false)
-  const [isUploadingCover, setIsUploadingCover] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  const [activeTab, setActiveTab] = useState("details")
-
-  // Dialogs
-  const [moduleDialogOpen, setModuleDialogOpen] = useState(false)
-  const [lessonDialogOpen, setLessonDialogOpen] = useState(false)
-  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
-
-  // Form state for new module/lesson
-  const [newModuleTitle, setNewModuleTitle] = useState("")
-  const [newModuleDescription, setNewModuleDescription] = useState("")
-  const [newLessonTitle, setNewLessonTitle] = useState("")
-  const [newLessonDescription, setNewLessonDescription] = useState("")
+  const [formation, setFormation] = useState<FormationFormState>(
+    initialData
+      ? {
+          id: initialData.id || "",
+          title: initialData.title || "",
+          slug: initialData.slug || "",
+          description: initialData.description ?? null,
+          long_description: initialData.long_description ?? null,
+          thumbnail_url: initialData.thumbnail_url ?? null,
+          difficulty: initialData.difficulty || "beginner",
+          duration_minutes: initialData.duration_minutes ?? 0,
+          is_published: initialData.is_published ?? false,
+          is_premium: initialData.is_premium ?? false,
+          is_featured: initialData.is_featured ?? false,
+          xp_reward: initialData.xp_reward ?? 0,
+          price: initialData.price ?? 0,
+          sort_order: initialData.sort_order ?? 0,
+        }
+      : {
+          id: "",
+          title: "",
+          slug: "",
+          description: null,
+          long_description: null,
+          thumbnail_url: null,
+          difficulty: "beginner",
+          duration_minutes: 0,
+          is_published: false,
+          is_premium: false,
+          is_featured: false,
+          xp_reward: 0,
+          price: 0,
+          sort_order: 0,
+        },
+  );
+  const modules = initialData?.modules ?? [];
+  const [loading] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [activeTab, setActiveTab] = useState("details");
 
   function buildPayload() {
     return {
@@ -159,31 +157,35 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
       is_featured: formation?.is_featured || false,
       xp_reward: formation?.xp_reward || 0,
       price: formation?.price || 0,
-    }
+    };
   }
 
   function handleSave() {
-    if (!formation) return
+    if (!formation) return;
 
     startTransition(async () => {
       try {
-        const payload = buildPayload()
+        const payload = buildPayload();
 
         if (isNew) {
-          const res = await createFormationAction(payload)
-          if (!res.success) throw new Error(res.error)
-          toast.success("Formación creada correctamente")
-          router.push(`/admin/content/formations/${res.data.id}`)
+          const res = await createFormationAction(payload);
+          if (!res.success) throw new Error(res.error);
+          toast.success("Formación creada correctamente");
+          router.push(`/admin/content/formations/${res.data.id}`);
         } else {
-          const res = await updateFormationAction(formation?.id || "", payload)
-          if (!res.success) throw new Error(res.error)
-          toast.success("Formación guardada correctamente")
+          const res = await updateFormationAction(formation?.id || "", payload);
+          if (!res.success) throw new Error(res.error);
+          toast.success("Formación guardada correctamente");
         }
       } catch (error) {
-        console.error("Error saving formation:", error)
-        toast.error("Error al guardar la formación")
+        console.error("Error saving formation:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Error al guardar la formación",
+        );
       }
-    })
+    });
   }
 
   const generateSlug = (title: string) => {
@@ -192,8 +194,8 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
-  }
+      .replace(/(^-|-$)/g, "");
+  };
 
   const handleTitleChange = (title: string) => {
     if (formation) {
@@ -201,148 +203,55 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
         ...prev,
         title,
         slug: isNew ? generateSlug(title) : prev.slug,
-      }))
+      }));
     }
-  }
-
-  async function addModule() {
-    if (!formation || !newModuleTitle.trim() || isNew) return
-
-    try {
-      const res = await createModuleAction({
-        formation_id: formation?.id || "",
-        title: newModuleTitle,
-        description: newModuleDescription || null,
-        sort_order: modules?.length || 0,
-        is_published: false,
-      })
-
-      if (!res.success) throw new Error(res.error)
-
-      setModules([...modules, { ...res.data, lessons: [] }])
-      setNewModuleTitle("")
-      setNewModuleDescription("")
-      setModuleDialogOpen(false)
-    } catch (error) {
-      console.error("Error creating module:", error)
-    }
-  }
-
-  async function addLesson() {
-    if (!selectedModuleId || !newLessonTitle.trim()) return
-
-    const moduleIndex = modules?.findIndex(m => m.id === selectedModuleId) ?? -1
-    if (moduleIndex === -1) return
-
-    try {
-      const lessonSlug = newLessonTitle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString().slice(-4)
-      const { data, error } = await supabase
-        .from("lessons")
-        .insert({
-          module_id: selectedModuleId,
-          title: newLessonTitle,
-          slug: lessonSlug,
-          description: newLessonDescription || null,
-          sort_order: modules[moduleIndex].lessons?.length || 0,
-          content_type: "video",
-          is_published: false,
-          is_free: false,
-          xp_reward: 25,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      const updatedModules = [...modules]
-      updatedModules[moduleIndex] = {
-        ...updatedModules[moduleIndex],
-        lessons: [...(updatedModules[moduleIndex].lessons || []), data]
-      }
-      setModules(updatedModules)
-
-      setNewLessonTitle("")
-      setNewLessonDescription("")
-      setLessonDialogOpen(false)
-    } catch (error) {
-      console.error("Error creating lesson:", error)
-    }
-  }
-
-  async function deleteModule(moduleId: string) {
-    try {
-      const res = await deleteModuleAction(moduleId, formation?.id || "")
-      if (!res.success) throw new Error(res.error)
-
-      setModules(modules?.filter(m => m.id !== moduleId) || [])
-    } catch (error) {
-      console.error("Error deleting module:", error)
-    }
-  }
-
-  async function deleteLesson(lessonId: string, moduleId: string) {
-    try {
-      const { error } = await supabase
-        .from("lessons")
-        .delete()
-        .eq("id", lessonId)
-
-      if (error) throw error
-
-      const moduleIndex = modules?.findIndex(m => m.id === moduleId) ?? -1
-      if (moduleIndex !== -1) {
-        const updatedModules = [...modules]
-        updatedModules[moduleIndex] = {
-          ...updatedModules[moduleIndex],
-          lessons: updatedModules[moduleIndex].lessons?.filter(l => l.id !== lessonId) || []
-        }
-        setModules(updatedModules)
-      }
-    } catch (error) {
-      console.error("Error deleting lesson:", error)
-    }
-  }
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`
-    }
-    return `${minutes}m`
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   if (!formation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <p className="text-muted-foreground">Formacion no encontrada</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.back()}>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => router.back()}
+        >
           Volver
         </Button>
       </div>
-    )
+    );
   }
 
-  const totalLessons = modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 0
-  const totalDuration = modules?.reduce(
-    (acc, m) => acc + (m.lessons?.reduce((acc2, l) => acc2 + (l.duration_seconds || 0), 0) || 0),
-    0
-  ) || 0
+  const totalLessons =
+    modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 0;
+  const totalDuration =
+    modules?.reduce(
+      (acc, m) =>
+        acc +
+        (m.lessons?.reduce((acc2, l) => acc2 + (l.duration_seconds || 0), 0) ||
+          0),
+      0,
+    ) || 0;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/30 pb-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="shrink-0"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="min-w-0">
@@ -350,20 +259,34 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
               {isNew ? "Nueva Formación" : "Editar Formación"}
             </h1>
             <p className="text-muted-foreground text-xs truncate">
-              {isNew ? "Crea una nueva formación para tus estudiantes" : formation?.title || ""}
+              {isNew
+                ? "Crea una nueva formación para tus estudiantes"
+                : formation?.title || ""}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto justify-end">
           {!isNew && (
-            <Button variant="outline" size="sm" asChild className="flex-1 md:flex-initial justify-center">
-              <Link href={`/formations/${formation?.slug || ""}`} target="_blank">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="flex-1 md:flex-initial justify-center"
+            >
+              <Link
+                href={`/admin/content/formations/${formation.id}/preview`}
+                target="_blank"
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 Vista Previa
               </Link>
             </Button>
           )}
-          <Button onClick={handleSave} disabled={isPending} className="flex-1 md:flex-initial justify-center bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button
+            onClick={handleSave}
+            disabled={isPending}
+            className="flex-1 md:flex-initial justify-center bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
             {isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -384,8 +307,12 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   <Video className="h-4 w-4 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Lecciones</p>
-                  <p className="text-xl font-semibold leading-none mt-1">{totalLessons}</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    Lecciones
+                  </p>
+                  <p className="text-xl font-semibold leading-none mt-1">
+                    {totalLessons}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -397,8 +324,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   <Clock className="h-4 w-4 text-warning-strong" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Duración</p>
-                  <p className="text-xl font-semibold leading-none mt-1 truncate">{formatDuration(totalDuration)}</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    Duración
+                  </p>
+                  <p className="text-xl font-semibold leading-none mt-1 truncate">{`${Math.round(totalDuration / 60)} min`}</p>
                 </div>
               </div>
             </CardContent>
@@ -410,8 +339,12 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   <FileText className="h-4 w-4 text-blue-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Módulos</p>
-                  <p className="text-xl font-semibold leading-none mt-1">{modules?.length || 0}</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    Módulos
+                  </p>
+                  <p className="text-xl font-semibold leading-none mt-1">
+                    {modules?.length || 0}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -423,7 +356,9 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   <Users className="h-4 w-4 text-green-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Estudiantes</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    Estudiantes
+                  </p>
                   <p className="text-xl font-semibold leading-none mt-1">0</p>
                 </div>
               </div>
@@ -436,7 +371,9 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="details">Detalles</TabsTrigger>
-          <TabsTrigger value="content" disabled={isNew}>Contenido</TabsTrigger>
+          <TabsTrigger value="content" disabled={isNew}>
+            Contenido
+          </TabsTrigger>
           <TabsTrigger value="settings">Configuracion</TabsTrigger>
         </TabsList>
 
@@ -466,7 +403,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                     id="slug"
                     value={formation?.slug || ""}
                     onChange={(e) =>
-                    setFormation((prev) => ({ ...prev, slug: e.target.value }))
+                      setFormation((prev) => ({
+                        ...prev,
+                        slug: e.target.value,
+                      }))
                     }
                     placeholder="despertar-consciencia"
                   />
@@ -479,7 +419,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   id="description"
                   value={formation?.description || ""}
                   onChange={(e) =>
-                    setFormation((prev) => ({ ...prev, description: e.target.value }))
+                    setFormation((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                   placeholder="Breve descripcion de la formacion..."
                   rows={3}
@@ -492,7 +435,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   id="long_description"
                   value={formation?.long_description || ""}
                   onChange={(e) =>
-                    setFormation((prev) => ({ ...prev, long_description: e.target.value }))
+                    setFormation((prev) => ({
+                      ...prev,
+                      long_description: e.target.value,
+                    }))
                   }
                   placeholder="Descripcion detallada de lo que aprenderan..."
                   rows={5}
@@ -505,7 +451,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   <Select
                     value={formation?.difficulty || "beginner"}
                     onValueChange={(value) =>
-                      setFormation((prev) => ({ ...prev, difficulty: value as DifficultyLevel }))
+                      setFormation((prev) => ({
+                        ...prev,
+                        difficulty: value as DifficultyLevel,
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -528,7 +477,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                     min={0}
                     value={formation?.duration_minutes || 0}
                     onChange={(e) =>
-                      setFormation((prev) => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))
+                      setFormation((prev) => ({
+                        ...prev,
+                        duration_minutes: parseInt(e.target.value) || 0,
+                      }))
                     }
                   />
                 </div>
@@ -540,7 +492,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                     min={0}
                     value={formation?.xp_reward || 0}
                     onChange={(e) =>
-                      setFormation((prev) => ({ ...prev, xp_reward: parseInt(e.target.value) || 0 }))
+                      setFormation((prev) => ({
+                        ...prev,
+                        xp_reward: parseInt(e.target.value) || 0,
+                      }))
                     }
                   />
                 </div>
@@ -564,45 +519,61 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                     disabled={isUploadingCover}
                     className="rounded-md"
                     onChange={async (e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
+                      const file = e.target.files?.[0];
+                      if (!file) return;
                       // Permite reintentar con el mismo fichero: sin esto, el
                       // input no vuelve a disparar `change` tras un fallo.
-                      e.target.value = ""
+                      e.target.value = "";
 
-                      setIsUploadingCover(true)
-                      const toastId = toast.loading("Subiendo imagen…")
+                      setIsUploadingCover(true);
+                      const toastId = toast.loading("Subiendo imagen…");
                       try {
-                        const url = await uploadImage(file, "thumbnails/formations")
-                        setFormation((prev) => ({ ...prev, thumbnail_url: url }))
-                        toast.dismiss(toastId)
+                        const url = await uploadImage(
+                          file,
+                          "thumbnails/formations",
+                        );
+                        setFormation((prev) => ({
+                          ...prev,
+                          thumbnail_url: url,
+                        }));
+                        toast.dismiss(toastId);
 
                         if (!isNew && formation?.id) {
-                          const saveRes = await updateFormationAction(formation.id, { thumbnail_url: url })
+                          const saveRes = await updateFormationAction(
+                            formation.id,
+                            { thumbnail_url: url },
+                          );
                           if (saveRes.success) {
-                            toast.success("Imagen guardada correctamente")
+                            toast.success("Imagen guardada correctamente");
                           } else {
-                            toast.error("Imagen subida pero no guardada — pulsa Guardar")
+                            toast.error(
+                              "Imagen subida pero no guardada — pulsa Guardar",
+                            );
                           }
                         } else {
-                          toast.success("Imagen lista — recuerda guardar la formación")
+                          toast.success(
+                            "Imagen lista — recuerda guardar la formación",
+                          );
                         }
                       } catch (error) {
-                        toast.dismiss(toastId)
+                        toast.dismiss(toastId);
                         toast.error(
                           error instanceof Error
                             ? error.message
                             : "No se pudo subir la imagen.",
-                        )
+                        );
                       } finally {
-                        setIsUploadingCover(false)
+                        setIsUploadingCover(false);
                       }
                     }}
                   />
                   <Input
                     value={formation?.thumbnail_url || ""}
                     onChange={(e) =>
-                      setFormation((prev) => ({ ...prev, thumbnail_url: e.target.value }))
+                      setFormation((prev) => ({
+                        ...prev,
+                        thumbnail_url: e.target.value,
+                      }))
                     }
                     placeholder="URL de imagen (opcional si subes archivo)"
                   />
@@ -625,233 +596,17 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
           </Card>
         </TabsContent>
 
-        {/* Content Tab */}
         <TabsContent value="content" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Modulos y Lecciones</h3>
-              <p className="text-sm text-muted-foreground">
-                Organiza el contenido de tu formacion en modulos
-              </p>
-            </div>
-            <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Modulo
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Nuevo Modulo</DialogTitle>
-                  <DialogDescription>
-                    Crea un nuevo modulo para organizar tus lecciones
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="module-title">Titulo del Modulo</Label>
-                    <Input
-                      id="module-title"
-                      value={newModuleTitle}
-                      onChange={(e) => setNewModuleTitle(e.target.value)}
-                      placeholder="Ej: Fundamentos de la Consciencia"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="module-description">Descripcion</Label>
-                    <Textarea
-                      id="module-description"
-                      value={newModuleDescription}
-                      onChange={(e) => setNewModuleDescription(e.target.value)}
-                      placeholder="Describe el contenido de este modulo..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setModuleDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={addModule} disabled={!newModuleTitle.trim()}>
-                    Crear Modulo
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Modules List */}
-          <div className="space-y-4">
-            {(!modules || modules.length === 0) ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground/50" />
-                  <h3 className="mt-4 font-semibold">No hay modulos</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Agrega un modulo para empezar a crear contenido
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              modules?.map((module, moduleIndex) => (
-                <Card key={module.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                          {moduleIndex + 1}
-                        </div>
-                        <div>
-                          <CardTitle className="text-base">{module.title}</CardTitle>
-                          {module.description && (
-                            <CardDescription className="text-xs mt-1">
-                              {module.description}
-                            </CardDescription>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={module.is_published ? "default" : "outline"}>
-                          {module.is_published ? "Publicado" : "Borrador"}
-                        </Badge>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedModuleId(module.id)
-                                setLessonDialogOpen(true)
-                              }}
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Agregar Leccion
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => deleteModule(module.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Eliminar Modulo
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Lessons List */}
-                    {module?.lessons && module.lessons.length > 0 ? (
-                      <div className="space-y-2">
-                        {module.lessons?.map((lesson, lessonIndex) => (
-                          <div
-                            key={lesson.id}
-                            className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                          >
-                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                            <div className="flex items-center justify-center w-6 h-6 rounded bg-muted text-muted-foreground text-xs font-medium">
-                              {lessonIndex + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{lesson.title}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="capitalize">{lesson.content_type}</span>
-                                {lesson.duration_seconds > 0 && (
-                                  <>
-                                    <span>-</span>
-                                    <span>{formatDuration(lesson.duration_seconds)}</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {lesson.is_free && (
-                                <Badge variant="secondary" className="text-xs">Preview</Badge>
-                              )}
-                              <Badge variant={lesson.is_published ? "default" : "outline"} className="text-xs">
-                                {lesson.is_published ? "Publicado" : "Borrador"}
-                              </Badge>
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/admin/content/lessons/${lesson.id}`}>
-                                  <Video className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteLesson(lesson.id, module.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground text-sm">
-                        No hay lecciones en este modulo
-                        <Button
-                          variant="link"
-                          className="ml-1 p-0 h-auto"
-                          onClick={() => {
-                            setSelectedModuleId(module.id)
-                            setLessonDialogOpen(true)
-                          }}
-                        >
-                          Agregar una
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-
-          {/* Lesson Dialog */}
-          <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Nueva Leccion</DialogTitle>
-                <DialogDescription>
-                  Crea una nueva leccion para este modulo
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="lesson-title">Titulo de la Leccion</Label>
-                  <Input
-                    id="lesson-title"
-                    value={newLessonTitle}
-                    onChange={(e) => setNewLessonTitle(e.target.value)}
-                    placeholder="Ej: Introduccion a la Meditacion"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lesson-description">Descripcion</Label>
-                  <Textarea
-                    id="lesson-description"
-                    value={newLessonDescription}
-                    onChange={(e) => setNewLessonDescription(e.target.value)}
-                    placeholder="Describe el contenido de esta leccion..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setLessonDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={addLesson} disabled={!newLessonTitle.trim()}>
-                  Crear Leccion
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {isNew ? (
+            <p className="rounded-xl border p-6 text-muted-foreground">
+              Guarda la formación para empezar a añadir contenido.
+            </p>
+          ) : (
+            <CurriculumEditor
+              formationId={formation.id}
+              initialModules={initialData?.modules ?? []}
+            />
+          )}
         </TabsContent>
 
         {/* Settings Tab */}
@@ -920,7 +675,7 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="price">Precio (USD)</Label>
+                <Label htmlFor="price">Precio (EUR)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -928,7 +683,10 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
                   step={0.01}
                   value={formation?.price || 0}
                   onChange={(e) =>
-                    setFormation((prev) => ({ ...prev, price: parseFloat(e.target.value) || 0 }))
+                    setFormation((prev) => ({
+                      ...prev,
+                      price: parseFloat(e.target.value) || 0,
+                    }))
                   }
                   placeholder="0.00"
                 />
@@ -941,5 +699,5 @@ export default function FormationEditorClientPage({ isNew, initialData }: { isNe
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

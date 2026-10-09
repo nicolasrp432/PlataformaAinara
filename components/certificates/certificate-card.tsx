@@ -1,17 +1,20 @@
-"use client"
+"use client";
 
-import { Award, Sparkles, CheckCircle2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Award, Sparkles, CheckCircle2 } from "lucide-react";
+import { CertificateDownloadButton } from "./download-button";
+import { cn } from "@/lib/utils";
 
 interface CertificateCardProps {
-  userName: string
-  formationTitle: string
-  issuedAt: string
-  certificateNumber: string
-  className?: string
+  id?: string;
+  userName: string;
+  formationTitle: string;
+  issuedAt: string;
+  certificateNumber: string;
+  className?: string;
 }
 
 export function CertificateCard({
+  id,
   userName,
   formationTitle,
   issuedAt,
@@ -22,7 +25,7 @@ export function CertificateCard({
     year: "numeric",
     month: "long",
     day: "numeric",
-  })
+  });
 
   return (
     <div
@@ -52,14 +55,18 @@ export function CertificateCard({
       </p>
 
       {/* This certifies */}
-      <p className="text-sm text-muted-foreground mb-2">Este certificado acredita que</p>
+      <p className="text-sm text-muted-foreground mb-2">
+        Este certificado acredita que
+      </p>
 
       {/* User name */}
       <h2 className="font-display text-3xl font-semibold text-foreground mb-2 leading-tight">
         {userName}
       </h2>
 
-      <p className="text-sm text-muted-foreground mb-2">ha completado satisfactoriamente</p>
+      <p className="text-sm text-muted-foreground mb-2">
+        ha completado satisfactoriamente
+      </p>
 
       {/* Formation name */}
       <h3 className="font-display text-xl font-medium text-primary mb-5 leading-tight">
@@ -73,18 +80,28 @@ export function CertificateCard({
         <div className="flex-1 h-px bg-warning-soft" />
       </div>
 
+      {id && (
+        <div className="mb-5">
+          <CertificateDownloadButton id={id} />
+        </div>
+      )}
+
       {/* Date and number */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <div className="text-left">
-          <p className="text-3xs uppercase tracking-wider mb-0.5 text-muted-foreground/60">Fecha</p>
+          <p className="text-3xs uppercase tracking-wider mb-0.5 text-muted-foreground/60">
+            Fecha
+          </p>
           <p>{formattedDate}</p>
         </div>
         <CheckCircle2 className="h-5 w-5 text-primary/60" />
         <div className="text-right">
-          <p className="text-3xs uppercase tracking-wider mb-0.5 text-muted-foreground/60">Certificado Nº</p>
+          <p className="text-3xs uppercase tracking-wider mb-0.5 text-muted-foreground/60">
+            Certificado Nº
+          </p>
           <p className="font-mono">{certificateNumber}</p>
         </div>
       </div>
     </div>
-  )
+  );
 }

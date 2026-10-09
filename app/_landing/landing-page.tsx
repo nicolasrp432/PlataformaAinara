@@ -1,3 +1,4 @@
+import { VideoPlayer } from "@/components/video/video-player";
 import Link from "next/link";
 import {
   Check,
@@ -51,7 +52,21 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 /** Public sales content stays on the server; animations, tabs, ranges and registration hydrate. */
-export function LandingPage({ formations }: { formations: Formation[] }) {
+export interface PublicTestimonial {
+  id: string;
+  subject_name: string | null;
+  caption: string;
+  testimonial_text: string | null;
+  playback_url: string | null;
+  thumbnail_url: string | null;
+}
+export function LandingPage({
+  formations,
+  testimonials = [],
+}: {
+  formations: Formation[];
+  testimonials?: PublicTestimonial[];
+}) {
   const lifetimePrice = planPrice(PLANS.lifetime);
   const membershipPrice = planPrice(PLANS.membership);
 
@@ -356,13 +371,33 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
             </div>
           </section>
 
-          {TESTIMONIALS.length > 0 && (
+          {(TESTIMONIALS.length > 0 || testimonials.length > 0) && (
             <section className="sales-section sales-container">
               <Label>EXPERIENCIAS COMPARTIDAS</Label>
               <h2 className="sales-title mb-8">
                 Lo que cuentan quienes han estado aquí.
               </h2>
               <div className="grid gap-5 md:grid-cols-3">
+                {testimonials.map((testimonial) => (
+                  <figure key={testimonial.id} className="ainara-panel h-full">
+                    {testimonial.playback_url && (
+                      <VideoPlayer
+                        src={testimonial.playback_url}
+                        title={
+                          testimonial.subject_name || "Experiencia compartida"
+                        }
+                      />
+                    )}
+                    <blockquote className="mt-4 whitespace-pre-wrap">
+                      {testimonial.testimonial_text || testimonial.caption}
+                    </blockquote>
+                    {testimonial.subject_name && (
+                      <figcaption className="mt-4 border-t pt-3 font-semibold">
+                        {testimonial.subject_name}
+                      </figcaption>
+                    )}
+                  </figure>
+                ))}
                 {TESTIMONIALS.map((testimonial) => (
                   <CardTilt key={testimonial.name} tiltMax={4}>
                     <figure className="ainara-panel h-full transition-shadow duration-300 hover:shadow-xl">
@@ -422,8 +457,12 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
 
               <CardTilt tiltMax={3}>
                 <article className="sales-price-card sales-price-featured h-full">
-                  <span className="ainara-eyebrow">PARA AVANZAR A TU RITMO</span>
-                  <h3 className="font-display text-2xl">{PLANS.lifetime.name}</h3>
+                  <span className="ainara-eyebrow">
+                    PARA AVANZAR A TU RITMO
+                  </span>
+                  <h3 className="font-display text-2xl">
+                    {PLANS.lifetime.name}
+                  </h3>
                   <p className="sales-price">{lifetimePrice}</p>
                   <p className="text-sm text-muted-foreground">
                     {PLANS.lifetime.billingNote}
@@ -452,7 +491,9 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
 
               <CardTilt tiltMax={3}>
                 <article className="sales-price-card h-full">
-                  <span className="ainara-eyebrow">PARA HACERLO ACOMPAÑADO</span>
+                  <span className="ainara-eyebrow">
+                    PARA HACERLO ACOMPAÑADO
+                  </span>
                   <h3 className="font-display text-2xl">
                     {PLANS.membership.name}
                   </h3>
@@ -490,8 +531,12 @@ export function LandingPage({ formations }: { formations: Formation[] }) {
             </div>
             <div className="relative z-20 mx-auto mt-14 sm:mt-20 max-w-2xl text-center">
               <p className="inline-block rounded-full border border-border/70 bg-card/90 px-6 py-3 text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
-                El pago se realiza dentro de tu cuenta a través de Stripe. Consulta las{" "}
-                <Link href="/terms" className="font-medium text-foreground underline hover:text-primary-strong">
+                El pago se realiza dentro de tu cuenta a través de Stripe.
+                Consulta las{" "}
+                <Link
+                  href="/terms"
+                  className="font-medium text-foreground underline hover:text-primary-strong"
+                >
                   condiciones de compra y acceso
                 </Link>{" "}
                 antes de elegir.

@@ -34,6 +34,7 @@ export async function updateMentorshipSession(
       error:
         "No se pudo guardar. Comprueba que la sesión está asignada a ti y que ya ha empezado si la marcas como completada.",
     };
+  revalidatePath("/admin/mentorship");
   revalidatePath("/mentorship");
   revalidatePath("/profile");
   return { success: true };
@@ -55,6 +56,7 @@ export async function updateMentorshipRequest(id: string, status: string) {
     p_status: status,
   });
   if (error) return { error: "No se pudo actualizar esta solicitud." };
+  revalidatePath("/admin/mentorship");
   revalidatePath("/mentorship");
   return { success: true };
 }

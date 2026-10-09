@@ -1,88 +1,127 @@
-import { Metadata } from "next"
-import Link from "next/link"
-import { redirect } from "next/navigation"
-import { getAuthUser, getUserProfile, getQuestData } from "@/lib/data-access"
-import { PageHeader } from "@/components/layout/page-header"
-import { ProfileForm } from "./profile-form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getAuthUser, getUserProfile, getQuestData } from "@/lib/data-access";
+import { PageHeader } from "@/components/layout/page-header";
+import { ProfileForm } from "./profile-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Flame, Star, BookOpen, MessageSquare,
-  Award, CalendarDays, Settings, CreditCard,
-  ArrowRight, CheckCircle2, Activity, Clock, Inbox,
-} from "lucide-react"
-import { computeAchievements } from "@/lib/achievements"
-import { AchievementPill } from "@/components/achievements/achievement-badge"
-import { getSunSign } from "@/lib/utils/astrology"
-import { cn, getInitials } from "@/lib/utils"
-import { getUserMentorshipSessions } from "@/lib/services/mentorship"
-import { getProfileActivity } from "@/lib/services/profile"
-import { createClient } from "@/lib/supabase/server"
-import { CertificateCard } from "@/components/certificates/certificate-card"
-import { listConversations } from "@/lib/services/messaging"
-import { NatalChartSection } from "@/components/profile/NatalChartSection"
-import type { NatalChartRecord } from "@/types"
+  Flame,
+  Star,
+  BookOpen,
+  MessageSquare,
+  Award,
+  CalendarDays,
+  Settings,
+  CreditCard,
+  ArrowRight,
+  CheckCircle2,
+  Activity,
+  Clock,
+  Inbox,
+} from "lucide-react";
+import { computeAchievements } from "@/lib/achievements";
+import { AchievementPill } from "@/components/achievements/achievement-badge";
+import { getSunSign } from "@/lib/utils/astrology";
+import { cn, getInitials } from "@/lib/utils";
+import { getUserMentorshipSessions } from "@/lib/services/mentorship";
+import { getProfileActivity } from "@/lib/services/profile";
+import { createClient } from "@/lib/supabase/server";
+import { CertificateCard } from "@/components/certificates/certificate-card";
+import { listConversations } from "@/lib/services/messaging";
+import { NatalChartSection } from "@/components/profile/NatalChartSection";
+import type { NatalChartRecord } from "@/types";
 
 interface Conversation {
-  conversationId: string
-  otherUser: { id: string; full_name: string; avatar_url: string | null } | null
-  lastMessage: { body: string; created_at: string; sender_id: string } | null
-  unreadCount: number
-  lastMessageAt: string | null
+  conversationId: string;
+  otherUser: {
+    id: string;
+    full_name: string;
+    avatar_url: string | null;
+  } | null;
+  lastMessage: { body: string; created_at: string; sender_id: string } | null;
+  unreadCount: number;
+  lastMessageAt: string | null;
 }
 
 interface DbUserCertificate {
-  id: string
-  certificate_number: string
-  issued_at: string
-  formations: { title: string } | null
+  id: string;
+  certificate_number: string;
+  issued_at: string;
+  formations: { title: string } | null;
 }
 
 export const metadata: Metadata = {
   title: "Mi Perfil",
   description: "Gestiona tu información personal y visualiza tu evolución.",
-}
+};
 
 function formatRelative(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "Ahora"
-  if (mins < 60) return `${mins}m`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h`
-  const days = Math.floor(hours / 24)
-  return `${days}d`
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Ahora";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
 }
 
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const params = await searchParams
-  const initialTab = ["info","activity","mentorship","subscription","messages"].includes(params.tab ?? "") ? params.tab : "info"
-  const user = await getAuthUser()
-  if (!user) redirect("/login")
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const params = await searchParams;
+  const initialTab = [
+    "info",
+    "activity",
+    "mentorship",
+    "subscription",
+    "messages",
+  ].includes(params.tab ?? "")
+    ? params.tab
+    : "info";
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
 
-  const supabase = await createClient()
+  const supabase = await createClient();
 
-  const [profile, questData, mentorshipSessions, activity, { data: subscription }, { data: userCertificates }, conversations, { data: natalChart }] = await Promise.all([
+  const [
+    profile,
+    questData,
+    mentorshipSessions,
+    activity,
+    { data: subscription },
+    { data: userCertificates },
+    conversations,
+    { data: natalChart },
+  ] = await Promise.all([
     getUserProfile(user.id),
     getQuestData(user.id),
     getUserMentorshipSessions(user.id),
     getProfileActivity(user.id),
     supabase
       .from("subscriptions")
-      .select("status, current_period_end, cancel_at_period_end, stripe_price_id")
+      .select(
+        "status, current_period_end, cancel_at_period_end, stripe_price_id",
+      )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     supabase
       .from("certificates")
-      .select(`
+      .select(
+        `
         id, certificate_number, issued_at,
         formations ( title )
-      `)
+      `,
+      )
       .eq("user_id", user.id)
       .order("issued_at", { ascending: false }),
     listConversations(user.id),
@@ -91,13 +130,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle(),
-  ])
+  ]);
 
   const userData = {
     id: user.id,
     full_name: profile?.full_name || user.user_metadata?.full_name || "Usuario",
     email: user.email || "",
-    avatarUrl: (profile ? profile.avatar_url : user.user_metadata?.avatar_url) ?? "",
+    avatarUrl:
+      (profile ? profile.avatar_url : user.user_metadata?.avatar_url) ?? "",
     role: profile?.role || "student",
     level: profile?.level || 1,
     xp: profile?.xp ?? 0,
@@ -105,28 +145,55 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     birth_date: profile?.birth_date || null,
     birth_time: profile?.birth_time || null,
     birth_city: profile?.birth_city || null,
-  }
+  };
 
-  const astro = userData.birth_date ? getSunSign(userData.birth_date) : null
-  const sunSign = astro?.sign || ""
-  const signSymbol = astro?.symbol || ""
+  const astro = userData.birth_date ? getSunSign(userData.birth_date) : null;
+  const sunSign = astro?.sign || "";
+  const signSymbol = astro?.symbol || "";
 
-  const allAchievements = computeAchievements(questData)
-  const unlockedAchievements = allAchievements.filter((a) => a.unlocked)
+  const allAchievements = computeAchievements(questData);
+  const unlockedAchievements = allAchievements.filter((a) => a.unlocked);
 
-  const subscriptionStatus = subscription?.status ?? "inactive"
-  const subscriptionLabel: Record<string, { label: string; className: string }> = {
-    active: { label: "Activa", className: "bg-success-soft text-success-strong border-success-border" },
-    trialing: { label: "En prueba", className: "bg-blue-500/15 text-blue-700 border-blue-300/40" },
-    past_due: { label: "Pago pendiente", className: "bg-warning-soft text-warning-strong border-warning-border" },
-    canceled: { label: "Cancelada", className: "bg-danger-soft text-danger-strong border-danger-border" },
-    inactive: { label: "Sin suscripción", className: "bg-muted text-muted-foreground border-border/60" },
-  }
-  const subBadge = subscriptionLabel[subscriptionStatus] ?? subscriptionLabel.inactive
+  const subscriptionStatus = subscription?.status ?? "inactive";
+  const subscriptionLabel: Record<
+    string,
+    { label: string; className: string }
+  > = {
+    active: {
+      label: "Activa",
+      className: "bg-success-soft text-success-strong border-success-border",
+    },
+    trialing: {
+      label: "En prueba",
+      className: "bg-blue-500/15 text-blue-700 border-blue-300/40",
+    },
+    past_due: {
+      label: "Pago pendiente",
+      className: "bg-warning-soft text-warning-strong border-warning-border",
+    },
+    canceled: {
+      label: "Cancelada",
+      className: "bg-danger-soft text-danger-strong border-danger-border",
+    },
+    inactive: {
+      label: "Sin suscripción",
+      className: "bg-muted text-muted-foreground border-border/60",
+    },
+  };
+  const subBadge =
+    subscriptionLabel[subscriptionStatus] ?? subscriptionLabel.inactive;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10 relative">
-      <PageHeader eyebrow="Tu espacio en Mitra" title={<>Mi <em>perfil.</em></>} description="Cuida tu identidad, revisa tu aprendizaje y encuentra tus mensajes, sesiones y logros en un mismo lugar." />
+      <PageHeader
+        eyebrow="Tu espacio en Mitra"
+        title={
+          <>
+            Mi <em>perfil.</em>
+          </>
+        }
+        description="Cuida tu identidad, revisa tu aprendizaje y encuentra tus mensajes, sesiones y logros en un mismo lugar."
+      />
 
       <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
         {/* Left Column: Avatar & Main Stats (unchanged) */}
@@ -136,7 +203,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <CardContent className="px-6 py-0 pb-6 relative z-10 text-center">
               <div className="flex justify-center -mt-14 mb-5">
                 <Avatar className="h-28 w-28 border-[6px] border-background shadow-xl transition-transform duration-300 hover:scale-105">
-                  <AvatarImage src={userData.avatarUrl} className="object-cover" />
+                  <AvatarImage
+                    src={userData.avatarUrl}
+                    className="object-cover"
+                  />
                   <AvatarFallback className="text-3xl bg-primary/10 text-primary font-bold">
                     {userData.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -149,13 +219,23 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 <p className="text-sm text-muted-foreground font-medium">
                   {userData.email}
                 </p>
-                {profile?.bio && <p className="mt-3 break-words text-sm text-muted-foreground">{profile.bio}</p>}
+                {profile?.bio && (
+                  <p className="mt-3 break-words text-sm text-muted-foreground">
+                    {profile.bio}
+                  </p>
+                )}
               </div>
               <div className="flex justify-center items-center gap-2 mb-2">
-                <Badge variant="secondary" className="bg-primary/15 text-primary hover:bg-primary/25 border-none transition-colors px-3 py-1">
+                <Badge
+                  variant="secondary"
+                  className="bg-primary/15 text-primary hover:bg-primary/25 border-none transition-colors px-3 py-1"
+                >
                   {userData.role === "admin" ? "Fundador" : "Aventurero"}
                 </Badge>
-                <Badge variant="outline" className="border-primary/20 text-foreground px-3 py-1 bg-background/50">
+                <Badge
+                  variant="outline"
+                  className="border-primary/20 text-foreground px-3 py-1 bg-background/50"
+                >
                   Nivel {userData.level}
                 </Badge>
               </div>
@@ -175,13 +255,19 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     <Flame className="w-5 h-5 fill-primary/20" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">Racha</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      Racha
+                    </p>
                     <p className="text-xs text-muted-foreground">Constancia</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-xl text-foreground">{userData.streak}</span>
-                  <span className="text-xs text-muted-foreground block -mt-1">Días</span>
+                  <span className="font-bold text-xl text-foreground">
+                    {userData.streak}
+                  </span>
+                  <span className="text-xs text-muted-foreground block -mt-1">
+                    Días
+                  </span>
                 </div>
               </div>
 
@@ -191,19 +277,31 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     <Star className="w-5 h-5 fill-primary/20" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">Experiencia</p>
-                    <p className="text-xs text-muted-foreground">Conocimiento</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      Experiencia
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Conocimiento
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-xl text-foreground">{userData.xp}</span>
-                  <span className="text-xs text-primary block -mt-1 font-medium">XP</span>
+                  <span className="font-bold text-xl text-foreground">
+                    {userData.xp}
+                  </span>
+                  <span className="text-xs text-primary block -mt-1 font-medium">
+                    XP
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Button asChild variant="outline" className="w-full justify-start gap-2 border-border/50">
+          <Button
+            asChild
+            variant="outline"
+            className="w-full justify-start gap-2 border-border/50"
+          >
             <Link href="/profile/settings">
               <Settings className="w-4 h-4" />
               Ajustes y seguridad
@@ -215,28 +313,54 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue={initialTab}>
             <TabsList className="bg-muted/50 w-full justify-start p-1 rounded-xl h-auto flex flex-wrap">
-              <TabsTrigger value="info" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+              <TabsTrigger
+                value="info"
+                className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5"
+              >
                 <Award className="w-4 h-4" /> Información
               </TabsTrigger>
-              <TabsTrigger value="activity" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+              <TabsTrigger
+                value="activity"
+                className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5"
+              >
                 <Activity className="w-4 h-4" /> Actividad
               </TabsTrigger>
-              <TabsTrigger value="mentorship" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+              <TabsTrigger
+                value="mentorship"
+                className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5"
+              >
                 <CalendarDays className="w-4 h-4" /> Mentorías
                 {mentorshipSessions.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-3xs">
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 h-4 px-1.5 text-3xs"
+                  >
                     {mentorshipSessions.length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="subscription" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+              <TabsTrigger
+                value="subscription"
+                className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5"
+              >
                 <CreditCard className="w-4 h-4" /> Suscripción
               </TabsTrigger>
-              <TabsTrigger value="messages" className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+              <TabsTrigger
+                value="messages"
+                className="rounded-lg py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5"
+              >
                 <MessageSquare className="w-4 h-4" /> Mensajes
-                {conversations.filter((c: Conversation) => c.unreadCount > 0).length > 0 && (
-                  <Badge variant="destructive" className="ml-1 h-4 px-1.5 text-3xs bg-primary text-primary-foreground font-bold">
-                    {conversations.reduce((acc: number, curr: Conversation) => acc + curr.unreadCount, 0)}
+                {conversations.filter((c: Conversation) => c.unreadCount > 0)
+                  .length > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="ml-1 h-4 px-1.5 text-3xs bg-primary text-primary-foreground font-bold"
+                  >
+                    {conversations.reduce(
+                      (acc: number, curr: Conversation) =>
+                        acc + curr.unreadCount,
+                      0,
+                    )}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -270,7 +394,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg font-medium">
                     <Award className="w-5 h-5 text-primary" /> Insignias
-                    <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/20 text-primary">
+                    <Badge
+                      variant="outline"
+                      className="ml-auto text-xs font-normal border-primary/20 text-primary"
+                    >
                       {unlockedAchievements.length}/{allAchievements.length}
                     </Badge>
                   </CardTitle>
@@ -290,32 +417,40 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     <Award className="w-5 h-5 text-primary" /> Tus Certificados
                   </h3>
                   <div className="grid gap-6 sm:grid-cols-2">
-                    {(userCertificates as unknown as DbUserCertificate[]).map((cert) => (
-                      <CertificateCard
-                        key={cert.id}
-                        userName={userData.full_name}
-                        formationTitle={cert.formations?.title || "Formación"}
-                        issuedAt={cert.issued_at}
-                        certificateNumber={cert.certificate_number}
-                      />
-                    ))}
+                    {(userCertificates as unknown as DbUserCertificate[]).map(
+                      (cert) => (
+                        <CertificateCard
+                          key={cert.id}
+                          id={cert.id}
+                          userName={userData.full_name}
+                          formationTitle={cert.formations?.title || "Formación"}
+                          issuedAt={cert.issued_at}
+                          certificateNumber={cert.certificate_number}
+                        />
+                      ),
+                    )}
                   </div>
                 </div>
               )}
             </TabsContent>
 
             {/* ACTIVITY TAB */}
-            <TabsContent value="activity" className="mt-6 space-y-6 outline-none">
+            <TabsContent
+              value="activity"
+              className="mt-6 space-y-6 outline-none"
+            >
               <Card className="border-border/50 bg-card/60 backdrop-blur-md">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary" /> Últimas lecciones completadas
+                    <BookOpen className="w-5 h-5 text-primary" /> Últimas
+                    lecciones completadas
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {activity.recentLessons.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-6">
-                      Aún no has completado lecciones. ¡Empieza tu primer módulo!
+                      Aún no has completado lecciones. ¡Empieza tu primer
+                      módulo!
                     </p>
                   ) : (
                     activity.recentLessons.map((l) => (
@@ -345,7 +480,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
               <Card className="border-border/50 bg-card/60 backdrop-blur-md">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-primary" /> Tus reflexiones recientes
+                    <MessageSquare className="w-5 h-5 text-primary" /> Tus
+                    reflexiones recientes
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -355,11 +491,19 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     </p>
                   ) : (
                     activity.recentReflections.map((r) => (
-                      <div key={r.id} className="p-3 rounded-lg border border-border/30 bg-background/40">
-                        <p className="text-sm text-foreground line-clamp-2">{r.content}</p>
+                      <div
+                        key={r.id}
+                        className="p-3 rounded-lg border border-border/30 bg-background/40"
+                      >
+                        <p className="text-sm text-foreground line-clamp-2">
+                          {r.content}
+                        </p>
                         {r.lesson_title && (
                           <p className="text-xs text-muted-foreground mt-2">
-                            En: <span className="text-foreground">{r.lesson_title}</span>
+                            En:{" "}
+                            <span className="text-foreground">
+                              {r.lesson_title}
+                            </span>
                           </p>
                         )}
                       </div>
@@ -370,11 +514,16 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             </TabsContent>
 
             {/* MENTORSHIP TAB */}
-            <TabsContent value="mentorship" className="mt-6 space-y-4 outline-none">
+            <TabsContent
+              value="mentorship"
+              className="mt-6 space-y-4 outline-none"
+            >
               {mentorshipSessions.length === 0 ? (
                 <Card className="border-dashed border-2 border-border/50 bg-card/30 p-10 text-center">
                   <CalendarDays className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                  <p className="text-foreground font-medium mb-2">No tienes mentorías reservadas</p>
+                  <p className="text-foreground font-medium mb-2">
+                    No tienes mentorías reservadas
+                  </p>
                   <p className="text-sm text-muted-foreground mb-4">
                     Reserva una sesión 1:1 para acelerar tu transformación.
                   </p>
@@ -386,31 +535,45 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 </Card>
               ) : (
                 mentorshipSessions.map((s) => {
-                  const date = new Date(s.scheduled_at)
-                  const isPast = date.getTime() < Date.now()
-                  const expired = s.status === "pending" && s.hold_expires_at && new Date(s.hold_expires_at).getTime() <= Date.now()
+                  const date = new Date(s.scheduled_at);
+                  const isPast = date.getTime() < Date.now();
+                  const expired =
+                    s.status === "pending" &&
+                    s.hold_expires_at &&
+                    new Date(s.hold_expires_at).getTime() <= Date.now();
                   const statusColors: Record<string, string> = {
-                    confirmed: "bg-success-soft text-success-strong border-success-border",
-                    pending: "bg-warning-soft text-warning-strong border-warning-border",
-                    completed: "bg-blue-500/15 text-blue-700 border-blue-300/40",
-                    cancelled: "bg-danger-soft text-danger-strong border-danger-border",
+                    confirmed:
+                      "bg-success-soft text-success-strong border-success-border",
+                    pending:
+                      "bg-warning-soft text-warning-strong border-warning-border",
+                    completed:
+                      "bg-blue-500/15 text-blue-700 border-blue-300/40",
+                    cancelled:
+                      "bg-danger-soft text-danger-strong border-danger-border",
                     no_show: "bg-muted text-muted-foreground border-border/60",
-                  }
+                  };
                   const statusLabels: Record<string, string> = {
                     confirmed: "Confirmada",
                     pending: "Pago pendiente",
                     completed: "Completada",
                     cancelled: "Cancelada",
                     no_show: "No asistida",
-                  }
+                  };
                   return (
-                    <Card key={s.id} className="border-border/50 bg-card/60 backdrop-blur-md">
+                    <Card
+                      key={s.id}
+                      className="border-border/50 bg-card/60 backdrop-blur-md"
+                    >
                       <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <CalendarDays className="w-4 h-4 text-primary" />
                             <p className="text-sm font-semibold text-foreground">
-                              {date.toLocaleString("es-ES", { timeZone: s.timezone,dateStyle: "full", timeStyle: "short" })}
+                              {date.toLocaleString("es-ES", {
+                                timeZone: s.timezone,
+                                dateStyle: "full",
+                                timeStyle: "short",
+                              })}
                             </p>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -418,8 +581,16 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                               <Clock className="w-3.5 h-3.5" />
                               {s.duration_minutes} min
                             </span>
-                            <Badge variant="outline" className={cn("border", statusColors[s.status] ?? statusColors.pending)}>
-                              {expired ? "Reserva caducada" : statusLabels[s.status] ?? s.status}
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "border",
+                                statusColors[s.status] ?? statusColors.pending,
+                              )}
+                            >
+                              {expired
+                                ? "Reserva caducada"
+                                : (statusLabels[s.status] ?? s.status)}
                             </Badge>
                           </div>
                           {s.user_notes && (
@@ -428,13 +599,20 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                             </p>
                           )}
                         </div>
-                        {s.status === "confirmed" && s.meeting_link && !isPast && (
-                          <Button asChild size="sm">
-                            <a href={s.meeting_link} target="_blank" rel="noreferrer">
-                              Entrar a la sala <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                            </a>
-                          </Button>
-                        )}
+                        {s.status === "confirmed" &&
+                          s.meeting_link &&
+                          !isPast && (
+                            <Button asChild size="sm">
+                              <a
+                                href={s.meeting_link}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Entrar a la sala{" "}
+                                <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                              </a>
+                            </Button>
+                          )}
                         {s.status === "confirmed" && !s.meeting_link && (
                           <span className="text-xs text-muted-foreground italic">
                             La sala se enviará 24h antes
@@ -442,37 +620,54 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                         )}
                       </CardContent>
                     </Card>
-                  )
+                  );
                 })
               )}
             </TabsContent>
 
             {/* SUBSCRIPTION TAB */}
-            <TabsContent value="subscription" className="mt-6 space-y-4 outline-none">
+            <TabsContent
+              value="subscription"
+              className="mt-6 space-y-4 outline-none"
+            >
               <Card className="border-border/50 bg-card/60 backdrop-blur-md">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-primary" /> Tu suscripción
+                    <CreditCard className="w-5 h-5 text-primary" /> Tu
+                    suscripción
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Estado</span>
-                    <Badge className={cn("border", subBadge.className)}>{subBadge.label}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Estado
+                    </span>
+                    <Badge className={cn("border", subBadge.className)}>
+                      {subBadge.label}
+                    </Badge>
                   </div>
                   {subscription?.current_period_end && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">
-                        {subscription.cancel_at_period_end ? "Cancela el" : "Próxima renovación"}
+                        {subscription.cancel_at_period_end
+                          ? "Cancela el"
+                          : "Próxima renovación"}
                       </span>
                       <span className="text-sm font-medium text-foreground">
-                        {new Date(subscription.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+                        {new Date(
+                          subscription.current_period_end,
+                        ).toLocaleDateString("es-ES", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
                       </span>
                     </div>
                   )}
                   <Button asChild className="w-full">
                     <Link href="/billing">
-                      Gestionar suscripción <ArrowRight className="w-4 h-4 ml-1" />
+                      Gestionar suscripción{" "}
+                      <ArrowRight className="w-4 h-4 ml-1" />
                     </Link>
                   </Button>
                 </CardContent>
@@ -480,20 +675,27 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             </TabsContent>
 
             {/* MESSAGES TAB */}
-            <TabsContent value="messages" className="mt-6 space-y-4 outline-none">
+            <TabsContent
+              value="messages"
+              className="mt-6 space-y-4 outline-none"
+            >
               <Card className="border-border/50 bg-card/60 backdrop-blur-md">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-primary" /> Tus conversaciones
+                    <MessageSquare className="w-5 h-5 text-primary" /> Tus
+                    conversaciones
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1">
                   {conversations.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
                       <Inbox className="h-10 w-10 opacity-30" />
-                      <p className="text-sm font-medium">No tienes conversaciones todavía.</p>
+                      <p className="text-sm font-medium">
+                        No tienes conversaciones todavía.
+                      </p>
                       <p className="text-xs opacity-70">
-                        Visita el perfil público de otro usuario para iniciar un chat.
+                        Visita el perfil público de otro usuario para iniciar un
+                        chat.
                       </p>
                     </div>
                   ) : (
@@ -505,7 +707,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                           className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50"
                         >
                           <Avatar className="h-10 w-10 shrink-0 ring-1 ring-primary/10">
-                            <AvatarImage src={conv.otherUser?.avatar_url ?? undefined} />
+                            <AvatarImage
+                              src={conv.otherUser?.avatar_url ?? undefined}
+                            />
                             <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
                               {getInitials(conv.otherUser?.full_name ?? "?")}
                             </AvatarFallback>
@@ -531,7 +735,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                             </div>
                             {conv.lastMessage && (
                               <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                {conv.lastMessage.sender_id === userData.id ? "Tú: " : ""}
+                                {conv.lastMessage.sender_id === userData.id
+                                  ? "Tú: "
+                                  : ""}
                                 {conv.lastMessage.body}
                               </p>
                             )}
@@ -547,5 +753,5 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </div>
       </div>
     </div>
-  )
+  );
 }

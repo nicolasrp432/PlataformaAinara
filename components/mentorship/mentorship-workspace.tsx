@@ -1,4 +1,5 @@
 "use client";
+import { closeMentorship } from "@/app/(admin)/admin/mentorship/actions";
 import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -46,8 +47,10 @@ const statusLabels: Record<string, string> = {
 
 function SessionEditor({
   session,
+  admin,
 }: {
   session: MentorshipWorkspaceData["sessions"][number];
+  admin?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -122,6 +125,59 @@ function SessionEditor({
             <input type="checkbox" name="completed" /> Marcar como completada
           </label>
         )}
+      {admin && ["pending", "confirmed"].includes(session.status) && (
+        <div className="space-y-2 border-t pt-3">
+          <p className="text-xs text-muted-foreground">
+            La cancelación libera el horario. Si hubo un cobro, gestiona el
+            reembolso desde Stripe.
+          </p>
+          <div className="flex gap-2">
+            {[
+              "cancelled",
+              ...(session.status === "confirmed" &&
+              new Date(session.scheduled_at).getTime() < Date.now()
+                ? ["no_show"]
+                : []),
+            ].map((status) => (
+              <Button
+                key={status}
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={() => {
+                  const reason = prompt(
+                    status === "cancelled"
+                      ? "Motivo de cancelación (se notificará al alumno):"
+                      : "Motivo de la ausencia:",
+                  );
+                  if (!reason) return;
+                  startTransition(async () => {
+                    try {
+                      const r = await closeMentorship(
+                        session.id,
+                        status,
+                        reason,
+                      );
+                      if (r.error) toast.error(r.error);
+                      else {
+                        toast.success("Estado actualizado");
+                        router.refresh();
+                      }
+                    } catch {
+                      toast.error("No se pudo actualizar");
+                    }
+                  });
+                }}
+              >
+                {status === "cancelled"
+                  ? "Cancelar sesión"
+                  : "Registrar ausencia"}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
       <Button type="submit" disabled={pending} size="sm">
         {pending ? "Guardando…" : "Guardar sesión"}
       </Button>
@@ -185,8 +241,10 @@ function RequestEditor({
 }
 export function MentorshipWorkspace({
   data,
+  admin = false,
 }: {
   data: MentorshipWorkspaceData;
+  admin?: boolean;
 }) {
   return (
     <section className="space-y-5">
@@ -203,7 +261,7 @@ export function MentorshipWorkspace({
           <h3 className="font-semibold">Sesiones</h3>
           {data.sessions.length ? (
             data.sessions.map((session) => (
-              <SessionEditor key={session.id} session={session} />
+              <SessionEditor key={session.id} session={session} admin={admin} />
             ))
           ) : (
             <p className="text-sm text-muted-foreground">

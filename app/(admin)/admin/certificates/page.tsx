@@ -1,32 +1,63 @@
-import { createClient } from "@/lib/supabase/server"
-import { Award, Users } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { IssueCertificateForm } from "./issue-form";
+import { requireAdmin } from "@/lib/guards";
+import { CertificateDownloadButton } from "@/components/certificates/download-button";
+import { createClient } from "@/lib/supabase/server";
+import { Award, Users } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type CertificateRow = {
-  id: string
-  certificate_number: string
-  issued_at: string
-  profiles: { full_name: string } | null
-  formations: { title: string } | null
-}
+  id: string;
+  user_id: string;
+  certificate_number: string;
+  issued_at: string;
+  profiles: { full_name: string } | null;
+  formations: { title: string } | null;
+};
 
 export default async function CertificatesPage() {
-  const supabase = await createClient()
+  await requireAdmin();
+  const supabase = await createClient();
 
-  const { data: certificates } = await supabase
+  const { data: completed, error: enrollmentError } = await supabase
+    .from("enrollments")
+    .select("user_id,formation_id,profiles(full_name),formations(title)")
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(100);
+  if (enrollmentError)
+    throw new Error("No se pudieron consultar las inscripciones");
+  const eligible = (completed ?? []).map((row) => {
+    const profile = Array.isArray(row.profiles)
+      ? row.profiles[0]
+      : row.profiles;
+    const formation = Array.isArray(row.formations)
+      ? row.formations[0]
+      : row.formations;
+    return {
+      user_id: row.user_id,
+      formation_id: row.formation_id,
+      label: `${profile?.full_name ?? "Alumno"} — ${formation?.title ?? "Formación"}`,
+    };
+  });
+  const { data: certificates, error: certificateError } = await supabase
     .from("certificates")
-    .select(`
-      id, certificate_number, issued_at,
+    .select(
+      `
+      id, user_id, certificate_number, issued_at,
       profiles ( full_name, avatar_url ),
       formations ( title )
-    `)
+    `,
+    )
     .order("issued_at", { ascending: false })
-    .limit(100)
+    .limit(100);
+
+  if (certificateError)
+    throw new Error("No se pudieron consultar los certificados");
 
   const { count: totalCerts } = await supabase
     .from("certificates")
-    .select("*", { count: "exact", head: true })
+    .select("*", { count: "exact", head: true });
 
   return (
     <div className="space-y-6">
@@ -46,8 +77,12 @@ export default async function CertificatesPage() {
               <Award className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{totalCerts ?? 0}</p>
-              <p className="text-sm text-muted-foreground">Certificados emitidos</p>
+              <p className="text-2xl font-bold text-foreground">
+                {totalCerts ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Certificados emitidos
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -58,34 +93,52 @@ export default async function CertificatesPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {new Set(((certificates ?? []) as unknown as CertificateRow[]).map((c) => c.profiles?.full_name)).size}
+                {
+                  new Set(
+                    ((certificates ?? []) as unknown as CertificateRow[]).map(
+                      (c) => c.user_id,
+                    ),
+                  ).size
+                }
               </p>
-              <p className="text-sm text-muted-foreground">Usuarios certificados</p>
+              <p className="text-sm text-muted-foreground">
+                Usuarios en los últimos 100 certificados
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <IssueCertificateForm enrollments={eligible} />
 
       {/* Table */}
       {!certificates || certificates.length === 0 ? (
         <Card className="border-dashed border-border/60">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Award className="h-10 w-10 text-muted-foreground/40 mb-3" />
-            <p className="font-medium text-muted-foreground">No hay certificados todavía</p>
+            <p className="font-medium text-muted-foreground">
+              No hay certificados todavía
+            </p>
             <p className="text-sm text-muted-foreground/70 mt-1">
-              Se emitirán automáticamente cuando un usuario complete todas las lecciones de una formación.
+              Se emitirán automáticamente cuando un usuario complete todas las
+              lecciones de una formación.
             </p>
           </CardContent>
         </Card>
       ) : (
         <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-base">Todos los Certificados</CardTitle>
+            <CardTitle className="text-base">
+              Últimos 100 certificados
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-border/50">
               {(certificates as unknown as CertificateRow[]).map((cert) => (
-                <div key={cert.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors">
+                <div
+                  key={cert.id}
+                  className="flex flex-wrap items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors"
+                >
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-warning-soft shrink-0">
                     <Award className="h-4 w-4 text-primary" />
                   </div>
@@ -98,12 +151,22 @@ export default async function CertificatesPage() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-mono text-muted-foreground">{cert.certificate_number}</p>
+                    <p className="text-xs font-mono text-muted-foreground">
+                      {cert.certificate_number}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {new Date(cert.issued_at).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })}
+                      {new Date(cert.issued_at).toLocaleDateString("es-ES", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-primary border-primary/30 text-xs shrink-0">
+                  <CertificateDownloadButton id={cert.id} />
+                  <Badge
+                    variant="outline"
+                    className="text-primary border-primary/30 text-xs shrink-0"
+                  >
                     Emitido
                   </Badge>
                 </div>
@@ -113,5 +176,5 @@ export default async function CertificatesPage() {
         </Card>
       )}
     </div>
-  )
+  );
 }

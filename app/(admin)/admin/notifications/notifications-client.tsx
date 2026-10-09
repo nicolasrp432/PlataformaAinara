@@ -1,68 +1,95 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useTransition } from "react"
-import { toast } from "sonner"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Send, History, Users } from "lucide-react"
-import { sendCampaignAction } from "./actions"
+import * as React from "react";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Send, History, Users } from "lucide-react";
+import { sendCampaignAction } from "./actions";
 
 interface Campaign {
-  id: string
-  title: string
-  body: string
-  recipient_count: number
-  sent_at: string
-  channel: string
-  audience: { type: string; value?: unknown }
+  id: string;
+  title: string;
+  body: string;
+  recipient_count: number;
+  sent_at: string;
+  channel: string;
+  audience: { type: string; value?: unknown };
 }
 
 interface Formation {
-  id: string
-  title: string
+  id: string;
+  title: string;
 }
 
 interface Props {
-  campaigns: Campaign[]
-  formations: Formation[]
+  campaigns: Campaign[];
+  formations: Formation[];
 }
 
 function formatAudience(audience: { type: string; value?: unknown }) {
-  if (audience.type === "all") return "Todos los usuarios"
-  if (audience.type === "role") return `Rol: ${audience.value}`
-  if (audience.type === "formation") return `Formación específica`
+  if (audience.type === "all") return "Todos los usuarios";
+  if (audience.type === "role") return `Rol: ${audience.value}`;
+  if (audience.type === "formation") return `Formación específica`;
   if (audience.type === "user_ids") {
-    const ids = audience.value as string[]
-    return `${ids.length} usuario(s) específico(s)`
+    const ids = audience.value as string[];
+    return `${ids.length} usuario(s) específico(s)`;
   }
-  return audience.type
+  return audience.type;
 }
 
 export function NotificationsAdminClient({ campaigns, formations }: Props) {
-  const [isPending, startTransition] = useTransition()
-  const [audienceType, setAudienceType] = React.useState("all")
-  const formRef = React.useRef<HTMLFormElement>(null)
+  const router = useRouter();
+  const requestId = React.useRef<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [audienceType, setAudienceType] = React.useState("all");
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    requestId.current ??= crypto.randomUUID();
+    formData.set("requestId", requestId.current);
     startTransition(async () => {
-      const result = await sendCampaignAction(formData)
-      if (result?.error) {
-        toast.error(result.error)
-        return
+      try {
+        const result = await sendCampaignAction(formData);
+        if (result?.error) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success(
+          `Notificación enviada a ${result.recipientCount} usuario(s).`,
+        );
+        formRef.current?.reset();
+        setAudienceType("all");
+        requestId.current = null;
+        router.refresh();
+      } catch {
+        toast.error(
+          "No se pudo conectar. Puedes reintentar el envío sin duplicarlo.",
+        );
       }
-      toast.success(`Notificación enviada a ${result.recipientCount} usuario(s).`)
-      formRef.current?.reset()
-      setAudienceType("all")
-    })
-  }
+    });
+  };
 
   return (
     <Tabs defaultValue="send">
@@ -85,10 +112,23 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+            <form
+              ref={formRef}
+              onChange={() => {
+                if (!isPending) requestId.current = null;
+              }}
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
               <div className="grid gap-2">
                 <Label htmlFor="title">Título *</Label>
-                <Input id="title" name="title" required maxLength={200} placeholder="Ej: Nueva formación disponible" />
+                <Input
+                  id="title"
+                  name="title"
+                  required
+                  maxLength={200}
+                  placeholder="Ej: Nueva formación disponible"
+                />
               </div>
 
               <div className="grid gap-2">
@@ -105,7 +145,12 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
 
               <div className="grid gap-2">
                 <Label htmlFor="link">Enlace (opcional)</Label>
-                <Input id="link" name="link" type="url" placeholder="https://… o /ruta-interna" />
+                <Input
+                  id="link"
+                  name="link"
+                  type="text"
+                  placeholder="https://… o /ruta-interna"
+                />
               </div>
 
               <div className="grid gap-2">
@@ -113,7 +158,10 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
                 <Select
                   name="audienceType"
                   value={audienceType}
-                  onValueChange={setAudienceType}
+                  onValueChange={(value) => {
+                    setAudienceType(value);
+                    requestId.current = null;
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -124,7 +172,9 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
                         <Users className="h-3.5 w-3.5" /> Todos los usuarios
                       </span>
                     </SelectItem>
-                    <SelectItem value="role">Por rol (estudiante / mentor)</SelectItem>
+                    <SelectItem value="role">
+                      Por rol (estudiante / mentor)
+                    </SelectItem>
                     <SelectItem value="formation">Por formación</SelectItem>
                     <SelectItem value="user_ids">IDs específicos</SelectItem>
                   </SelectContent>
@@ -155,7 +205,9 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
                     </SelectTrigger>
                     <SelectContent>
                       {formations.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.title}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -164,7 +216,9 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
 
               {audienceType === "user_ids" && (
                 <div className="grid gap-2">
-                  <Label htmlFor="audienceValue">IDs de usuarios (separados por coma)</Label>
+                  <Label htmlFor="audienceValue">
+                    IDs de usuarios (separados por coma)
+                  </Label>
                   <Textarea
                     id="audienceValue"
                     name="audienceValue"
@@ -177,9 +231,13 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
               <div className="flex justify-end">
                 <Button type="submit" disabled={isPending} className="gap-2">
                   {isPending ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Enviando…</>
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Enviando…
+                    </>
                   ) : (
-                    <><Send className="h-4 w-4" /> Enviar notificación</>
+                    <>
+                      <Send className="h-4 w-4" /> Enviar notificación
+                    </>
                   )}
                 </Button>
               </div>
@@ -197,7 +255,9 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
           </CardHeader>
           <CardContent>
             {campaigns.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No hay campañas aún.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No hay campañas aún.
+              </p>
             ) : (
               <div className="space-y-3">
                 {campaigns.map((c) => (
@@ -206,17 +266,25 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
                     className="rounded-lg border border-border/50 p-4 space-y-1"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold leading-snug">{c.title}</p>
+                      <p className="text-sm font-semibold leading-snug">
+                        {c.title}
+                      </p>
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(c.sent_at).toLocaleDateString("es-ES", {
-                          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{c.body}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {c.body}
+                    </p>
                     <div className="flex items-center gap-3 pt-1">
                       <span className="text-xs text-muted-foreground">
-                        {formatAudience(c.audience)} · {c.recipient_count} destinatarios
+                        {formatAudience(c.audience)} · {c.recipient_count}{" "}
+                        destinatarios
                       </span>
                     </div>
                   </div>
@@ -227,5 +295,5 @@ export function NotificationsAdminClient({ campaigns, formations }: Props) {
         </Card>
       </TabsContent>
     </Tabs>
-  )
+  );
 }
