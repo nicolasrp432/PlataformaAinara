@@ -21,9 +21,9 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMPTZ;
 
 COMMENT ON COLUMN public.profiles.terms_accepted_at IS
-  'Momento en que la usuaria aceptó los Términos y Condiciones (prueba del consentimiento).';
+  'Momento en que la persona usuaria aceptó los Términos y Condiciones (prueba del consentimiento).';
 COMMENT ON COLUMN public.profiles.privacy_accepted_at IS
-  'Momento en que la usuaria aceptó la Política de Privacidad.';
+  'Momento en que la persona usuaria aceptó la Política de Privacidad.';
 
 -- Las cuentas anteriores a esta migración aceptaron en el registro, pero sin
 -- sello: se les asigna su fecha de alta como mejor aproximación disponible.
@@ -56,7 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_deletion_requests_user
 
 ALTER TABLE public.deletion_requests ENABLE ROW LEVEL SECURITY;
 
--- Cada usuaria ve y crea únicamente su propia solicitud.
+-- Cada persona usuaria ve y crea únicamente su propia solicitud.
 DROP POLICY IF EXISTS "deletion_requests_select_own" ON public.deletion_requests;
 CREATE POLICY "deletion_requests_select_own" ON public.deletion_requests
   FOR SELECT USING (auth.uid() = user_id);

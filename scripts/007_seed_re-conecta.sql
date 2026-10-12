@@ -35,7 +35,7 @@ INSERT INTO public.formations (
   'RE-CONECTA',
   're-conecta',
   'Reconecta contigo, silencia tu mente crítica y vuelve a sentirte suficiente.',
-  'RE-CONECTA es un programa de transformación emocional diseñado para ayudar a mujeres que viven atrapadas en la autocrítica, la inseguridad, el agotamiento emocional y la desconexión consigo mismas. A través de herramientas de inteligencia emocional, neurociencia aplicada, mindfulness, PNL y prácticas de presencia consciente, esta formación guía paso a paso a la alumna para: silenciar su voz crítica, fortalecer su autoestima, sanar la relación consigo misma, volver a sentirse segura y auténtica, aprender a escucharse sin juicio y crear una nueva identidad emocional desde el amor propio.',
+  'RE-CONECTA es un programa de transformación emocional para cuando la autocrítica, la inseguridad y el agotamiento te han ido alejando de ti. Con herramientas de inteligencia emocional, neurociencia aplicada, mindfulness, PNL y prácticas de presencia consciente, te guía paso a paso para silenciar tu voz crítica, fortalecer tu autoestima, sanar la relación contigo, recuperar la seguridad y la autenticidad, aprender a escucharte sin juicio y construir una nueva identidad emocional desde el amor propio.',
   'beginner',
   360,
   false,
@@ -82,7 +82,7 @@ INSERT INTO public.lessons (
 (v_mod1_id,
  'El Impacto del Diálogo Interno',
  'rc-m1-impacto-dialogo-interno',
- 'Aprende cómo las palabras que te dices a ti misma moldean tu realidad emocional y tus decisiones.',
+ 'Aprende cómo las palabras que te dices a diario moldean tu realidad emocional y tus decisiones.',
  'video', 3, 50, false, false, 0,
  '[]'::jsonb),
 
@@ -243,14 +243,14 @@ INSERT INTO public.lessons (
 (v_mod4_id,
  'Cómo Cambiar Creencias Limitantes',
  'rc-m4-cambiar-creencias-limitantes',
- 'Identifica y transforma las creencias que te mantienen atrapada en la inseguridad y la autocrítica.',
+ 'Identifica y transforma las creencias que te atan a la inseguridad y la autocrítica.',
  'video', 2, 50, false, false, 0,
  '[{"title": "Ejercicio de Creencias", "url": "", "type": "pdf"}]'::jsonb),
 
 (v_mod4_id,
  'Autoimagen Consciente',
  'rc-m4-autoimagen-consciente',
- 'Trabaja la imagen que tienes de ti misma y aprende a verte desde la compasión y el reconocimiento.',
+ 'Trabaja la imagen que tienes de ti y aprende a mirarte desde la compasión y el reconocimiento.',
  'video', 3, 50, false, false, 0,
  '[]'::jsonb),
 
@@ -318,7 +318,7 @@ INSERT INTO public.lessons (
 (v_mod5_id,
  'Autoestima y Energía Femenina',
  'rc-m5-autoestima-energia-femenina',
- 'Conecta con tu energía femenina como fuente de poder, no de debilidad, y aplícala en tu autoestima diaria.',
+ 'Tu energía femenina —sentir, recibir, fluir— como fuente de poder y no de debilidad. La tenemos todas las personas: aquí la llevas a tu autoestima diaria.',
  'video', 5, 75, false, false, 0,
  '[{"title": "Checklist de Autocuidado", "url": "", "type": "pdf"},
    {"title": "Prácticas de Autoestima Diaria", "url": "", "type": "pdf"}]'::jsonb);
