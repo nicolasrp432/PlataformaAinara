@@ -45,7 +45,7 @@ export default function LoginPage() {
               </Link>
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Bienvenido de nuevo
+              Hola de nuevo
             </h1>
             <p className="text-sm text-muted-foreground">
               Entra y sigue donde lo dejaste

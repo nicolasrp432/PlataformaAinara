@@ -46,7 +46,7 @@ export default function PrivacyPage() {
           <strong>Diario de reflexión:</strong> tu estado de ánimo diario y lo que
           escribes. Es <strong>estrictamente privado</strong>: la base de datos
           impide técnicamente que otra persona lo lea, incluido el resto de
-          usuarias.
+          la comunidad.
         </li>
         <li>
           <strong>Rueda de la vida:</strong> las puntuaciones que eliges en ocho
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
             <td>Ejecución del contrato (art. 6.1.b)</td>
           </tr>
           <tr>
-            <td>Comunidad, comentarios y mensajería entre usuarias</td>
+            <td>Comunidad, comentarios y mensajería entre personas usuarias</td>
             <td>Ejecución del contrato (art. 6.1.b)</td>
           </tr>
           <tr>

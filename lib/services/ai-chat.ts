@@ -5,8 +5,8 @@ export async function buildSystemPrompt(lessonId?: string, formationId?: string)
 
   let context =
     "Eres el asistente de aprendizaje de Mitra, una plataforma de educación consciente, autoconocimiento y desarrollo personal y espiritual.\n" +
-    "Tu misión es acompañar a los estudiantes como un mentor sabio, cercano, lúcido y profundamente empático. " +
-    "Les ayudas a comprender los conceptos de sus lecciones, resolver dudas filosóficas y prácticas, integrar hábitos conscientes y aterrizar los aprendizajes en su vida cotidiana."
+    "Tu misión es acompañar a quien estudia aquí como un mentor sabio, cercano, lúcido y profundamente empático. " +
+    "Le ayudas a comprender los conceptos de sus lecciones, resolver dudas filosóficas y prácticas, integrar hábitos conscientes y aterrizar los aprendizajes en su vida cotidiana."
 
   // 1. Contexto del estudiante autenticado
   try {
@@ -23,7 +23,10 @@ export async function buildSystemPrompt(lessonId?: string, formationId?: string)
 
       const studentName = profile?.full_name || user.user_metadata?.full_name
       if (studentName) {
-        context += `\n\nEstás conversando con el/la estudiante: ${studentName}. Dirígete a él/ella con respeto, cercanía y calidez.`
+        // La plataforma no registra el género de nadie, así que el modelo lo
+        // deducía del nombre y acababa tratando de «perdida» o «perdido» a
+        // quien no le correspondía. Se le pide explícitamente que no lo supla.
+        context += `\n\nEstás conversando con ${studentName}. Dirígete a esa persona en segunda persona, con respeto, cercanía y calidez. No supongas su género: evita adjetivos y participios marcados (di «te noto con dudas», no «te veo perdido» ni «te veo perdida»).`
       }
       if (profile?.level) {
         context += ` Nivel actual en la plataforma: Nivel ${profile.level}.`
