@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import { Flame, NotebookPen, ChevronLeft, ChevronRight, Filter } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import type { DailyReflectionEntry } from "@/lib/data-access"
 import { ReflectionCalendar } from "./reflection-calendar"
+import { MoodSummary } from "./mood-summary"
 import { EntryEditor } from "./entry-editor"
 import { MOOD_ICONS, MOOD_LABELS, MOOD_TONES } from "./moods"
 
@@ -44,6 +45,7 @@ export function ReflexionClient({
   streak,
   today,
 }: ReflexionClientProps) {
+  const reduceMotion = useReducedMotion()
   const [selected, setSelected] = React.useState(today)
   const [sheetOpen, setSheetOpen] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
@@ -106,9 +108,9 @@ export function ReflexionClient({
 
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
         className="ainara-page-header flex flex-col gap-3"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -143,9 +145,9 @@ export function ReflexionClient({
       {/* Calendario */}
       <motion.div
         className="ainara-journal-calendar"
-        initial={{ opacity: 0 }}
+        initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.12, duration: 0.4 }}
+        transition={{ duration: 0.15 }}
       >
         <ReflectionCalendar
           entries={recent}
@@ -158,9 +160,9 @@ export function ReflexionClient({
       {/* Editor principal */}
       <motion.div
         className="ainara-journal-editor"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.45 }}
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
       >
         <Card className="overflow-hidden border-border/70 bg-card/75 shadow-lg shadow-black/5 backdrop-blur-xl md:shadow-xl rounded-2xl">
           <div className="h-1.5 gold-gradient" />
@@ -212,6 +214,7 @@ export function ReflexionClient({
       {/* Historial con filtro por estado de ánimo */}
       {recent.length > 0 && (
         <div className="ainara-journal-history space-y-3 pt-2">
+          <MoodSummary entries={recent} />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="label-luxury flex items-center gap-2">
               <NotebookPen className="h-3.5 w-3.5 text-primary" />
@@ -225,6 +228,7 @@ export function ReflexionClient({
                 <button
                   type="button"
                   onClick={() => setMoodFilter("all")}
+                  aria-pressed={moodFilter === "all"}
                   className={cn(
                     "text-3xs font-semibold px-2 py-0.5 rounded-md border transition-colors shrink-0",
                     moodFilter === "all"
@@ -239,6 +243,7 @@ export function ReflexionClient({
                     key={m}
                     type="button"
                     onClick={() => setMoodFilter(m)}
+                    aria-pressed={moodFilter === m}
                     className={cn(
                       "text-3xs font-semibold px-2 py-0.5 rounded-md border transition-colors shrink-0",
                       moodFilter === m

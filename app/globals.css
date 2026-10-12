@@ -924,7 +924,7 @@
 .ainara-sidebar nav { padding:1rem .75rem; }
 .ainara-sidebar nav a { min-height:2.85rem; margin-bottom:.3rem; }
 .ainara-sidebar nav a[aria-current="page"] { color:var(--color-primary-foreground); }
-.ainara-sidebar nav a[aria-current="page"] > span:first-child { background:#F6D25C; box-shadow:0 3px 12px #b8902e1a; }
+.ainara-sidebar nav a > .sidebar-nav-highlight { background:#F6D25C; box-shadow:0 3px 12px #b8902e1a; }
 .ainara-sidebar nav a[aria-current="page"] svg { color:inherit; }
 .ainara-platform main > div > div > h1, .ainara-platform main > div > div > div > h1 { font-family:var(--font-heading-brand),Georgia,serif; font-weight:500; }
 .ainara-journal { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); column-gap:2rem; align-items:start; }

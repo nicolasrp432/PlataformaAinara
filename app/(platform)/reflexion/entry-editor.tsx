@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils"
 import type { DailyReflectionEntry } from "@/lib/data-access"
 import { phraseForDate } from "@/lib/daily-phrases"
 import { MoodPicker } from "./mood-picker"
-import { MOOD_ICONS, MOOD_LABELS } from "./moods"
+import { MOOD_ICONS, MOOD_LABELS, MOOD_TONES } from "./moods"
 import { deleteDailyReflection, upsertDailyReflection } from "./actions"
 import { useRouter } from "next/navigation"
 
@@ -199,7 +199,7 @@ export function EntryEditor({
         <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-primary/10 border border-primary/25 shadow-xs">
           <div className="flex min-w-0 items-center gap-3">
             {SavedMoodIcon && (
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary shadow-xs">
+              <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs", MOOD_TONES[entry.mood])}>
                 <SavedMoodIcon className="h-5 w-5" />
               </div>
             )}
@@ -286,10 +286,11 @@ export function EntryEditor({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-xs sm:text-sm font-semibold text-foreground">
-            {isToday ? "¿Cómo está tu energía hoy?" : "¿Cómo te sentías?"}
+            {isToday ? "¿Cómo te sientes hoy?" : "¿Cómo te sentías?"}
           </p>
           <span className="text-2xs text-muted-foreground">Clima interior</span>
         </div>
+        <p className="text-xs text-muted-foreground">Primero reconoce tu emoción. Después, escribe si lo necesitas.</p>
         <MoodPicker value={mood} onChange={setMood} disabled={isPending} />
       </div>
 
@@ -337,6 +338,7 @@ export function EntryEditor({
           <Feather className="h-4 w-4 text-primary" />
           ¿Qué necesitas expresar hoy?
         </label>
+        <p className="text-xs text-muted-foreground">La nota es opcional: también puedes guardar solo tu estado emocional.</p>
         <textarea
           ref={textareaRef}
           id={fieldId}
