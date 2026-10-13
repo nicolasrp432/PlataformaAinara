@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { motion } from "framer-motion"
 import {
   CreditCard,
   LayoutDashboard,
@@ -14,7 +13,6 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { SPRING_UI } from "@/lib/motion"
 import {
   Sheet,
   SheetContent,
@@ -98,13 +96,13 @@ export function MobileBottomNav({ user, streak, hasFullAccess }: MobileBottomNav
                     isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {isActive && (
-                    <motion.span
-                      layoutId="mobile-nav-pill"
-                      className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20"
-                      transition={SPRING_UI}
-                    />
-                  )}
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "pointer-events-none absolute inset-0 rounded-xl bg-primary/10 border border-primary/20 transition-opacity duration-150 motion-reduce:transition-none",
+                      isActive ? "opacity-100" : "opacity-0"
+                    )}
+                  />
 
                   {isReflexion ? (
                     <div
@@ -154,13 +152,13 @@ export function MobileBottomNav({ user, streak, hasFullAccess }: MobileBottomNav
                 isMoreActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {isMoreActive && (
-                <motion.span
-                  layoutId="mobile-nav-pill"
-                  className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20"
-                  transition={SPRING_UI}
-                />
-              )}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "pointer-events-none absolute inset-0 rounded-xl bg-primary/10 border border-primary/20 transition-opacity duration-150 motion-reduce:transition-none",
+                  isMoreActive ? "opacity-100" : "opacity-0"
+                )}
+              />
               <span className="relative z-10">
                 <MoreHorizontal className="h-5 w-5" />
                 <MessagesUnreadBadge isCollapsed />

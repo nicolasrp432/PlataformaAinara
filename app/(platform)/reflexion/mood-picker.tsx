@@ -1,8 +1,8 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MOODS } from "./moods"
+import { MOODS, MOOD_TONES } from "./moods"
 
 interface MoodPickerProps {
   value: string | null
@@ -10,48 +10,38 @@ interface MoodPickerProps {
   disabled?: boolean
 }
 
-/**
- * Selector de clima emocional. Iconos intuitivos con etiquetas claras y bordes suaves.
- */
 export function MoodPicker({ value, onChange, disabled }: MoodPickerProps) {
+  const selectedMood = MOODS.find((m) => m.id === value)
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-2.5">
-      {MOODS.map((m) => {
-        const Icon = m.icon
-        const selected = value === m.id
-        return (
-          <motion.button
-            key={m.id}
-            type="button"
-            whileTap={{ scale: 0.94 }}
-            onClick={() => onChange(m.id)}
-            disabled={disabled}
-            aria-pressed={selected}
-            className={cn(
-              "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2.5 transition-[transform,background-color,border-color,color,box-shadow,opacity]",
-              "disabled:opacity-50",
-              selected
-                ? "border-primary bg-primary/15 ring-2 ring-primary/30 shadow-sm"
-                : "border-border bg-card/60 hover:border-primary/40 hover:bg-primary/5"
-            )}
-          >
-            <Icon
+    <div className="space-y-3">
+      <div role="group" aria-label="Elige tu clima emocional" className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {MOODS.map((m) => {
+          const Icon = m.icon
+          const selected = value === m.id
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onChange(m.id)}
+              disabled={disabled}
+              aria-pressed={selected}
               className={cn(
-                "h-5 w-5",
-                selected ? "text-primary scale-110" : "text-muted-foreground"
-              )}
-            />
-            <span
-              className={cn(
-                "text-2xs leading-none",
-                selected ? "font-semibold text-foreground" : "text-muted-foreground"
+                "relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 motion-reduce:transition-none",
+                selected ? "border-current ring-1 ring-current shadow-sm" : "border-transparent hover:border-current",
+                MOOD_TONES[m.id]
               )}
             >
-              {m.label}
-            </span>
-          </motion.button>
-        )
-      })}
+              {selected && <Check aria-hidden="true" className="absolute right-2 top-2 h-3.5 w-3.5" />}
+              <Icon aria-hidden="true" className="h-7 w-7" />
+              <span className="text-xs font-semibold">{m.label}</span>
+              <span className="text-[11px] leading-snug">{m.description}</span>
+            </button>
+          )
+        })}
+      </div>
+      <div aria-live="polite" className="rounded-xl border border-border bg-muted/30 p-3 text-sm leading-relaxed">
+        {selectedMood ? selectedMood.question : "No hay emociones buenas o malas. Elige el estado que más se acerque a lo que sientes; puedes cambiarlo antes de guardar."}
+      </div>
     </div>
   )
 }

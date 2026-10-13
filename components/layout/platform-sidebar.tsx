@@ -4,9 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useUserStore } from "@/lib/store/user-store"
-import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
-import { SPRING_UI } from "@/lib/motion"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -215,7 +213,7 @@ export function PlatformSidebar({ user, streak, hasFullAccess }: PlatformSidebar
                   className={cn(
                     "relative flex items-center gap-3 rounded-lg px-3 py-2.5",
                     "text-sm font-medium leading-snug",
-                    "transition-colors duration-150",
+                    "transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                     isCollapsed && "justify-center px-2",
                     isActive
                       ? "text-sidebar-accent-foreground"
@@ -224,13 +222,13 @@ export function PlatformSidebar({ user, streak, hasFullAccess }: PlatformSidebar
                   aria-current={isActive ? "page" : undefined}
                   title={isCollapsed ? item.name : undefined}
                 >
-                  {isActive && (
-                    <motion.span
-                      layoutId="sidebar-active-pill"
-                      className="absolute inset-0 rounded-lg bg-sidebar-accent ring-1 ring-primary/15"
-                      transition={SPRING_UI}
-                    />
-                  )}
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "sidebar-nav-highlight pointer-events-none absolute inset-0 rounded-lg bg-sidebar-accent ring-1 ring-primary/15 transition-opacity duration-150 ease-out motion-reduce:transition-none",
+                      isActive ? "opacity-100" : "opacity-0"
+                    )}
+                  />
                   <item.icon
                     className={cn(
                       "h-4.5 w-4.5 shrink-0 relative z-10",
